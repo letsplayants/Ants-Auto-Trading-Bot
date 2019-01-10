@@ -12,10 +12,11 @@
 import sys
 from bithumb_client import *
 import pprint
+from read_api_key import readKey
 
-
-api_key = "...";
-api_secret = "...";
+keys = readKey('bithumb.key')
+api_key = keys[0]
+api_secret = keys[1]
 
 api = XCoinAPI(api_key, api_secret);
 
