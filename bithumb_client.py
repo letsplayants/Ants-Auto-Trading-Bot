@@ -10,6 +10,7 @@
 # Compatible with python3 version.
 #
 # Bithumb에서 제공하는 샘플 코드이다
+# API 문서 https://apidocs.bithumb.com/docs/apiInfo
 
 import sys
 import time
@@ -89,7 +90,7 @@ class XCoinAPI:
 		curl_handle.setopt(curl_handle.WRITEFUNCTION, self.body_callback);
 		curl_handle.perform();
 
-		#response_code = curl_handle.getinfo(pycurl.RESPONSE_CODE); # Get http response status code.
+		response_code = curl_handle.getinfo(pycurl.RESPONSE_CODE); # Get http response status code.
 
 		curl_handle.close();
 
