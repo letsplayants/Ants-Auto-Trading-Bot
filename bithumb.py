@@ -50,11 +50,11 @@ print("buy: " + result["data"]["buy_price"]);
 # /info/balance
 # /info/wallet_address
 
-# result = api.xcoinApiCall("/info/account", rgParams);
-# print("status: " + result["status"]);
-# print("created: " + result["data"]["created"]);
-# print("account id: " + result["data"]["account_id"]);
-# print("trade fee: " + result["data"]["trade_fee"]);
-# print("balance: " + result["data"]["balance"]);
+result = api.xcoinApiCall("/info/account", rgParams);
+print("status: " + result["status"]);
+print("created: " + result["data"]["created"]);
+print("account id: " + result["data"]["account_id"]);
+print("trade fee: " + result["data"]["trade_fee"]);
+print("balance: " + result["data"]["balance"]);
 
-sys.exit(0);
+

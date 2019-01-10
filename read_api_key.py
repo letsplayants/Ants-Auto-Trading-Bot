@@ -10,4 +10,7 @@ def readKey(filePath):
     with open(filePath) as fp:
         keys = fp.readlines()
        
+    keys[0] = keys[0].strip()
+    keys[1] = keys[1].strip()
+    
     return keys
