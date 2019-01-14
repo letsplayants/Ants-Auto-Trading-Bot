@@ -24,13 +24,17 @@ import email.header
 import datetime
 import time
 import signal
+from read_api_key import readKey
 
-EMAIL_ACCOUNT = "zlemy@naver.com"
+EMAIL_SETTING = readKey('mail.key')
 
+EMAIL_ACCOUNT = EMAIL_SETTING['id']
+EMAIL_PASSWORD = EMAIL_SETTING['password']
 # Use 'INBOX' to read inbox.  Note that whatever folder is specified, 
 # after successfully running this script all emails in that folder 
 # will be marked as read.
-EMAIL_FOLDER = "ants"
+EMAIL_FOLDER = EMAIL_SETTING['folder']
+EMAL_IMAP_SERVER = EMAIL_SETTING['imap_server']
 
 
 def signal_handler(sig, frame):
@@ -82,11 +86,11 @@ def process_mailbox(M):
     
 
 
-M = imaplib.IMAP4_SSL('imap.naver.com')
+M = imaplib.IMAP4_SSL(EMAL_IMAP_SERVER)
 
-PASSWORD = '1Djrqjfrl!'
+
 try:
-    rv, data = M.login(EMAIL_ACCOUNT, PASSWORD)
+    rv, data = M.login(EMAIL_ACCOUNT, EMAIL_PASSWORD)
 except imaplib.IMAP4.error as exp:
     print ("LOGIN FAILED!!! {}".format(exp))
     sys.exit(1)

@@ -15,8 +15,8 @@ import pprint
 from read_api_key import readKey
 
 keys = readKey('bithumb.key')
-api_key = keys[0]
-api_secret = keys[1]
+api_key = keys['api_key']
+api_secret = keys['api_secret']
 
 api = XCoinAPI(api_key, api_secret);
 
@@ -75,8 +75,8 @@ bithumb = Bithumb(api_key, api_secret)
 # print(bithumb.get_trading_fee())
 
 #잔고 조회, 1초에 10회 이상 요청하면 API가 5분간 막힌다.. 아래의 코드는 10회 이상 요구하므로 5분간 무조건 막힘
-# for coin in ['BTC', 'XRP', 'ETH']:
-#     print(coin, bithumb.get_balance(coin))
+for coin in ['BTC', 'XRP', 'ETH']:
+    print(coin, bithumb.get_balance(coin))
     
 #매수 주문
 # desc = bithumb.buy_limit_order("ETH", 30000, 1)
@@ -90,16 +90,16 @@ bithumb = Bithumb(api_key, api_secret)
 # status = bithumb.cancel_order(desc)
 # print('request cancel order: {}'.format(status))
 
-try :
-	#매도 주문
-	desc = bithumb.sell_limit_order("ETH", 270000, 1)
-	print('sell order :{}'.format(desc))
+# try :
+# 	#매도 주문
+# 	desc = bithumb.sell_limit_order("ETH", 270000, 1)
+# 	print('sell order :{}'.format(desc))
 	
-	quanity = bithumb.get_outstanding_order(desc)
-	print('sell quanity: {}'.format(quanity))
+# 	quanity = bithumb.get_outstanding_order(desc)
+# 	print('sell quanity: {}'.format(quanity))
 	
-	status = bithumb.cancel_order(desc)
-	print('request cancel order: {}'.format(status))
-except Exception as exp:
-	print(exp)
+# 	status = bithumb.cancel_order(desc)
+# 	print('request cancel order: {}'.format(status))
+# except Exception as exp:
+# 	print(exp)
 		
