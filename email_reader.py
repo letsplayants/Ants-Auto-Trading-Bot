@@ -8,13 +8,22 @@
 #
 # This is an updated version of the original -- modified to work with Python 3.4.
 #
+# 참고
+# https://docs.python.org/3/library/imaplib.html
+# https://docs.python.org/3.7/library/imaplib.html
+# https://github.com/python/cpython/tree/master/Lib/email
+# https://www.programcreek.com/python/example/2875/imaplib.IMAP4_SSL
+# https://stackoverflow.com/questions/2230037/how-to-fetch-an-email-body-using-imaplib-in-python
+# https://stackoverflow.com/questions/2251977/python-imap-and-gmail-mark-messages-as-seen
+
 import sys
 import imaplib
 import getpass
 import email
 import email.header
 import datetime
-
+import time
+import signal
 
 EMAIL_ACCOUNT = "zlemy@naver.com"
 
@@ -24,6 +33,12 @@ EMAIL_ACCOUNT = "zlemy@naver.com"
 EMAIL_FOLDER = "ants"
 
 
+def signal_handler(sig, frame):
+    print('\nExit Program by user cause Ctrl + C')
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
+
 def process_mailbox(M):
     """
     Do something with emails messages in the folder.  
@@ -31,22 +46,30 @@ def process_mailbox(M):
     """
 
     # rv, data = M.search(None, "ALL")
-    rv, data = M.search(None, "SUBJECT", '"TradingView Alert"')
+    rv, data = M.search(None, "SUBJECT", '"TradingView Alert"', '(UNSEEN)')
     if rv != 'OK':
         print("No messages found!")
         return
 
-    for num in data[0].split():
-        rv, data = M.fetch(num, '(RFC822)')
+    print("total cnt : {}".format(data[0].split()))
+    for msg_num in data[0].split():
+        rv, data = M.fetch(msg_num, '(RFC822)')
         if rv != 'OK':
-            print("ERROR getting message", num)
+            print("ERROR getting message", msg_num)
             return
 
         msg = email.message_from_bytes(data[0][1])
         hdr = email.header.make_header(email.header.decode_header(msg['Subject']))
+        
         subject = str(hdr)
-        print('Message %s: %s' % (num, subject))
-        print('Raw Date:', msg['Date'])
+        print('Message %s: %s' % (msg_num, subject))
+        
+        typ, data = M.store(msg_num, '+FLAGS', '\\Seen')
+        if typ != 'OK':
+            print('FLAGS setting error {}'.format(typ))
+            return
+        
+        # print('Raw Date:', msg['Date'])
         
         # Now convert to local date-time
         date_tuple = email.utils.parsedate_tz(msg['Date'])
@@ -55,29 +78,36 @@ def process_mailbox(M):
                 email.utils.mktime_tz(date_tuple))
             print ("Local Date:", \
                 local_date.strftime("%a, %d %b %Y %H:%M:%S"))
+                
+    
 
 
 M = imaplib.IMAP4_SSL('imap.naver.com')
 
+PASSWORD = '1Djrqjfrl!'
 try:
-    rv, data = M.login(EMAIL_ACCOUNT, getpass.getpass())
+    rv, data = M.login(EMAIL_ACCOUNT, PASSWORD)
 except imaplib.IMAP4.error as exp:
     print ("LOGIN FAILED!!! {}".format(exp))
     sys.exit(1)
 
 print(rv, data)
 
-rv, mailboxes = M.list()
-if rv == 'OK':
-    print("Mailboxes:")
-    print(mailboxes)
+# rv, mailboxes = M.list()
+# if rv == 'OK':
+#     print("Mailboxes:")
+#     print(mailboxes)
 
-rv, data = M.select(EMAIL_FOLDER)
-if rv == 'OK':
-    print("Processing mailbox...\n")
-    process_mailbox(M)
+while(True) :
+    rv, data = M.select(EMAIL_FOLDER)
+    if rv == 'OK':
+        print("Processing mailbox...\n")
+        process_mailbox(M)
+    else:
+        print("ERROR: Unable to open mailbox ", rv)
+
+    time.sleep(10)  #입력값은 초단위이다. 10초마다 업데이트 확인함
     M.close()
-else:
-    print("ERROR: Unable to open mailbox ", rv)
-
+    
 M.logout()
+print('program done!')
