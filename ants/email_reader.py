@@ -30,11 +30,11 @@ EMAIL_SETTING = readKey('mail.key')
 
 EMAIL_ACCOUNT = EMAIL_SETTING['id']
 EMAIL_PASSWORD = EMAIL_SETTING['password']
-# Use 'INBOX' to read inbox.  Note that whatever folder is specified, 
-# after successfully running this script all emails in that folder 
+# Use 'INBOX' to read inbox.  Note that whatever folder is specified,
+# after successfully running this script all emails in that folder
 # will be marked as read.
 EMAIL_FOLDER = EMAIL_SETTING['folder']
-EMAL_IMAP_SERVER = EMAIL_SETTING['imap_server']
+EMAIL_IMAP_SERVER = EMAIL_SETTING['imap_server']
 
 
 def signal_handler(sig, frame):
@@ -82,12 +82,8 @@ def process_mailbox(M):
                 email.utils.mktime_tz(date_tuple))
             print ("Local Date:", \
                 local_date.strftime("%a, %d %b %Y %H:%M:%S"))
-                
-    
 
-
-M = imaplib.IMAP4_SSL(EMAL_IMAP_SERVER)
-
+M = imaplib.IMAP4_SSL(EMAIL_IMAP_SERVER)
 
 try:
     rv, data = M.login(EMAIL_ACCOUNT, EMAIL_PASSWORD)
