@@ -19,9 +19,9 @@ setup(
     long_description=readme,
     author='muyoul lee',
     author_email='lemy0715@gmail.com',
-    url='https://github.com/',
+    url='https://github.com/letsplayants/Ants-Auto-Trading-Bot',
     license=license,
     packages=find_packages(exclude=('tests', 'docs','configs')),
-    python_requires='>=3.6',
+    python_requires='>=3.6.7',
     test_suite="tests"
 )

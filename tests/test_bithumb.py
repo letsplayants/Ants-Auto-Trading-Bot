@@ -5,7 +5,7 @@ import context
 import sys
 import os
 
-from ants.read_api_key import readKey
+from utils import readKey
 from pybithumb import Bithumb
 
 class BithumbTest(unittest.TestCase):

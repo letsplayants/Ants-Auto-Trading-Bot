@@ -24,10 +24,10 @@ import email.header
 import datetime
 import time
 import signal
-import read_api_key
+import utils
 import json
 
-EMAIL_SETTING = read_api_key.readKey('./configs/mail.key')
+EMAIL_SETTING = utils.readKey('./configs/mail.key')
 
 EMAIL_ACCOUNT = EMAIL_SETTING['id']
 EMAIL_PASSWORD = EMAIL_SETTING['password']
@@ -42,7 +42,7 @@ signal.signal(signal.SIGINT, signal_handler)
 
 def parsingMsg(data):
     # 샘플 확보용 코드
-    # read_api_key.saveBinFile('/tmp/email.sample',data)
+    # utils.saveBinFile('/tmp/email.sample',data)
     
     msg = email.message_from_bytes(data)
     hdr = email.header.make_header(email.header.decode_header(msg['Subject']))
