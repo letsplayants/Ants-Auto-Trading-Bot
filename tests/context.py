@@ -1,5 +1,4 @@
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../ants'))
 
-import ants
+# sys.path.insert(0, os.path.abspath('../ants'))

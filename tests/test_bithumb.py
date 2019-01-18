@@ -5,7 +5,6 @@ import context
 import sys
 import os
 
-from ants.exchanges import bithumb_client
 from ants.read_api_key import readKey
 from pybithumb import Bithumb
 
@@ -15,8 +14,7 @@ class BithumbTest(unittest.TestCase):
         keys = readKey('./configs/bithumb.key')
         self.apiKey = keys['api_key']
         self.apiSecret = keys['api_secret']
-        self.apiKey = ''
-        
+
     def setUp(self):
         self.bithumb = Bithumb(self.apiKey, self.apiSecret)
 
@@ -29,51 +27,11 @@ class BithumbTest(unittest.TestCase):
         
     def test_callPrivAPI(self):
         self.assertIsNotNone(self.bithumb.get_trading_fee())
-        
+
+    
+
 if __name__ == '__main__':
     unittest.main()
-
-
-
-# api = XCoinAPI(api_key, api_secret);
-
-# rgParams = {
-# 	"order_currency" : "BTC",
-# 	"payment_currency" : "KRW"
-# };
-
-
-# #
-# # public api
-# #
-# # /public/ticker
-# # /public/recent_ticker
-# # /public/orderbook
-# # /public/recent_transactions
-
-# # result = api.xcoinApiCall("/public/ticker", rgParams);
-# # print("status: " + result["status"]);
-# # print("last: " + result["data"]["closing_price"]);
-# # print("sell: " + result["data"]["sell_price"]);
-# # print("buy: " + result["data"]["buy_price"]);
-
-
-# #
-# # private api
-# #
-# # endpoint		=> parameters
-# # /info/current
-# # /info/account
-# # /info/balance
-# # /info/wallet_address
-
-# # result = api.xcoinApiCall("/info/account", rgParams);
-# # print("status: " + result["status"]);
-# # print("created: " + result["data"]["created"]);
-# # print("account id: " + result["data"]["account_id"]);
-# # print("trade fee: " + result["data"]["trade_fee"]);
-# # print("balance: " + result["data"]["balance"]);
-
 
 # #============================================================================
 # from pybithumb import Bithumb

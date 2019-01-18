@@ -24,31 +24,61 @@ import email.header
 import datetime
 import time
 import signal
-from read_api_key import readKey
+import read_api_key
+import json
 
-EMAIL_SETTING = readKey('mail.key')
+EMAIL_SETTING = read_api_key.readKey('./configs/mail.key')
 
 EMAIL_ACCOUNT = EMAIL_SETTING['id']
 EMAIL_PASSWORD = EMAIL_SETTING['password']
-# Use 'INBOX' to read inbox.  Note that whatever folder is specified,
-# after successfully running this script all emails in that folder
-# will be marked as read.
 EMAIL_FOLDER = EMAIL_SETTING['folder']
 EMAIL_IMAP_SERVER = EMAIL_SETTING['imap_server']
 
-
 def signal_handler(sig, frame):
-    print('\nExit Program by user cause Ctrl + C')
+    print('\nExit Program by user Ctrl + C')
     sys.exit(0)
 
 signal.signal(signal.SIGINT, signal_handler)
 
-def process_mailbox(M):
-    """
-    Do something with emails messages in the folder.  
-    For the sake of this example, print some headers.
-    """
+def parsingMsg(data):
+    # 샘플 확보용 코드
+    # read_api_key.saveBinFile('/tmp/email.sample',data)
+    
+    msg = email.message_from_bytes(data)
+    hdr = email.header.make_header(email.header.decode_header(msg['Subject']))
+    
+    subject = str(hdr)
+    
+    #subject ex) TradingView Alert: #BTCKRW #1M #SELL #BITHUMB
+    
+    _list = subject.split('#')
+    ret={}
+    ret['market'] = _list[1].strip()
+    ret['time'] = _list[2].strip()
+    ret['action'] = _list[3].strip()
+    ret['exchange'] = _list[4].strip()
+    
+    return ret
+    
+def setFlag(M, msg_num, flag, value):
+    typ, data = M.store(msg_num, '+FLAGS', '\\Seen')
+    if typ != 'OK':
+        print('FLAGS setting error {}'.format(typ))
+        return
 
+def getLocalTime(msg):
+    # Now convert to local date-time
+    date_tuple = email.utils.parsedate_tz(msg['Date'])
+    if date_tuple:
+        local_date = datetime.datetime.fromtimestamp(
+            email.utils.mktime_tz(date_tuple))
+        print ("Local Date:", \
+            local_date.strftime("%a, %d %b %Y %H:%M:%S"))
+        return 'No have time info'
+        
+    return local_date
+    
+def process_mailbox(M):
     # rv, data = M.search(None, "ALL")
     rv, data = M.search(None, "SUBJECT", '"TradingView Alert"', '(UNSEEN)')
     if rv != 'OK':
@@ -61,53 +91,62 @@ def process_mailbox(M):
         if rv != 'OK':
             print("ERROR getting message", msg_num)
             return
-
-        msg = email.message_from_bytes(data[0][1])
-        hdr = email.header.make_header(email.header.decode_header(msg['Subject']))
         
-        subject = str(hdr)
-        print('Message %s: %s' % (msg_num, subject))
-        
-        typ, data = M.store(msg_num, '+FLAGS', '\\Seen')
-        if typ != 'OK':
-            print('FLAGS setting error {}'.format(typ))
-            return
-        
-        # print('Raw Date:', msg['Date'])
-        
-        # Now convert to local date-time
-        date_tuple = email.utils.parsedate_tz(msg['Date'])
-        if date_tuple:
-            local_date = datetime.datetime.fromtimestamp(
-                email.utils.mktime_tz(date_tuple))
-            print ("Local Date:", \
-                local_date.strftime("%a, %d %b %Y %H:%M:%S"))
+        msg = parsingMsg(data[0][1])
+        setFlag(M, msg_num, '+FLAGS', '\\Seen')
+        # print(getLocalTime(msg))
 
-M = imaplib.IMAP4_SSL(EMAIL_IMAP_SERVER)
+def conn(srv):
+    mailConn = None
+    try:
+        mailConn = imaplib.IMAP4_SSL(srv)
+    except Exception as exp:
+        print("Connecting error : {}".format(exp))
+        return mailConn
+    
+    return mailConn
 
-try:
-    rv, data = M.login(EMAIL_ACCOUNT, EMAIL_PASSWORD)
-except imaplib.IMAP4.error as exp:
-    print ("LOGIN FAILED!!! {}".format(exp))
-    sys.exit(1)
+def login(M):
+    try:
+        rv, data = M.login(EMAIL_ACCOUNT, EMAIL_PASSWORD)
+        print(rv, data)
+    except imaplib.IMAP4.error as exp:
+        print ("LOGIN FAILED!!! {}".format(exp))
+        return 'Failed : {}'.format(exp)
+    return 'OK'
 
-print(rv, data)
-
-# rv, mailboxes = M.list()
-# if rv == 'OK':
-#     print("Mailboxes:")
-#     print(mailboxes)
-
-while(True) :
+def openFolder(M):
     rv, data = M.select(EMAIL_FOLDER)
     if rv == 'OK':
         print("Processing mailbox...\n")
         process_mailbox(M)
     else:
         print("ERROR: Unable to open mailbox ", rv)
-
-    time.sleep(10)  #입력값은 초단위이다. 10초마다 업데이트 확인함
-    M.close()
     
-M.logout()
-print('program done!')
+def getFolderList(M):
+    rv, mailboxes = M.list()
+    if rv == 'OK':
+        print("Mailboxes:")
+        print(mailboxes)
+
+def closeFolder(M):
+    M.close()
+
+def logout(M):
+    M.logout()
+
+if __name__ == '__main__':
+    M = conn(EMAIL_IMAP_SERVER)
+    ret = login(M)
+    if ret != 'OK' :
+        print(ret)
+        sys.exit(1)
+    
+    while(True):
+        openFolder(M)
+        time.sleep(10)  #입력값은 초단위이다. 10초마다 업데이트 확인함
+        closeFolder(M)
+    
+    logout(M)
+    
+    print('program done!')

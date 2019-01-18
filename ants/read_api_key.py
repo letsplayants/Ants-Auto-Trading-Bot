@@ -3,7 +3,6 @@ import os
 import json
 
 def readKey(filePath):
-    
     print('read file {}'.format(filePath))
     if not os.path.isfile(filePath):
         print("File path {} does not exist. Exiting...".format(filePath))
@@ -18,3 +17,15 @@ def readKey(filePath):
         sys.exit()
 
     return result
+
+def saveBinFile(fileName, data):
+    f = open(fileName,'wb')
+    f.write(data)
+    f.close()
+    
+def loadBinFile(fileName): 
+    f = open(fileName,'rb')
+    data = f.read()
+    f.close()
+    return data
+    
