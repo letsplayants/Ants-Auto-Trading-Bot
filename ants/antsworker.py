@@ -129,6 +129,7 @@ def sell(coinName):
     # orderCnt = keepCnt[coinName] - balance #keepCnt를 구현해야함.. 거래소별 유지해야하는 코인개수
     orderCnt = balance[0] - balance[1]  #코인 전량을 다 팔아버린다.
     
+    logger.info('Sell Order - price : {}\tcnt:{}'.format(marketPrice, orderCnt))
     try:
         # desc = bithumb.sell_limit_order(coinName, marketPrice, orderCnt)
         desc = bithumb.sell_market_order(coinName, orderCnt) #시장가 매도 주문
