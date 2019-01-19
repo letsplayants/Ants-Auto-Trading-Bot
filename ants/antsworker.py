@@ -48,8 +48,7 @@ def start():
             ret = email.parsingMsg(msg[0][1])
             if ret != {}:
                 print('ret :{}'.format(ret))
-                doAction()
-                
+                doAction(ret)
                 
         email.closeFolder(M)
     
