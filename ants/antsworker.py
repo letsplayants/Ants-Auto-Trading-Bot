@@ -34,11 +34,11 @@ def init():
         bithumb = Bithumb(apiKey, apiSecret)
         M = email.conn()
         ret = email.login(M)
+        email.clearMailBox(M)
         email.logout(M)
     except Exception as exp:
         logger.error(exp)
         sys.exit(1)
-    
     
 def start():
     M = email.conn()

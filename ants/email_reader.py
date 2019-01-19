@@ -149,6 +149,14 @@ def closeFolder(M):
 def logout(M):
     M.logout()
 
+def clearMailBox(M):
+    openFolder(M)
+    logger.info('Mailbox clear')
+    data = mailSearch(M)
+    getMailList(M, data)
+    closeFolder(M)
+    
+
 if __name__ == '__main__':
     M = conn()
     ret = login(M)
