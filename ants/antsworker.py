@@ -8,6 +8,7 @@ import email_reader as email
 
 M = None
 bithumb = None
+usageKRW = 0
 
 def signal_handler(sig, frame):
     print('\nExit Program by user Ctrl + C')
@@ -16,9 +17,13 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 def init():
+    global usageKRW
+    
     keys = utils.readKey('./configs/bithumb.key')
     apiKey = keys['api_key']
     apiSecret = keys['api_secret']
+    usageKRW = keys['usageKRW']     #구매에 사용할 금액
+    print('usageKRW : {}'.format(utils.krwFormat(usageKRW)))
 
     try:
         global bithumb
@@ -47,8 +52,9 @@ def start():
         for msg in msgList:
             ret = email.parsingMsg(msg[0][1])
             if ret != {}:
-                print('ret :{}'.format(ret))
+                print('doActoin :{}'.format(ret))
                 doAction(ret)
+                print('actoin done')
                 
         email.closeFolder(M)
     
@@ -79,15 +85,17 @@ def doAction(msg):
         return
 
 def buy(coinName):
-    #잔고에서 얼마를 가지고 올지 결정한다
-    #오더북에서 가장 싼 가격에서 구매를 한다 (미구현)
-    #시장가로 오더를 낸다
     fee = bithumb.get_trading_fee()
     balance = bithumb.get_balance('BTC') #balance(보유코인, 사용중코인, 보유원화, 사용중원화)
+    
+    if(balance[2] - balance[3] < usageKRW) :
+        print('not enought KRW balance')
+        return
+    
     marketPrice = bithumb.get_current_price(coinName)
     marketPrice = (int)(marketPrice / 1000)  #BTC의 경우 주문을 1000단위로 넣어야한다. 즉 다른 코인들도 주문 단위가 각각 있을 것이다.
     marketPrice = marketPrice * 1000
-    orderCnt = (balance[2] - balance[3]) / marketPrice
+    orderCnt = usageKRW / marketPrice
     
     feePrice = orderCnt - orderCnt * fee
     print(fee)
@@ -95,16 +103,13 @@ def buy(coinName):
     
     print('Buy Order - price : {}\tcnt:{}'.format(marketPrice, orderCnt))
     try:
-        desc = bithumb.buy_limit_order(coinName, marketPrice, orderCnt)
-        # desc = bithumb.buy_market_order(coinName, orderCnt) #시장가 매수 주문
+        # desc = bithumb.buy_limit_order(coinName, marketPrice, orderCnt)
+        desc = bithumb.buy_market_order(coinName, orderCnt) #시장가 매수 주문
         
     except Exception as exp:
         print('Error buy order : {}'.format(exp))
     
 def sell(coinName):
-    #잔고에서 몇개의 코인을 팔지 결정한다
-    #오더북에서 가장 비싼 가격에서 판매를 한다(미구현)
-    #시장가로 오더를 낸다
     balance = bithumb.get_balance(coinName) #balance(보유코인, 사용중코인, 보유원화, 사용중원화)
     marketPrice = bithumb.get_current_price(coinName)
     marketPrice = (int)(marketPrice / 1000)  #BTC의 경우 주문을 1000단위로 넣어야한다. 즉 다른 코인들도 주문 단위가 각각 있을 것이다.
@@ -113,8 +118,8 @@ def sell(coinName):
     orderCnt = balance[0] - balance[1]  #코인 전량을 다 팔아버린다.
     
     try:
-        desc = bithumb.sell_limit_order(coinName, marketPrice, orderCnt)
-        # desc = bithumb.sell_market_order(coinName, orderCnt) 시장가 매도 주문
+        # desc = bithumb.sell_limit_order(coinName, marketPrice, orderCnt)
+        desc = bithumb.sell_market_order(coinName, orderCnt) #시장가 매도 주문
     except Exception as exp:
         print('Error sell order : {}'.format(exp))
     

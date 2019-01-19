@@ -1,6 +1,7 @@
 import sys  
 import os
 import json
+import locale
 
 def readKey(filePath):
     print('read file {}'.format(filePath))
@@ -29,3 +30,10 @@ def loadBinFile(fileName):
     f.close()
     return data
     
+def krwFormat(number) :
+    s = '%d' % number
+    groups = []
+    while s and s[-1].isdigit():
+        groups.append(s[-3:])
+        s = s[:-3]
+    return s + ','.join(reversed(groups))

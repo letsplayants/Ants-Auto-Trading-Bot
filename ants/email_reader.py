@@ -117,7 +117,7 @@ def conn():
 def login(M):
     try:
         rv, data = M.login(EMAIL_ACCOUNT, EMAIL_PASSWORD)
-        print(rv, data)
+        print('IMAP Login {},\t{}'.format(rv, data))
     except imaplib.IMAP4.error as exp:
         print ("LOGIN FAILED!!! {}".format(exp))
         return 'Failed : {}'.format(exp)
@@ -126,7 +126,7 @@ def login(M):
 def openFolder(M):
     rv, data = M.select(EMAIL_FOLDER)
     if rv == 'OK':
-        print("Processing mailbox...")
+        pass
     else:
         print("ERROR: Unable to open mailbox ", rv)
     
