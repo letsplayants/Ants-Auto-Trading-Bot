@@ -26,6 +26,9 @@ import time
 import signal
 import utils
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 EMAIL_SETTING = utils.readKey('./configs/mail.key')
 
@@ -35,7 +38,7 @@ EMAIL_FOLDER = EMAIL_SETTING['folder']
 EMAIL_IMAP_SERVER = EMAIL_SETTING['imap_server']
 
 def signal_handler(sig, frame):
-    print('\nExit Program by user Ctrl + C')
+    logger.info('\nExit Program by user Ctrl + C')
     sys.exit(0)
 
 signal.signal(signal.SIGINT, signal_handler)
@@ -49,6 +52,7 @@ def parsingMsg(data):
     
     subject = str(hdr)
     
+    logger.debug('subject : {}'.format(subject))
     #subject ex) TradingView Alert: #BTCKRW #1M #SELL #BITHUMB
     
     _list = subject.split('#')
@@ -63,8 +67,9 @@ def parsingMsg(data):
 def setFlag(M, msg_num, flag, value):
     typ, data = M.store(msg_num, '+FLAGS', '\\Seen')
     if typ != 'OK':
-        print('FLAGS setting error {}'.format(typ))
+        logger.warning('FLAGS setting error {}'.format(typ))
         return
+    logger.debug('{} is seen'.format(msg_num))
 
 def getLocalTime(msg):
     # Now convert to local date-time
@@ -72,7 +77,7 @@ def getLocalTime(msg):
     if date_tuple:
         local_date = datetime.datetime.fromtimestamp(
             email.utils.mktime_tz(date_tuple))
-        print ("Local Date:", \
+        logger.info ("Local Date:", \
             local_date.strftime("%a, %d %b %Y %H:%M:%S"))
         return 'No have time info'
         
@@ -80,10 +85,12 @@ def getLocalTime(msg):
     
 def mailSearch(M):
     # rv, data = M.search(None, "ALL")
-    rv, data = M.search(None, "SUBJECT", '"TradingView Alert"', '(UNSEEN)')
+    rv, data = M.search(None, '(UNSEEN)')
     if rv != 'OK':
-        print("No messages found!")
+        logger.info("No messages found!")
         return
+    
+    logger.debug('mail list : {}'.format(data[0].split()))
     
     return data[0].split()  #메일 id 리스트를 넘겨준다
 
@@ -92,7 +99,7 @@ def getMailList(M, mList):
     for msg_num in mList:
         rv, data = M.fetch(msg_num, '(RFC822)')
         if rv != 'OK':
-            print("ERROR getting message", msg_num)
+            logger.warning("ERROR getting message", msg_num)
             pass
         
         mailList.append(data)
@@ -109,18 +116,19 @@ def conn():
     try:
         mailConn = imaplib.IMAP4_SSL(EMAIL_IMAP_SERVER)
     except Exception as exp:
-        print("Connecting error : {}".format(exp))
-        return mailConn
+        logger.error("Connecting error : {}".format(exp))
+        sys.exit(1)
     
     return mailConn
 
 def login(M):
     try:
         rv, data = M.login(EMAIL_ACCOUNT, EMAIL_PASSWORD)
-        print('IMAP Login {},\t{}'.format(rv, data))
+        logger.info('IMAP Login {},\t{}'.format(rv, data))
     except imaplib.IMAP4.error as exp:
-        print ("LOGIN FAILED!!! {}".format(exp))
-        return 'Failed : {}'.format(exp)
+        logger.error("LOGIN FAILED!!! {}".format(exp))
+        sys.exit(1)
+        
     return 'OK'
 
 def openFolder(M):
@@ -128,13 +136,12 @@ def openFolder(M):
     if rv == 'OK':
         pass
     else:
-        print("ERROR: Unable to open mailbox ", rv)
+        logger.warning("ERROR: Unable to open mailbox ", rv)
     
 def getFolderList(M):
-    rv, mailboxes = M.list()
+    rv, mailBoxes = M.list()
     if rv == 'OK':
-        print("Mailboxes:")
-        print(mailboxes)
+        logger.info("Mailboxes:\n{}".format(mailBoxes))
 
 def closeFolder(M):
     M.close()
@@ -146,7 +153,7 @@ if __name__ == '__main__':
     M = conn()
     ret = login(M)
     if ret != 'OK' :
-        print(ret)
+        logger.error(ret)
         sys.exit(1)
     
     while(True):
@@ -156,4 +163,4 @@ if __name__ == '__main__':
     
     logout(M)
     
-    print('program done!')
+    logger.info('program done!')

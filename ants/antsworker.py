@@ -1,6 +1,8 @@
 import sys
 import signal
 import time
+import logging
+
 from pybithumb import Bithumb
 
 import utils
@@ -9,9 +11,10 @@ import email_reader as email
 M = None
 bithumb = None
 usageKRW = 0
+logger = logging.getLogger(__name__)
 
 def signal_handler(sig, frame):
-    print('\nExit Program by user Ctrl + C')
+    logger.info('\nExit Program by user Ctrl + C')
     sys.exit(0)
 
 signal.signal(signal.SIGINT, signal_handler)
@@ -23,7 +26,7 @@ def init():
     apiKey = keys['api_key']
     apiSecret = keys['api_secret']
     usageKRW = keys['usageKRW']     #구매에 사용할 금액
-    print('usageKRW : {}'.format(utils.krwFormat(usageKRW)))
+    logger.info('usageKRW : {}'.format(utils.krwFormat(usageKRW)))
 
     try:
         global bithumb
@@ -32,7 +35,7 @@ def init():
         ret = email.login(M)
         email.logout(M)
     except Exception as exp:
-        print(exp)
+        logger.error(exp)
         sys.exit(1)
     
     
@@ -40,7 +43,7 @@ def start():
     M = email.conn()
     ret = email.login(M)
     if ret != 'OK' :
-        print(ret)
+        logger.error(ret)
         sys.exit(1)
     
     while(True):
@@ -52,15 +55,15 @@ def start():
         for msg in msgList:
             ret = email.parsingMsg(msg[0][1])
             if ret != {}:
-                print('doActoin :{}'.format(ret))
+                logger.info('doActoin :{}'.format(ret))
                 doAction(ret)
-                print('actoin done')
+                logger.info('actoin done')
                 
         email.closeFolder(M)
     
     email.logout(M)
     
-    print('program done!')
+    logger.info('program done!')
 
 def doAction(msg):
     exchange = msg['exchange']
@@ -70,9 +73,9 @@ def doAction(msg):
     
     if(exchange.upper() == 'BITHUMB') :
         if(market.upper() != 'KRW') :
-            print('{} has not {} market'.format(exchange,market))
+            logger.warning('{} has not {} market'.format(exchange,market))
         if(coinName.upper() != 'BTC') :
-            print('{} is not support not')
+            logger.warning('{} is not support not')
             return
         
         if(action.upper() == 'BUY'):
@@ -81,7 +84,7 @@ def doAction(msg):
             sell(coinName)
             
     else :
-        print('{} is not support!'.format(exchange))
+        logger.warning('{} is not support!'.format(exchange))
         return
 
 def buy(coinName):
@@ -89,7 +92,7 @@ def buy(coinName):
     balance = bithumb.get_balance('BTC') #balance(보유코인, 사용중코인, 보유원화, 사용중원화)
     
     if(balance[2] - balance[3] < usageKRW) :
-        print('not enought KRW balance')
+        logger.warning('not enought KRW balance')
         return
     
     marketPrice = bithumb.get_current_price(coinName)
@@ -98,16 +101,16 @@ def buy(coinName):
     orderCnt = usageKRW / marketPrice
     
     feePrice = orderCnt - orderCnt * fee
-    print(fee)
-    print(feePrice)
+    logger.debug(fee)
+    logger.debug(feePrice)
     
-    print('Buy Order - price : {}\tcnt:{}'.format(marketPrice, orderCnt))
+    logger.info('Buy Order - price : {}\tcnt:{}'.format(marketPrice, orderCnt))
     try:
         # desc = bithumb.buy_limit_order(coinName, marketPrice, orderCnt)
         desc = bithumb.buy_market_order(coinName, orderCnt) #시장가 매수 주문
         
     except Exception as exp:
-        print('Error buy order : {}'.format(exp))
+        logger.warning('Error buy order : {}'.format(exp))
     
 def sell(coinName):
     balance = bithumb.get_balance(coinName) #balance(보유코인, 사용중코인, 보유원화, 사용중원화)
@@ -121,9 +124,8 @@ def sell(coinName):
         # desc = bithumb.sell_limit_order(coinName, marketPrice, orderCnt)
         desc = bithumb.sell_market_order(coinName, orderCnt) #시장가 매도 주문
     except Exception as exp:
-        print('Error sell order : {}'.format(exp))
+        logger.warning('Error sell order : {}'.format(exp))
     
 if __name__ == '__main__':
     init()
-    
     
