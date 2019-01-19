@@ -11,7 +11,15 @@ pip install python-telegram-bot
 ~~~
 
 
-### 실행법
+### config 파일 생성
+
+~~~
+./configs/bithumb.key
+./configs/mail.key
+~~~
+
+
+### 실행
 
 ~~~
 python ./ants/ants.py
@@ -20,7 +28,4 @@ python ./ants/ants.py
 
 ### 주의사항
 
-imap을 설정한 폴더의 모든 메일은 '읽음상태'이여야 한다
-'읽지않음'상태일 경우 모든 메일을 읽어서 매매를 수행하므로 
-반드시 '읽음'상태여야한다
-대상 폴더를 전부 비워도 된다
+> 해당 프로그램으로 직접 투자시 위험부담은 투자자 본인에게 있습니다.
