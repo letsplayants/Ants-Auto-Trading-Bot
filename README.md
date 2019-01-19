@@ -4,8 +4,10 @@ Python 3.6.7이상
 
 #설치목록
 
-'''pip install pybithumb pandas'''
-'''pip install python-telegram-bot'''
+~~~
+pip install pybithumb pandas
+pip install python-telegram-bot
+~~~
 
 
 
@@ -19,4 +21,6 @@ imap을 설정한 폴더의 모든 메일은 '읽음상태'이여야 한다
 
 #실행법
 
-'''python ./ants/ants.py'''
+~~~
+python ./ants/ants.py
+~~~
