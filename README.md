@@ -26,6 +26,14 @@ pip install python-telegram-bot
 메일지원 : 네이버 IMAP 설정 (OPT 미지원)
 
 
+### 트레이딩뷰 얼러트 설정
+
+~~~
+#BTCKRW #1M #SELL #BITHUMB
+#종목심볼 #봉 #BUY/SELL타입 #거래소
+~~~
+얼러트 내용부분을 위의 형태로 적용.
+
 
 ### 실행
 
