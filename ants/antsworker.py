@@ -12,6 +12,7 @@ M = None
 bithumb = None
 usageKRW = 0
 logger = logging.getLogger(__name__)
+actionState = 'READY'  #BUY, SELL, READY
 
 def signal_handler(sig, frame):
     logger.info('\nExit Program by user Ctrl + C')
@@ -66,21 +67,29 @@ def start():
     logger.info('program done!')
 
 def doAction(msg):
-    exchange = msg['exchange']
-    coinName = msg['market'][0:3]
-    market = msg['market'][3:6]
-    action = msg['action']
+    global actionState
     
-    if(exchange.upper() == 'BITHUMB') :
-        if(market.upper() != 'KRW') :
+    exchange = msg['exchange'].upper()
+    coinName = msg['market'][0:3].upper()
+    market = msg['market'][3:6].upper()
+    action = msg['action'].upper()
+    
+    if(actionState == action) :
+        logger.info('Already {} state'.format(action))
+        return
+    
+    actionState = action
+    
+    if(exchange == 'BITHUMB') :
+        if(market != 'KRW') :
             logger.warning('{} has not {} market'.format(exchange,market))
-        if(coinName.upper() != 'BTC') :
+        if(coinName != 'BTC') :
             logger.warning('{} is not support not')
             return
         
-        if(action.upper() == 'BUY'):
+        if(action == 'BUY'):
             buy(coinName)
-        elif(action.upper() == 'SELL'):
+        elif(action == 'SELL'):
             sell(coinName)
             
     else :
