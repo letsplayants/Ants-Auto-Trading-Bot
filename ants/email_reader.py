@@ -78,28 +78,36 @@ def getLocalTime(msg):
         
     return local_date
     
-def process_mailbox(M):
+def mailSearch(M):
     # rv, data = M.search(None, "ALL")
     rv, data = M.search(None, "SUBJECT", '"TradingView Alert"', '(UNSEEN)')
     if rv != 'OK':
         print("No messages found!")
         return
+    
+    return data[0].split()  #메일 id 리스트를 넘겨준다
 
-    print("total cnt : {}".format(data[0].split()))
-    for msg_num in data[0].split():
+def getMailList(M, mList):
+    mailList=[]
+    for msg_num in mList:
         rv, data = M.fetch(msg_num, '(RFC822)')
         if rv != 'OK':
             print("ERROR getting message", msg_num)
-            return
+            pass
         
-        msg = parsingMsg(data[0][1])
+        mailList.append(data)
         setFlag(M, msg_num, '+FLAGS', '\\Seen')
-        # print(getLocalTime(msg))
+        
+    return mailList
+    
+    # msg = parsingMsg(data[0][1])
+    # setFlag(M, msg_num, '+FLAGS', '\\Seen')
+        
 
-def conn(srv):
+def conn():
     mailConn = None
     try:
-        mailConn = imaplib.IMAP4_SSL(srv)
+        mailConn = imaplib.IMAP4_SSL(EMAIL_IMAP_SERVER)
     except Exception as exp:
         print("Connecting error : {}".format(exp))
         return mailConn
@@ -118,8 +126,7 @@ def login(M):
 def openFolder(M):
     rv, data = M.select(EMAIL_FOLDER)
     if rv == 'OK':
-        print("Processing mailbox...\n")
-        process_mailbox(M)
+        print("Processing mailbox...")
     else:
         print("ERROR: Unable to open mailbox ", rv)
     
@@ -136,7 +143,7 @@ def logout(M):
     M.logout()
 
 if __name__ == '__main__':
-    M = conn(EMAIL_IMAP_SERVER)
+    M = conn()
     ret = login(M)
     if ret != 'OK' :
         print(ret)

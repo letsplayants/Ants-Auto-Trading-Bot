@@ -28,6 +28,10 @@ class BithumbTest(unittest.TestCase):
     def test_callPrivAPI(self):
         self.assertIsNotNone(self.bithumb.get_trading_fee())
 
+    def test_getBalance(self):
+        balance = self.bithumb.get_balance('ETH')
+        #balance(보유코인, 사용중코인, 보유원화, 사용중원화)
+        print(balance)
     
 
 if __name__ == '__main__':

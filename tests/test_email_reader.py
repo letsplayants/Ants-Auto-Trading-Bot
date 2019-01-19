@@ -26,13 +26,16 @@ class EmailReaderTest(unittest.TestCase):
         pass
     
     def test_login(self):
-        m = email.conn(self.server)
+        m = email.conn()
         email.login(m)
         
     def test_parser(self):
         print(os.path.abspath('./tests'))
         dummy = utils.loadBinFile('./tests/email.sample')
         ret = email.parsingMsg(dummy)
+        
+        print(ret['market'][0:3])
+        print(ret['market'][3:6])
         
         self.assertEqual(ret['market'], 'BTCKRW')
         self.assertEqual(ret['time'], '1M')
