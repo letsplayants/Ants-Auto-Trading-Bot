@@ -23,7 +23,7 @@ pip install python-telegram-bot
 ./configs/mail.key
 ~~~
 
-메일지원 : 네이버 IMAP 설정 (OPT 미지원)
+메일지원 : 네이버 IMAP 설정 (OTP 미지원)
 
 
 ### 트레이딩뷰 얼러트 설정
