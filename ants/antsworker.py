@@ -80,9 +80,11 @@ def start():
             logger.warning(exp)
             time.sleep(5)
             
+            M = connectionReset(M)
+            
             global errorCnt
             errorCnt += 1
-            if(errorCnt > 100) :
+            if(errorCnt > 10) :
                 logger.error('email connection has some probleam.')
                 sys.exit(1)
             
@@ -91,6 +93,15 @@ def start():
     
     logger.info('program done!')
 
+def connectionReset(M):
+    logger.warning('connetion has some program. Connection will reset.')
+    M = email.conn()
+    ret = email.login(M)
+    if ret != 'OK' :
+        logger.error(ret)
+        sys.exit(1)
+    return M
+    
 def doAction(msg):
     global actionState
     
