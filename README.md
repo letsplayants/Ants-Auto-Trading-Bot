@@ -1,14 +1,48 @@
-요구사항 
+### 프로그램 개요
+트레이딩뷰의 얼러트를 메일로 수신하여, 거래소 API를 통해 자동매매를 실현함.
+
+
+### 요구사항
 Python 3.6.7이상
 
 
-설치목록
-pip install pybithumb pandas 
+
+### 설치목록
+
+~~~
+pip install pybithumb pandas
 pip install python-telegram-bot
+~~~
 
 
-주의사항
-imap을 설정한 폴더의 모든 메일은 '읽음상태'이여야 한다
-'읽지않음'상태일 경우 모든 메일을 읽어서 매매를 수행하므로 
-반드시 '읽음'상태여야한다
-대상 폴더를 전부 비워도 된다
+
+### config 파일 생성
+
+~~~
+./configs/bithumb.key
+./configs/mail.key
+~~~
+
+메일지원 : 네이버 IMAP 설정 (OTP 미지원)
+
+
+### 트레이딩뷰 얼러트 설정
+
+~~~
+#BTCKRW #1M #SELL #BITHUMB
+#종목심볼 #봉 #BUY/SELL타입 #거래소
+~~~
+얼러트 내용부분을 위의 형태로 적용.
+
+
+### 실행
+
+~~~
+python ./ants/ants.py
+~~~
+
+
+
+### 주의사항
+
+> 해당 프로그램으로 직접 투자시 위험부담은 투자자 본인에게 있습니다.
