@@ -12,6 +12,7 @@ M = None
 bithumb = None
 errorCnt = 0
 usageKRW = 0
+startKRW = 0
 logger = logging.getLogger(__name__)
 actionState = 'READY'  #BUY, SELL, READY
 tradingRecord = {}
@@ -28,13 +29,14 @@ signal.signal(signal.SIGINT, signal_handler)
 
 def init():
     global usageKRW
+    global startKRW
     
     keys = utils.readKey('./configs/bithumb.key')
     apiKey = keys['api_key']
     apiSecret = keys['api_secret']
     usageKRW = keys['usageKRW']     #구매에 사용할 금액
     logger.info('usageKRW : {}'.format(utils.krwFormat(usageKRW)))
-
+    
     try:
         global bithumb
         bithumb = Bithumb(apiKey, apiSecret)
@@ -42,9 +44,15 @@ def init():
         ret = email.login(M)
         email.clearMailBox(M)
         email.logout(M)
+        
+        balance = bithumb.get_balance('BTC') #balance(보유코인, 사용중코인, 보유원화, 사용중원화)
+        startKRW = balance[2]
     except Exception as exp:
         logger.error(exp)
         sys.exit(1)
+    
+    tradingLogger.info('start KRW : {}\tusage KRW : {}'.format(utils.krwFormat(startKRW), utils.krwFormat(usageKRW)))
+    tradingLogger.info('Action\tunits\tprice\ttotal\tfee\tAccumulate KRW')
     
 def start():
     M = email.conn()
@@ -134,7 +142,7 @@ def buy(coinName):
     try:
         # desc = bithumb.buy_limit_order(coinName, marketPrice, orderCnt)
         desc = bithumb.buy_market_order(coinName, orderCnt) #시장가 매수 주문
-        getTradingResult(desc)
+        getTradingResult('BUY', desc)
     except Exception as exp:
         logger.warning('Error buy order : {}'.format(exp))
     
@@ -150,14 +158,34 @@ def sell(coinName):
     try:
         # desc = bithumb.sell_limit_order(coinName, marketPrice, orderCnt)
         desc = bithumb.sell_market_order(coinName, orderCnt) #시장가 매도 주문
-        getTradingResult(desc)
+        getTradingResult('SELL', desc)
     except Exception as exp:
         logger.warning('Error sell order : {}'.format(exp))
     
     
-def getTradingResult(orderID):
-    bithumb.get_order_completed()
-    tradingLogger.info()
+def getTradingResult(action, result):
+    # status	결과 상태 코드 (정상: 0000, 그 외 에러 코드 참조)	String
+    # order_id	주문 번호	String
+    # cont_id	체결 번호	Number (String)
+    # units	체결(매수) 수량 (수수료 포함)	Number (String)
+    # price	1Currency당 KRW 가격 (체결가)	Number (String)
+    # total	매수 KRW (체결가)	Integer
+    # fee	거래 수수료	Number (String)
+    # {'status': '0000', 'order_id': '1548078639677728', 'data': [{'cont_id': '32762404', 'units': '0.0025', 'price': 3980000, 'total': 9950, 'fee': '14.93'}]}
+    
+    global startKRW
+    balance = bithumb.get_balance('BTC') #balance(보유코인, 사용중코인, 보유원화, 사용중원화)
+    totalProfit = balance[2] - startKRW
+    
+    logger.debug(result)
+    tradingLogger.info('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}'.format(action,
+                                                     result['status'],
+                                                     result['data'][0]['units'],
+                                                     result['data'][0]['price'],
+                                                     result['data'][0]['total'],
+                                                     result['data'][0]['fee'],
+                                                     utils.krwFormat(totalProfit)))
+
     
 if __name__ == '__main__':
     init()

@@ -1,9 +1,11 @@
 from pybithumb.core import *
 import math
+import logging
 
 class Bithumb:
     def __init__(self, conkey, seckey):
         self.api = PrivateApi(conkey, seckey)
+        self.logger=logging.getLogger(__name__)
 
     @staticmethod
     def _convert_unit(unit):
@@ -25,7 +27,7 @@ class Bithumb:
             tickers = [k for k, v in data.items() if isinstance(v, dict)]
             return tickers
         except Exception as x:
-            print(x.__class__.__name__, resp)
+            self.logger.warning(x.__class__.__name__, resp)
             return None
 
     @staticmethod
@@ -54,7 +56,7 @@ class Bithumb:
             }
 
         except Exception as x:
-            print(x.__class__.__name__, resp)
+            self.logger.warning(x.__class__.__name__, resp)
             return None
 
     @staticmethod
@@ -73,7 +75,7 @@ class Bithumb:
             volume = resp['data']['units_traded']
             return float(low), float(high), float(avg), float(volume)
         except Exception as x:
-            print(x.__class__.__name__, resp)
+            self.logger.warning(x.__class__.__name__, resp)
             return None
 
     @staticmethod
@@ -93,7 +95,7 @@ class Bithumb:
                 return resp["data"]
 
         except Exception as x:
-            print(x.__class__.__name__, resp)
+            self.logger.warning(x.__class__.__name__, resp)
             return None
 
     @staticmethod
@@ -114,7 +116,7 @@ class Bithumb:
                 data['asks'][idx]['price'] = float(data['asks'][idx]['price'])
             return data
         except Exception as x:
-            print(x.__class__.__name__, resp)
+            self.logger.warning(x.__class__.__name__, resp)
             return None
 
     def get_trading_fee(self):
@@ -126,7 +128,7 @@ class Bithumb:
             resp = self.api.account()
             return float(resp['data']['trade_fee'])
         except Exception as x:
-            print(x.__class__.__name__, resp)
+            self.logger.warning(x.__class__.__name__, resp)
             return None
 
     def get_balance(self, currency):
@@ -141,7 +143,7 @@ class Bithumb:
             return (float(resp['data']["total_" + specifier]), float(resp['data']["in_use_" + specifier]),
                     float(resp['data']["total_krw"]), float(resp['data']["in_use_krw"]))
         except Exception as x:
-            print(x.__class__.__name__, resp)
+            self.logger.warning(x.__class__.__name__, resp)
             return None
 
     def buy_limit_order(self, currency, price, unit):
@@ -157,7 +159,8 @@ class Bithumb:
             resp = self.api.place(type="bid", price=price, units=unit, order_currency=currency)
             return "bid", currency, resp['order_id']
         except Exception as x:
-            print(x.__class__.__name__, resp)
+            self.logger.warning(x.__class__.__name__, resp)
+            print(resp)
             return None
 
     def sell_limit_order(self, currency, price, unit):
@@ -173,7 +176,7 @@ class Bithumb:
             resp = self.api.place(type="ask", price=price, units=unit, order_currency=currency)
             return "ask", currency, resp['order_id']
         except Exception as x:
-            print(x.__class__.__name__, resp)
+            self.logger.warning(x.__class__.__name__, resp)
             return None
 
     def get_outstanding_order(self, order_desc):
@@ -189,7 +192,7 @@ class Bithumb:
             # HACK : 빗썸이 데이터를 리스트에 넣어줌
             return resp['data'][0]['units_remaining']
         except Exception as x:
-            print(x.__class__.__name__, resp)
+            self.logger.warning(x.__class__.__name__, resp)
             return None
 
     def get_order_completed(self, order_desc):
@@ -205,7 +208,7 @@ class Bithumb:
             # HACK : 빗썸이 데이터를 리스트에 넣어줌
             return resp['data'][0]
         except Exception as x:
-            print(x.__class__.__name__, resp)
+            self.logger.warning(x.__class__.__name__, resp)
             return None
 
     def cancel_order(self, order_desc):
@@ -218,7 +221,7 @@ class Bithumb:
             resp = self.api.cancel(type=order_desc[0], currency=order_desc[1], order_id=order_desc[2])
             return resp['status'] == '0000'
         except Exception as x:
-            print(x.__class__.__name__, resp)
+            self.logger.warning(x.__class__.__name__, resp)
             return None
 
     def buy_market_order(self, currency, unit):
@@ -231,9 +234,9 @@ class Bithumb:
         try:
             unit = Bithumb._convert_unit(unit)
             resp = self.api.market_buy(currency=currency, units=unit)
-            return resp['order_id']
+            return resp
         except Exception as x:
-            print(x.__class__.__name__, resp)
+            self.logger.warning(x.__class__.__name__, resp)
             return None
 
     def sell_market_order(self, currency, unit):
@@ -246,9 +249,9 @@ class Bithumb:
         try:
             unit = Bithumb._convert_unit(unit)
             resp = self.api.market_sell(currency=currency, units=unit)
-            return resp['order_id']
+            return resp
         except Exception as x:
-            print(x.__class__.__name__, resp)
+            self.logger.warning(x.__class__.__name__, resp)
             return None
 
 

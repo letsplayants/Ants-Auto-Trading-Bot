@@ -35,6 +35,24 @@ class BithumbTest(unittest.TestCase):
         #balance(보유코인, 사용중코인, 보유원화, 사용중원화)
         print(balance)
     
+    def test_buyError(self):
+        coinName = 'BTC'
+        usageKRW = 1000
+        marketPrice = self.bithumb.get_current_price(coinName)
+        marketPrice = (int)(marketPrice / 300)  #BTC의 경우 주문을 1000단위로 넣어야한다. 즉 이 오더는 수행되지 않는다.
+        marketPrice = marketPrice * 1000
+        orderCnt = usageKRW / marketPrice
+        
+        try:
+            desc = self.bithumb.buy_limit_order(coinName, marketPrice, orderCnt)
+            print(desc)
+        except Exception as exp:
+            print(exp)
+
+    def test_parsingResult(self):
+        msg = {'status': '0000', 'order_id': '1548078639677728', 'data': [{'cont_id': '32762404', 'units': '0.0025', 'price': 3980000, 'total': 9950, 'fee': '14.93'}]}
+        print(msg['data'][0]['fee'])
+        
 
 if __name__ == '__main__':
     unittest.main()
