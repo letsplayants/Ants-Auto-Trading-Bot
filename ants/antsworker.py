@@ -10,6 +10,7 @@ import email_reader as email
 
 M = None
 bithumb = None
+errorCnt = 0
 usageKRW = 0
 logger = logging.getLogger(__name__)
 actionState = 'READY'  #BUY, SELL, READY
@@ -53,19 +54,30 @@ def start():
         sys.exit(1)
     
     while(True):
-        email.openFolder(M)
-        time.sleep(5)  #입력값은 초단위이다. 10초마다 업데이트 확인함
-        mthList = email.mailSearch(M)
-        msgList = email.getMailList(M, mthList)
-        
-        for msg in msgList:
-            ret = email.parsingMsg(msg[0][1])
-            if ret != {}:
-                logger.info('doActoin :{}'.format(ret))
-                doAction(ret)
-                logger.info('actoin done')
-                
-        email.closeFolder(M)
+        try:
+            email.openFolder(M)
+            time.sleep(5)  #입력값은 초단위이다. 10초마다 업데이트 확인함
+            mthList = email.mailSearch(M)
+            msgList = email.getMailList(M, mthList)
+            
+            for msg in msgList:
+                ret = email.parsingMsg(msg[0][1])
+                if ret != {}:
+                    logger.info('doActoin :{}'.format(ret))
+                    doAction(ret)
+                    logger.info('actoin done')
+                    
+            email.closeFolder(M)
+        except Exception as exp:
+            logger.warning(exp)
+            time.sleep(5)
+            
+            global errorCnt
+            errorCnt += 1
+            if(errorCnt > 100) :
+                logger.error('email connection has some probleam.')
+                sys.exit(1)
+            
     
     email.logout(M)
     
