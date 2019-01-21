@@ -2,6 +2,7 @@ import sys
 import signal
 import time
 import logging
+import telegram
 
 from pybithumb.client import Bithumb
 
@@ -20,6 +21,10 @@ tradingRecord = {}
 tradingLogger = logging.getLogger('tradingLogger')
 file_handler = logging.FileHandler('./logs/trading.log')
 tradingLogger.addHandler(file_handler)
+
+telegramKeys = utils.readKey('./configs/telegram_bot.key')
+bot = telegram.Bot(token = telegramKeys['bot_token'])
+chat_id = telegramKeys['chat_id']
 
 def signal_handler(sig, frame):
     logger.info('\nExit Program by user Ctrl + C')
@@ -53,6 +58,7 @@ def init():
     
     tradingLogger.info('start KRW : {}\tusage KRW : {}'.format(utils.krwFormat(startKRW), utils.krwFormat(usageKRW)))
     tradingLogger.info('Action\tunits\tprice\ttotal\tfee\tAccumulate KRW')
+    bot.sendMessage(chat_id=chat_id, text="자동매매 봇이 정상 구동되었습니다.")
     
 def start():
     M = email.conn()
@@ -189,14 +195,16 @@ def getTradingResult(action, result):
     totalProfit = balance[2] - startKRW
     
     logger.debug(result)
-    tradingLogger.info('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}'.format(action,
+    resultMessage = ('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}'.format(action,
                                                      result['status'],
                                                      result['data'][0]['units'],
                                                      result['data'][0]['price'],
                                                      result['data'][0]['total'],
                                                      result['data'][0]['fee'],
                                                      utils.krwFormat(totalProfit)))
-
+    
+    tradingLogger.info(resultMessage)
+    bot.sendMessage(chat_id=chat_id, text=resultMessage)
     
 if __name__ == '__main__':
     init()
