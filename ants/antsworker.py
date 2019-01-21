@@ -3,7 +3,7 @@ import signal
 import time
 import logging
 
-from pybithumb import Bithumb
+from pybithumb.client import Bithumb
 
 import utils
 import email_reader as email
@@ -13,6 +13,11 @@ bithumb = None
 usageKRW = 0
 logger = logging.getLogger(__name__)
 actionState = 'READY'  #BUY, SELL, READY
+tradingRecord = {}
+
+tradingLogger = logging.getLogger('tradingLogger')
+file_handler = logging.FileHandler('./logs/trading.log')
+tradingLogger.addHandler(file_handler)
 
 def signal_handler(sig, frame):
     logger.info('\nExit Program by user Ctrl + C')
@@ -117,7 +122,7 @@ def buy(coinName):
     try:
         # desc = bithumb.buy_limit_order(coinName, marketPrice, orderCnt)
         desc = bithumb.buy_market_order(coinName, orderCnt) #시장가 매수 주문
-        
+        getTradingResult(desc)
     except Exception as exp:
         logger.warning('Error buy order : {}'.format(exp))
     
@@ -133,8 +138,14 @@ def sell(coinName):
     try:
         # desc = bithumb.sell_limit_order(coinName, marketPrice, orderCnt)
         desc = bithumb.sell_market_order(coinName, orderCnt) #시장가 매도 주문
+        getTradingResult(desc)
     except Exception as exp:
         logger.warning('Error sell order : {}'.format(exp))
+    
+    
+def getTradingResult(orderID):
+    bithumb.get_order_completed()
+    tradingLogger.info()
     
 if __name__ == '__main__':
     init()

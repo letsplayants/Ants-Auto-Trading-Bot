@@ -4,9 +4,11 @@ import unittest
 import context
 import sys
 import os
+import pkgutil
+import prj_path
 
 from utils import readKey
-from pybithumb import Bithumb
+from pybithumb.client import Bithumb
 
 class BithumbTest(unittest.TestCase):
     @classmethod
