@@ -18,7 +18,10 @@ actionState = 'READY'  #BUY, SELL, READY
 tradingRecord = {}
 
 tradingLogger = logging.getLogger('tradingLogger')
+
 file_handler = logging.FileHandler('./logs/trading.log')
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
 tradingLogger.addHandler(file_handler)
 
 def signal_handler(sig, frame):
@@ -188,7 +191,7 @@ def getTradingResult(action, result):
     balance = bithumb.get_balance('BTC') #balance(보유코인, 사용중코인, 보유원화, 사용중원화)
     totalProfit = balance[2] - startKRW
     
-    logger.debug(result)
+    logger.debug('TradingResult : {}', result)
     tradingLogger.info('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}'.format(action,
                                                      result['status'],
                                                      result['data'][0]['units'],
