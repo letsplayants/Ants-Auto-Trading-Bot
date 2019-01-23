@@ -1,7 +1,10 @@
 import logging
 
+#로그 설정을 파일에서 읽어들인다.
+#설정이 없으면 기본 설정으로 따른다.
+
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
