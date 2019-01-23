@@ -162,7 +162,7 @@ def buy(coinName):
     try:
         # desc = bithumb.buy_limit_order(coinName, marketPrice, orderCnt)
         desc = bithumb.buy_market_order(coinName, orderCnt) #시장가 매수 주문
-        getTradingResult('BUY', desc)
+        getTradingResult('BUY', desc, balance)
     except Exception as exp:
         logger.warning('Error buy order : {}'.format(exp))
     
@@ -178,12 +178,12 @@ def sell(coinName):
     try:
         # desc = bithumb.sell_limit_order(coinName, marketPrice, orderCnt)
         desc = bithumb.sell_market_order(coinName, orderCnt) #시장가 매도 주문
-        getTradingResult('SELL', desc)
+        getTradingResult('SELL', desc, balance)
     except Exception as exp:
         logger.warning('Error sell order : {}'.format(exp))
     
     
-def getTradingResult(action, result):
+def getTradingResult(action, result, balance):
     # status	결과 상태 코드 (정상: 0000, 그 외 에러 코드 참조)	String
     # order_id	주문 번호	String
     # cont_id	체결 번호	Number (String)
@@ -194,17 +194,16 @@ def getTradingResult(action, result):
     # {'status': '0000', 'order_id': '1548078639677728', 'data': [{'cont_id': '32762404', 'units': '0.0025', 'price': 3980000, 'total': 9950, 'fee': '14.93'}]}
     
     global startKRW
-    balance = bithumb.get_balance('BTC') #balance(보유코인, 사용중코인, 보유원화, 사용중원화)
     totalProfit = balance[2] - startKRW
     
     logger.debug('TradingResult : {}', result)
-    tradingLogger.info('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}'.format(action,
+    resultMessage = '{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}'.format(action,
                                                      result['status'],
                                                      result['data'][0]['units'],
                                                      result['data'][0]['price'],
                                                      result['data'][0]['total'],
                                                      result['data'][0]['fee'],
-                                                     utils.krwFormat(totalProfit)))
+                                                     utils.krwFormat(totalProfit))
     
     tradingLogger.info(resultMessage)
     bot.sendMessage(chat_id=chat_id, text=resultMessage)
