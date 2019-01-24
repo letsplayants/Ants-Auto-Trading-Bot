@@ -1,7 +1,7 @@
 import logging
 
-#로그 설정을 파일에서 읽어들인다.
-#설정이 없으면 기본 설정으로 따른다.
+#The log settings are read from the file
+#If there is no setting, follow the default setting.
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
