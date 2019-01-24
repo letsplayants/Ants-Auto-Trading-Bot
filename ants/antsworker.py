@@ -14,6 +14,7 @@ bithumb = None
 errorCnt = 0
 usageKRW = 0
 startKRW = 0
+fee = 0
 logger = logging.getLogger(__name__)
 actionState = 'READY'  #BUY, SELL, READY
 tradingRecord = {}
@@ -26,6 +27,7 @@ file_handler.setFormatter(formatter)
 tradingLogger.addHandler(file_handler)
 bot = AntTelegram()
 
+
 def signal_handler(sig, frame):
     logger.info('\nExit Program by user Ctrl + C')
     sys.exit(0)
@@ -35,6 +37,7 @@ signal.signal(signal.SIGINT, signal_handler)
 def init():
     global usageKRW
     global startKRW
+    global fee
     
     keys = utils.readKey('./configs/bithumb.key')
     apiKey = keys['api_key']
@@ -52,6 +55,7 @@ def init():
         
         balance = bithumb.get_balance('BTC') #balance(보유코인, 사용중코인, 보유원화, 사용중원화)
         startKRW = balance[2]
+        fee = bithumb.get_trading_fee()
     except Exception as exp:
         logger.error(exp)
         sys.exit(1)
@@ -133,13 +137,18 @@ def doAction(msg):
             buy(coinName)
         elif(action == 'SELL'):
             sell(coinName)
-            
+        
+        #쿨다운에 걸리는 것을 막기 위한 임시방편
+        time.sleep(1)
+    
     else :
         logger.warning('{} is not support!'.format(exchange))
         return
 
 def buy(coinName):
-    fee = bithumb.get_trading_fee()
+    global fee
+    logger.info('Buy Order')
+    
     balance = bithumb.get_balance('BTC') #balance(보유코인, 사용중코인, 보유원화, 사용중원화)
     
     if(balance[2] - balance[3] < usageKRW) :
@@ -150,34 +159,49 @@ def buy(coinName):
     marketPrice = (int)(marketPrice / 1000)  #BTC의 경우 주문을 1000단위로 넣어야한다. 즉 다른 코인들도 주문 단위가 각각 있을 것이다.
     marketPrice = marketPrice * 1000
     orderCnt = usageKRW / marketPrice
-    
-    feePrice = orderCnt - orderCnt * fee
-    logger.debug(fee)
-    logger.debug(feePrice)
-    
-    logger.info('Buy Order - price : {}\tcnt:{}'.format(marketPrice, orderCnt))
+ 
     try:
-        # desc = bithumb.buy_limit_order(coinName, marketPrice, orderCnt)
         desc = bithumb.buy_market_order(coinName, orderCnt) #시장가 매수 주문
+        
+        #거래 결과 검사 루틴
+        if(desc is None):
+            logger.warning('Buy order was failed')
+            return
+            
+        if(desc['status'] != '0000'):
+            logger.warning('Buy order was failed : {}'.format(desc))
+            bot.sendMessage('Buy order was failed : {}'.format(desc))
+            return
+        
         getTradingResult('BUY', desc, balance)
     except Exception as exp:
         logger.warning('Error buy order : {}'.format(exp))
+        bot.sendMessage('Error buy order : {}'.format(exp))
+    
     
 def sell(coinName):
+    global fee
     balance = bithumb.get_balance(coinName) #balance(보유코인, 사용중코인, 보유원화, 사용중원화)
-    marketPrice = bithumb.get_current_price(coinName)
-    marketPrice = (int)(marketPrice / 1000)  #BTC의 경우 주문을 1000단위로 넣어야한다. 즉 다른 코인들도 주문 단위가 각각 있을 것이다.
-    marketPrice = marketPrice * 1000
-    # orderCnt = keepCnt[coinName] - balance #keepCnt를 구현해야함.. 거래소별 유지해야하는 코인개수
     orderCnt = balance[0] - balance[1]  #코인 전량을 다 팔아버린다.
     
-    logger.info('Sell Order - price : {}\tcnt:{}'.format(marketPrice, orderCnt))
+    logger.info('Sell Order')
     try:
-        # desc = bithumb.sell_limit_order(coinName, marketPrice, orderCnt)
         desc = bithumb.sell_market_order(coinName, orderCnt) #시장가 매도 주문
+        
+        #거래 결과 검사 루틴
+        if(desc is None):
+            logger.warning('Sell order was failed')
+            return
+            
+        if(desc['status'] != '0000'):
+            logger.warning('Sell order was failed : {}'.format(desc))
+            bot.sendMessage('Sell order was failed : {}'.format(desc))
+            return
+        
         getTradingResult('SELL', desc, balance)
     except Exception as exp:
         logger.warning('Error sell order : {}'.format(exp))
+        bot.sendMessage('Error sell order : {}'.format(exp))
     
     
 def getTradingResult(action, result, balance):
