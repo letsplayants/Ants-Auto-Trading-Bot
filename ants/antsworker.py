@@ -124,8 +124,6 @@ def doAction(msg):
         logger.info('Already {} state'.format(action))
         return
     
-    actionState = action
-    
     if(exchange == 'BITHUMB') :
         if(market != 'KRW') :
             logger.warning('{} has not {} market'.format(exchange,market))
@@ -133,14 +131,18 @@ def doAction(msg):
             logger.warning('{} is not support not')
             return
         
+        actionComplete = False
         if(action == 'BUY'):
-            buy(coinName)
+            actionComplete = buy(coinName)
         elif(action == 'SELL'):
-            sell(coinName)
+            actionComplete = sell(coinName)
         
+        if(actionComplete):
+            actionState = action
+        
+            
         #쿨다운에 걸리는 것을 막기 위한 임시방편
         time.sleep(1)
-    
     else :
         logger.warning('{} is not support!'.format(exchange))
         return
@@ -153,7 +155,7 @@ def buy(coinName):
     
     if(balance[2] - balance[3] < usageKRW) :
         logger.warning('not enought KRW balance')
-        return
+        return False
     
     marketPrice = bithumb.get_current_price(coinName)
     marketPrice = (int)(marketPrice / 1000)  #BTC의 경우 주문을 1000단위로 넣어야한다. 즉 다른 코인들도 주문 단위가 각각 있을 것이다.
@@ -166,18 +168,20 @@ def buy(coinName):
         #거래 결과 검사 루틴
         if(desc is None):
             logger.warning('Buy order was failed')
-            return
+            return False
             
         if(desc['status'] != '0000'):
             logger.warning('Buy order was failed : {}'.format(desc))
             bot.sendMessage('Buy order was failed : {}'.format(desc))
-            return
+            return False
         
         getTradingResult('BUY', desc, balance)
     except Exception as exp:
         logger.warning('Error buy order : {}'.format(exp))
         bot.sendMessage('Error buy order : {}'.format(exp))
+        return False
     
+    return True
     
 def sell(coinName):
     global fee
@@ -191,18 +195,20 @@ def sell(coinName):
         #거래 결과 검사 루틴
         if(desc is None):
             logger.warning('Sell order was failed')
-            return
+            return False
             
         if(desc['status'] != '0000'):
             logger.warning('Sell order was failed : {}'.format(desc))
             bot.sendMessage('Sell order was failed : {}'.format(desc))
-            return
+            return False
         
         getTradingResult('SELL', desc, balance)
     except Exception as exp:
         logger.warning('Error sell order : {}'.format(exp))
         bot.sendMessage('Error sell order : {}'.format(exp))
+        return False
     
+    return True
     
 def getTradingResult(action, result, balance):
     # status	결과 상태 코드 (정상: 0000, 그 외 에러 코드 참조)	String
