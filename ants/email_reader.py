@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python
 #
 # Very basic example of using Python 3 and IMAP to iterate over emails in a

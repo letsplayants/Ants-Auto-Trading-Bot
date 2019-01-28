@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Parsing of Telegram Message
 
 import telegram

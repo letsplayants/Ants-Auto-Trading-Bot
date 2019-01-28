@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import ant_logger
 import prj_path
 import ant_tele

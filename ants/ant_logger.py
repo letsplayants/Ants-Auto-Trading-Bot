@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import logging
 
 #The log settings are read from the file
