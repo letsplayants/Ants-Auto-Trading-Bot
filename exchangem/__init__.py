@@ -1,14 +1,20 @@
 # -*- coding: utf-8 -*-
-import utils
-
+print('exchange init')
 base = [
     'Exchange',
     'exchanges',
     'decimal_to_precision',
 ]
 
-util = [
-    'utils',
+exchange = [
+    'upbit',
+    'bithumb'
 ]
 
-__all__ = base + utils + exchanges
+utils = [
+    'Util',
+]
+
+__all__ = base + utils + exchange
+
+print('exchange init')

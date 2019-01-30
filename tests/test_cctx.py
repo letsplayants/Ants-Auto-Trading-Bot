@@ -1,22 +1,18 @@
 # -*- coding: utf-8 -*-
-#!/usr/bin/env python
 
 import unittest
 import sys
 import os
 import pkgutil
 import ccxt
-import exchangem
 
-from utils import readKey
+from exchangem.utils import Util as util
 
 
 class CcxtTest(unittest.TestCase):
-    # @classmethod
-    # def setUpClass(self):
-        # keys = readKey('./configs/bithumb.key')
-        # self.apiKey = keys['api_key']
-        # self.apiSecret = keys['api_secret']
+    @classmethod
+    def setUpClass(self):
+        pass
 
     # def setUp(self):
         # self.bithumb = Bithumb(self.apiKey, self.apiSecret)
@@ -38,13 +34,28 @@ class CcxtTest(unittest.TestCase):
         # print(bithumb.load_markets())
         
     def test_bithumb_pri_api(self):
-        utils.readKey('./config/bithumb.key')
+        keys = util.readKey('./configs/bithumb.key')
+        apiKey = keys['api_key']
+        apiSecret = keys['api_secret']
+        
         bithumb = ccxt.bithumb({
-                        'apiKey': '',
-                        'secret': '',
+                        'apiKey': apiKey,
+                        'secret': apiSecret,
                         })
         
-        print(bithumb.fetch_balance())
+        # print(bithumb.fetch_balance())
+        
+    def test_upbit_pri_api(self):
+        keys = util.readKey('./configs/upbit.key')
+        apiKey = keys['key']
+        apiSecret = keys['secret']
+        
+        upbit = ccxt.upbit({
+                        'apiKey': apiKey,
+                        'secret': apiSecret,
+                        })
+        
+        print(upbit.fetch_balance())
         
     # def test_callPrivAPI(self):
     #     self.assertIsNotNone(self.bithumb.get_trading_fee())
