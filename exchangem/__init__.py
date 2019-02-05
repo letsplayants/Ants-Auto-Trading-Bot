@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-print('exchange init')
+print('init in {}'.format(__name__))
 base = [
     'Exchange',
     'exchanges',
@@ -17,4 +17,8 @@ utils = [
 
 __all__ = base + utils + exchange
 
-print('exchange init')
+# import sys
+# sys.path.append(".")
+# import os
+# print (os.getcwd())
+
