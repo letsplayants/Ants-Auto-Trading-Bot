@@ -15,7 +15,14 @@ class Upbit(Base):
         self.logger = logging.getLogger(__name__)
         self.chainse = []
         pass
-        
+    
+    def _order(self, args):
+        """
+        각 거래소마다 지정된 형태로 오더를 내린다
+        ccxt를 사용한다
+        """
+        pass
+    
     def connect(self):
         self.noti_msg( '### 연결 중..')
         websocket.enableTrace(False)
@@ -82,5 +89,5 @@ if __name__ == '__main__':
     up.get_order_book()
     print('3...')
     # up.connect()
-        
+    
     
