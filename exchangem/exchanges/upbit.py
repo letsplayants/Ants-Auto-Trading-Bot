@@ -8,6 +8,7 @@ import threading
 import ccxt
 
 from exchangem.model.exchange import Base
+from exchangem.model.balance import Balance
 
 class Upbit(Base):
     def __init__(self, args={}):
@@ -78,7 +79,31 @@ class Upbit(Base):
     
     def get_balance(self, target):
         #업비트는 전체 계좌 조회만 제공한다
-        return self.ccUpbit.fetch_balance()
+        balance = Balance()
+        ret = self.ccUpbit.fetch_balance()
+        if(not ret.get(target)):
+            return None
+            
+        balance.add(target, ret[target]['total'], 
+                            ret[target]['used'], 
+                            ret[target]['free'])
+
+        return balance
+    
+    def get_all_balance(self):
+        #업비트는 전체 계좌 조회만 제공한다
+        balance = Balance()
+        ret = self.ccUpbit.fetch_balance()
+        info = ret['info']
+        for item in info:
+            name = item['currency']
+            balance.add(name, 
+                        ret[name]['total'],
+                        ret[name]['used'],
+                        ret[name]['free'])
+
+        return balance
+        
     
 if __name__ == '__main__':
     print('test')
@@ -100,7 +125,18 @@ if __name__ == '__main__':
     up.attach(udt)
     up.get_order_book()
     
-    print(up.get_balance('BTC'))
+    bal = up.get_balance('없는코인')
+    if(bal is not None):
+        print(bal.get_all())
+    
+    bal = up.get_balance('KRW')
+    if(bal is not None):
+        print(bal.get_all())
+        print(bal.get('KRW'))
+        
+    
+    print(up.get_all_balance().get('KRW'))
+    print(up.get_all_balance().get_all())
     
     # up.connect()
     
