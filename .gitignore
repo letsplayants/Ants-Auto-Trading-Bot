@@ -1,3 +1,10 @@
+#custom files
+.c9/
+bin/
+lib64
+pyvenv.cfg
+share/
+
 #config files
 *.key
 
