@@ -5,15 +5,22 @@ import json
 from datetime import datetime
 import websocket
 import threading
+import ccxt
 
-from model.exchange import Base
+from exchangem.model.exchange import Base
 
 class Upbit(Base):
-    def __init__(self):
+    def __init__(self, args={}):
         # super().__init__(self)
         Base.__init__(self)
         self.logger = logging.getLogger(__name__)
-        self.chainse = []
+        
+        if(args.get('key_file')):
+            _ret = self.loadKey(args['key_file'])
+            self.ccUpbit = ccxt.upbit(_ret)
+            self.logger.info('load key file : {}'.format(args.get('key_file')))
+        else:
+            self.ccUpbit = ccxt.upbit()
         pass
     
     def _order(self, args):
@@ -54,6 +61,7 @@ class Upbit(Base):
         
     def close(self):
         self.ws.close()
+        # self.thread_hnd.exit()
     
     def noti_msg(self, msg):
         self.logger.info(msg)
@@ -65,29 +73,35 @@ class Upbit(Base):
     def get_order_book(self):
         self.connect()
     
-    def register_callback(cb):
+    def register_callback(self, cb):
         pass
+    
+    def get_balance(self, target):
+        #업비트는 전체 계좌 조회만 제공한다
+        return self.ccUpbit.fetch_balance()
     
 if __name__ == '__main__':
     print('test')
-    up = Upbit()
+    up = Upbit({'key_file':'configs/upbit.key'})
+    
     coins = ['KRW-ETH', 'KRW-DASH', 'ETH-DASH', 'KRW-LTC', 'ETH-LTC', 'KRW-STRAT', 'ETH-STRAT', 'KRW-XRP', 'ETH-XRP', 'KRW-ETC', 'ETH-ETC', 'KRW-OMG', 'ETH-OMG', 'KRW-SNT', 'ETH-SNT', 'KRW-WAVES', 'ETH-WAVES', 'KRW-XEM', 'ETH-XEM', 'KRW-ZEC', 'ETH-ZEC', 'KRW-XMR', 'ETH-XMR', 'KRW-QTUM', 'ETH-QTUM', 'KRW-GNT', 'ETH-GNT', 'KRW-XLM', 'ETH-XLM', 'KRW-REP', 'ETH-REP', 'KRW-ADA', 'ETH-ADA', 'KRW-POWR', 'ETH-POWR', 'KRW-STORM', 'ETH-STORM', 'KRW-TRX', 'ETH-TRX', 'KRW-MCO', 'ETH-MCO', 'KRW-SC', 'ETH-SC', 'KRW-POLY', 'ETH-POLY', 'KRW-ZRX', 'ETH-ZRX', 'KRW-SRN', 'ETH-SRN', 'KRW-BCH', 'ETH-BCH', 'KRW-ADX', 'ETH-ADX', 'KRW-BAT', 'ETH-BAT', 'KRW-DMT', 'ETH-DMT', 'KRW-CVC', 'ETH-CVC', 'KRW-WAX', 'ETH-WAX']
 
-    from model.observers import Observer
+    from exchangem.model.observers import Observer
     class Update(Observer):
         def update(self, args):
             print('got msg in udt')
+            up.close()
             pass
     
     udt = Update()
     
     print(Update.mro())
-    print('1...')
     up.target_coins(coins)
-    print('2...')
     up.attach(udt)
     up.get_order_book()
-    print('3...')
+    
+    print(up.get_balance('BTC'))
+    
     # up.connect()
     
     

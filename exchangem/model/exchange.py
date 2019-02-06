@@ -5,7 +5,8 @@
 """
 
 import abc
-from model.observers import ObserverNotifier
+from exchangem.model.observers import ObserverNotifier
+from exchangem.utils import Util
 
 class Base(ObserverNotifier, metaclass=abc.ABCMeta):
     def __init__(self):
@@ -13,10 +14,31 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         orderes = []
     pass
     
-    def order(self, market, coin_name, price, count):
+    def loadKey(self, file_name):
+        return Util.readKey(file_name)
+        
+    @abc.abstractmethod
+    def get_balance(self, target):
+        pass
+    
+    @abc.abstractmethod
+    def _order(self, args):
+        """
+        각 거래소마다 지정된 형태로 오더를 내린다
+        
+        args['market'] = market
+        args['coin_name'] = coin_name
+        args['action'] = action #BUY or SELL
+        args['price'] = price
+        args['count'] = count
+        """
+        pass
+    
+    def order(self, market, coin_name, action, price, count):
         args = []
         args['market'] = market
         args['coin_name'] = coin_name
+        args['action'] = action #BUY or SELL
         args['price'] = price
         args['count'] = count
         
@@ -26,12 +48,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         except Exception as e:
             logger.warning(e)
     
-    @abc.abstractmethod
-    def _order(self, args):
-        """
-        각 거래소마다 지정된 형태로 오더를 내린다
-        """
-        pass
+    
 
 class SupportWebSocket(metaclass=abc.ABCMeta):
     @abc.abstractmethod
