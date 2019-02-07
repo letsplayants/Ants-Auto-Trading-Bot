@@ -1,0 +1,3 @@
+# exchangem
+
+pip install ccxt
