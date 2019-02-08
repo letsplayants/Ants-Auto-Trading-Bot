@@ -16,6 +16,7 @@ class EmailAlretStrategy(Observer):
         
     def register_data_provider(self, provider):
         self.data_provider = provider
+        self.data_provider.attach(self)
 
     def __perform(self, obu):
         #obu을 사용하여 판정을 한다
