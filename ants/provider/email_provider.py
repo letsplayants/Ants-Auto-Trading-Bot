@@ -22,6 +22,7 @@ class EmailProvider(Provider):
     
     def run(self):
         self.logger.info('email provider run.')
+        self.load_setting('configs/mail.key')
         mailConn = self.conn()
         if mailConn is None:
             self.logger.error('Can''t get mail connect')

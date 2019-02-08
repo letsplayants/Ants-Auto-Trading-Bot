@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-import alogger
 import logging
-from provider.data_provider import DataProvider
-from strategies.arbitage.strategy import StrategyTypeA
+import alogger
+from ants.provider.email_provider import EmailProvider
+from ants.strategies.tradingview.strategy import EmailAlretStrategy
 
 class Worker:
     def __init__(self):
@@ -13,10 +13,10 @@ class Worker:
         self.logger.info('run')
         
         #사용할 전략을 만든다
-        self.strategy = StrategyTypeA()
+        self.strategy = EmailAlretStrategy()
         
         #전략에서 필요로 하는 모듈들을 선언
-        self.data_provider = DataProvider()
+        self.data_provider = EmailProvider()
         
         #전략에서 사용할 데이터 제공자를 등록
         self.strategy.register_data_provider(self.data_provider)
@@ -35,5 +35,12 @@ class Worker:
         
         #action을 한 후 action 모니터링 큐에 넣는다.
         self.exchange_repoter(order_id)
-        
     
+    def stop(self):
+        self.strategy.stop()
+        self.data_provider.stop()
+    
+if __name__ == '__main__':
+    print('worker test')
+    w = Worker()
+    w.run()

@@ -13,7 +13,7 @@ stream_hander = logging.StreamHandler()
 stream_hander.setFormatter(formatter)
 logger.addHandler(stream_hander)
 
-file_handler = logging.FileHandler('./logs/arbitrage.log')
+file_handler = logging.FileHandler('./logs/ants.log')
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
