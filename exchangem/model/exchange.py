@@ -12,6 +12,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
     def __init__(self):
         ObserverNotifier.__init__(self)
         orderes = []
+        self.exchange = None
     pass
     
     def loadKey(self, file_name):
@@ -48,7 +49,25 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         except Exception as e:
             logger.warning(e)
     
-    
+    @abc.abstractmethod
+    def check_amount(self, coin_name, seed_size, price):
+        """
+        코인 이름과 시드 크기를 입력받아서 매매 가능한 값을 돌려준다
+        이때 수수료 계산도 함께 해준다
+        매매가능한 크기가 거래소에서 지정한 조건에 부합하는지도 함께 계산해서
+        돌려준다
+        
+        가령 주문 단위가 10으로 나눠서 떨어져야 한다면 계산값이 11이 나올경우
+        10으로 돌려준다
+        주문 가격이 오류인 경우 price오류와 함께 예외를 발생시킨다
+        
+        return 매매가능한 양, 가격, 수수료
+        """
+        pass
+
+    @abc.abstractmethod
+    def get_last_price(self, coin_name):
+        pass
 
 class SupportWebSocket(metaclass=abc.ABCMeta):
     @abc.abstractmethod
