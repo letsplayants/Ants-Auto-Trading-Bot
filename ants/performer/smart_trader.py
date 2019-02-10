@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-import ants.logging
-from ants.provider.observers
+import logging
 from exchangem.exchanges.upbit import Upbit
 from exchangem.model.observers import Observer
 
@@ -11,9 +10,9 @@ class SmartTrader:
     
     """
     
-    def __init__(self, exchanges):
+    def __init__(self):
         self.logger = logging.getLogger(__name__)
-        self.exchange = {}
+        self.exchanges = {}
         pass
     
     def config(self):
@@ -32,62 +31,88 @@ class SmartTrader:
         }
         pass
     
-    def add_exchange(self, name, exchange)
+    def add_exchange(self, name, exchange):
         self.exchanges[name] = exchange
     
-    def trading(self, exchange_name, market, action, coinName):
+    def trading(self, exchange_name, market, action, coin_name, price=None, count=None):
         """
         사용가능한 금액에 맞춰서 개수를 구매한다
         """
         exchange = self.exchanges.get(exchange_name)
         if(exchange == None):
             return None
-        
         self.logger.debug('select exchange : {}'.format(exchange))
         
-        if(not exchange.has_market(market)):
+        symbol = coin_name + '/' + market #'BTC/KRW'
+        if(not exchange.has_market(symbol)):
             self.logger.warning('{} has not market : {}'.format(exchange, market))
             return None
 
-        sm = self.availabel_seed_money(market)        
+        seed_money = self.availabel_seed_money(exchange, market)  
         if(action == 'BUY'):
-            ret = self._buy(exchange, market, coin_name, sm)
+            ret = self._buy(exchange, market, coin_name, seed_money, price)
         elif(action == 'SELL'):
-            ret = self._sell(exchange, market, coin_name, sm)
+            ret = self._sell(exchange, market, coin_name, price, count)
             
         if(ret is None):
             self.logger.warning('action fail')
             return None
         
         return ret
-        pass
-    
-    def _buy(exchange, market, coin_name, seed_size):
-        symbol = market + '/' + coin_name #'BTC/KRW'
-        type = 'limit'  # or 'market' or 'limit'
+
+    def _buy(self, exchange, market, coin_name, seed_size, price):
+        symbol = coin_name + '/' + market #'BTC/KRW'
+        _type = 'limit'  # or 'market' or 'limit'
         side = 'buy'  # 'buy' or 'sell'
         amount = 0
-        price = 0  # or None
         
-        price = exchange.get_last_price(symbol)
+        if(price == None):
+            price = exchange.get_last_price(symbol)
         amount, price, fee = exchange.check_amount(symbol, seed_size, price)
+        params = {}
+        desc = None
         
+        self.logger.debug('_buy - price: {}, amount: {}, fee: {}'.format(price, amount, fee))
         try:
             desc = exchange.create_order(symbol, _type, side, amount, price, params)
-            self.logger.debug(desc)
+            self.logger.debug('order complete : {}'.format(desc))
         except Exception as exp:
-            self.logger.warning(exp)
+            self.logger.warning('create_order exception : {}'.format(exp))
+            
+        return desc
     
-    def availabel_seed_money(self, base):
+    def _sell(self, exchange, market, coin_name, seed_size, price):
+        symbol = coin_name + '/' + market #'BTC/KRW'
+        _type = 'limit'  # or 'market' or 'limit'
+        side = 'sell'  # 'buy' or 'sell'
+        amount = 0
+        
+        if(price == None):
+            price = exchange.get_last_price(symbol)
+        amount, price, fee = exchange.check_amount(symbol, seed_size, price)
+        params = {}
+        desc = None
+        
+        self.logger.debug('_buy - price: {}, amount: {}, fee: {}'.format(price, amount, fee))
+        try:
+            desc = exchange.create_order(symbol, _type, side, amount, price, params)
+            self.logger.debug('order complete : {}'.format(desc))
+        except Exception as exp:
+            self.logger.warning('create_order exception : {}'.format(exp))
+            
+        return desc
+        
+    def availabel_seed_money(self, exchange, base):
         """
         사용 가능한 market base seed를 돌려준다
         1. config에서 설정된 값
         2. exchange별 설정된 값
         3. exchange에 가용 가능한 모든 머니
         """
-        self.configs
-        
-    
+        print(base)
+        sm = exchange.get_limit(base)
+        self.logger.debug('seed_money : {}'.format(sm))
+        return sm
     
     def trading_limit(self, exchange, action, count, price):
         """
