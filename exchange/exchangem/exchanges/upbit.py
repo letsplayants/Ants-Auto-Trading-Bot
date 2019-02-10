@@ -12,10 +12,9 @@ from exchangem.model.balance import Balance
 
 class Upbit(Base):
     def __init__(self, args={}):
-        # super().__init__(self)
         Base.__init__(self)
         self.logger = logging.getLogger(__name__)
-        
+
         if(args.get('key_file')):
             _ret = self.loadKey(args['key_file'])
             self.exchange = ccxt.upbit(_ret)
@@ -23,16 +22,14 @@ class Upbit(Base):
         else:
             self.exchange = ccxt.upbit()
         pass
-    
-    def _order(self, args):
-        """
-        각 거래소마다 지정된 형태로 오더를 내린다
-        ccxt를 사용한다
-        """
-        # create_order(self, symbol, type, side, amount, price=None, params={}):
-        self.exchange.create_order('BTC/KRW', 'limit', 'buy', '3982000', 0.003)
-        pass
-    
+        
+        self.exchange.loadMarkets()
+        
+        if(args.get('config_file')):
+            self.logger.info('config file file : {}'.format(args.get('config_file')))
+            self.config = self.loadKey(args.get('config_file'))
+            
+   
     def connect(self):
         self.noti_msg( '### 연결 중..')
         websocket.enableTrace(False)
@@ -119,6 +116,9 @@ class Upbit(Base):
         
         return 매매가능한 양, 가격, 수수료
         """
+        #TODO KRW일 때는 확인했는데.. USDT, BTC, ETH일 때 확인을 안했음..
+        
+        
         #가격에 따라 주문할 수 있는 범위가 달라진다
         #이에 맞춰 주문할 수 있는 범위를 조정해준다
         # https://docs.upbit.com/docs/market-info-trade-price-detail
@@ -172,6 +172,23 @@ class Upbit(Base):
             
         return fee
         
+    def get_limit(self, coin_name):
+        coin_name = coin_name.upper()
+        limit_conf = self.config.get('market_limit')
+        if(limit_conf != None):
+            coin_limit = limit_conf.get(coin_name)
+            if(coin_limit != None):
+                return coin_limit
+            
+        balance = self.get_balance(coin_name)
+        if(balance == None or balance.get(coin_name) == None):
+            #해당 코인의 잔고가 0일 경우
+            return 0
+        
+        
+        return balance.get(coin_name)['free']
+        
+        
 if __name__ == '__main__':
     print('test')
     logger = logging.getLogger()
@@ -185,7 +202,7 @@ if __name__ == '__main__':
     # logging.getLogger("ccxt").setLevel(logging.WARNING)
     # logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
     
-    up = Upbit({'key_file':'configs/upbit.key'})
+    up = Upbit({'key_file':'configs/upbit.key', 'config_file':'configs/upbit.conf'})
     
     coins = ['KRW-ETH', 'KRW-DASH', 'ETH-DASH', 'KRW-LTC', 'ETH-LTC', 'KRW-STRAT', 'ETH-STRAT', 'KRW-XRP', 'ETH-XRP', 'KRW-ETC', 'ETH-ETC', 'KRW-OMG', 'ETH-OMG', 'KRW-SNT', 'ETH-SNT', 'KRW-WAVES', 'ETH-WAVES', 'KRW-XEM', 'ETH-XEM', 'KRW-ZEC', 'ETH-ZEC', 'KRW-XMR', 'ETH-XMR', 'KRW-QTUM', 'ETH-QTUM', 'KRW-GNT', 'ETH-GNT', 'KRW-XLM', 'ETH-XLM', 'KRW-REP', 'ETH-REP', 'KRW-ADA', 'ETH-ADA', 'KRW-POWR', 'ETH-POWR', 'KRW-STORM', 'ETH-STORM', 'KRW-TRX', 'ETH-TRX', 'KRW-MCO', 'ETH-MCO', 'KRW-SC', 'ETH-SC', 'KRW-POLY', 'ETH-POLY', 'KRW-ZRX', 'ETH-ZRX', 'KRW-SRN', 'ETH-SRN', 'KRW-BCH', 'ETH-BCH', 'KRW-ADX', 'ETH-ADX', 'KRW-BAT', 'ETH-BAT', 'KRW-DMT', 'ETH-DMT', 'KRW-CVC', 'ETH-CVC', 'KRW-WAX', 'ETH-WAX']
 
@@ -225,6 +242,16 @@ if __name__ == '__main__':
     print('order : ', up.check_amount('BTC/KRW', 10000, 12.9157))
     print('order : ', up.check_amount('BTC/KRW', 10000, 163.9157))
     print('order : ', up.check_amount('BTC/KRW', 10000, 8823.9157))
+    
+    print('seed limit : ', up.get_limit('KRW'))
+    print('seed limit : ', up.get_limit('BTC'))
+    print('seed limit : ', up.get_limit('ETH'))
+    print('seed limit : ', up.get_limit('EOS'))
+    print('seed limit : ', up.get_limit('EOS111'))
+    
+    print('has_market :', up.has_market('BTC/KRW'))
+    print('has_market :', up.has_market('BTC/NONE'))
+    
     
     # up.connect()
     

@@ -13,8 +13,9 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         ObserverNotifier.__init__(self)
         orderes = []
         self.exchange = None
+        self.config = {}
     pass
-    
+
     def loadKey(self, file_name):
         return Util.readKey(file_name)
         
@@ -22,33 +23,10 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
     def get_balance(self, target):
         pass
     
-    @abc.abstractmethod
-    def _order(self, args):
-        """
-        각 거래소마다 지정된 형태로 오더를 내린다
-        
-        args['market'] = market
-        args['coin_name'] = coin_name
-        args['action'] = action #BUY or SELL
-        args['price'] = price
-        args['count'] = count
-        """
-        pass
-    
-    def order(self, market, coin_name, action, price, count):
-        args = []
-        args['market'] = market
-        args['coin_name'] = coin_name
-        args['action'] = action #BUY or SELL
-        args['price'] = price
-        args['count'] = count
-        
-        try:
-            order_id = self._order(args)
-            self.orders.append(order_id)
-        except Exception as e:
-            logger.warning(e)
-    
+    def create_order(self, symbol, type, side, amount, price, params):
+        desc = self.exchange.create_order(symbol, type, side, amount, price, params)
+        return desc
+
     @abc.abstractmethod
     def check_amount(self, coin_name, seed_size, price):
         """
@@ -68,7 +46,31 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def get_last_price(self, coin_name):
         pass
+    
+    @abc.abstractmethod
+    def get_fee(self, market):
+        pass
 
+    @abc.abstractmethod
+    def get_limit(self, coin_name):
+        """
+        coin_name의 사용 제한 값을 돌려준다
+        법정화폐 및 통화도 코인으로 간주하여 처리한다
+        """
+        pass
+    
+    def has_market(self, market):
+        try:
+            r = self.exchange.markets[market]
+        except Exception as exp:
+            self.logger.warning(exp)
+            r = None
+            
+        if(r != None):
+            return True
+        else:
+            return False
+        
 class SupportWebSocket(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def open(self):
