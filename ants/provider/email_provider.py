@@ -68,15 +68,25 @@ class EmailProvider(Provider):
                 self.logger.warning(exp)
                 time.sleep(60)
                 
-                mailConn = self.connectionReset(mailConn)
+                mailConn = self.connectionReset()
                 
                 self.errorCnt += 1
-                if(errorCnt > 10) :
+                if(self.errorCnt > 10) :
                     self.logger.error('email connection has some probleam. : errorCnt > 10')
                     break;
         
         self.logout(mailConn)
         self.logger.info('Thread will terminate!')
+    
+    def connectionReset(self):
+        self.logger.warning('connetion has some program. Connection will reset.')
+        M = self.conn()
+        ret = self.login(M)
+        if ret != 'OK' :
+            self.logger.error('Can''t get connetion() : {}'.format(ret))
+            # sys.exit(1)
+            
+        return M
     
     def register(self, update, coins):
         self.logger.info('register update')
