@@ -146,7 +146,7 @@ class EmailProvider(Provider):
         for msg_num in mList:
             rv, data = M.fetch(msg_num, '(RFC822)')
             if rv != 'OK':
-                self.logger.warning("ERROR getting message", msg_num)
+                self.logger.warning("ERROR getting message : {}".format(msg_num))
                 pass
             
             mailList.append(data)
@@ -182,7 +182,7 @@ class EmailProvider(Provider):
         if rv == 'OK':
             pass
         else:
-            self.logger.warning("ERROR: Unable to open mailbox ", rv)
+            self.logger.warning("ERROR: Unable to open mailbox : {}".format(rv))
         
     def getFolderList(self, M):
         rv, mailBoxes = M.list()
