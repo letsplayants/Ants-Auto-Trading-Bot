@@ -3,7 +3,7 @@ import logging
 from ants.provider.observers import Observer
 from ants.performer.smart_trader import SmartTrader
 from exchangem.exchanges.upbit import Upbit as cUpbit
-# from exchangem.exchangem.bithumb import Bithumb as cBithumb
+from exchangem.exchanges.bithumb import Bithumb as cBithumb
 
 class EmailAlretStrategy(Observer):
     """
@@ -17,6 +17,9 @@ class EmailAlretStrategy(Observer):
         
         self.upbit = cUpbit({'key_file':'configs/upbit.key', 'config_file':'configs/upbit.conf'})
         self.trader.add_exchange('UPBIT', self.upbit)
+        
+        self.bithumb = cBithumb({'key_file':'configs/bithumb.key', 'config_file':'configs/bithumb.conf'})
+        self.trader.add_exchange('BITHUMB', self.bithumb)
     
     def run(self):
         self.logger.info('strategy run')
@@ -75,10 +78,10 @@ if __name__ == '__main__':
     logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
     
     st = EmailAlretStrategy()
-    msg = {'market': 'BTCKRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
-    st.do_action(msg)
+    msg = {'market': 'BTCKRW', 'time': '10M', 'action': 'BUY', 'exchange': 'BITHUMB'}
+    # st.do_action(msg)
     
     print('try sell-------------------------------------------------------------------')
-    msg = {'market': 'BTCKRW', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
+    msg = {'market': 'BTCKRW', 'time': '10M', 'action': 'SELL', 'exchange': 'BITHUMB'}
     st.do_action(msg)
     

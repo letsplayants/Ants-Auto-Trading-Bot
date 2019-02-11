@@ -41,6 +41,7 @@ class SmartTrader:
         """
         exchange = self.exchanges.get(exchange_name)
         if(exchange == None):
+            self.logger.warning('{} is not support'.format(exchange))
             return None
         self.logger.debug('select exchange : {}'.format(exchange))
         
