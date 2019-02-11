@@ -12,6 +12,7 @@ class SmartTrader:
     
     def __init__(self):
         self.logger = logging.getLogger(__name__)
+        
         self.exchanges = {}
         pass
     
@@ -102,7 +103,7 @@ class SmartTrader:
         params = {}
         desc = None
         
-        self.logger.debug('_sell - price: {}, amount: {}, fee: {}'.format(price, amount, fee))
+        self.logger.info('_sell - price: {}, amount: {}, fee: {}'.format(price, amount, fee))
         try:
             desc = exchange.create_order(symbol, _type, side, amount, price, params)
             self.logger.debug('order complete : {}'.format(desc))
