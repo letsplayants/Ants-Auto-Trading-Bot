@@ -78,6 +78,7 @@ if __name__ == '__main__':
     msg = {'market': 'BTCKRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
     st.do_action(msg)
     
+    print('try sell-------------------------------------------------------------------')
     msg = {'market': 'BTCKRW', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
     st.do_action(msg)
     

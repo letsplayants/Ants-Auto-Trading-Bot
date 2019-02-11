@@ -34,7 +34,7 @@ class SmartTrader:
     def add_exchange(self, name, exchange):
         self.exchanges[name] = exchange
     
-    def trading(self, exchange_name, market, action, coin_name, price=None, count=None):
+    def trading(self, exchange_name, market, action, coin_name, price=None, amount=None):
         """
         사용가능한 금액에 맞춰서 개수를 구매한다
         """
@@ -48,11 +48,11 @@ class SmartTrader:
             self.logger.warning('{} has not market : {}'.format(exchange, market))
             return None
 
-        seed_money = self.availabel_seed_money(exchange, market)  
+        seed_money = self.availabel_seed_money(exchange, market)
         if(action == 'BUY'):
             ret = self._buy(exchange, market, coin_name, seed_money, price)
         elif(action == 'SELL'):
-            ret = self._sell(exchange, market, coin_name, price, count)
+            ret = self._sell(exchange, market, coin_name, price, amount)
             
         if(ret is None):
             self.logger.warning('action fail')
@@ -72,7 +72,7 @@ class SmartTrader:
         params = {}
         desc = None
         
-        self.logger.debug('_buy - price: {}, amount: {}, fee: {}'.format(price, amount, fee))
+        self.logger.info('_buy - price: {}, amount: {}, fee: {}'.format(price, amount, fee))
         try:
             desc = exchange.create_order(symbol, _type, side, amount, price, params)
             self.logger.debug('order complete : {}'.format(desc))
@@ -81,19 +81,28 @@ class SmartTrader:
             
         return desc
     
-    def _sell(self, exchange, market, coin_name, seed_size, price):
+    def _sell(self, exchange, market, coin_name, price, amount):
         symbol = coin_name + '/' + market #'BTC/KRW'
         _type = 'limit'  # or 'market' or 'limit'
         side = 'sell'  # 'buy' or 'sell'
-        amount = 0
+        
         
         if(price == None):
             price = exchange.get_last_price(symbol)
-        amount, price, fee = exchange.check_amount(symbol, seed_size, price)
+        
+        if(amount == None):
+            amount = exchange.get_availabel_size(coin_name)
+        
+        if(amount == 0):
+            self.logger.warning('{} is not enought {}'.format(coin_name, amount))
+        
+        # amount, price, fee = exchange.check_amount(symbol, amount, price)
+        fee_p = exchange.get_fee(market)
+        fee = amount * fee_p
         params = {}
         desc = None
         
-        self.logger.debug('_buy - price: {}, amount: {}, fee: {}'.format(price, amount, fee))
+        self.logger.debug('_sell - price: {}, amount: {}, fee: {}'.format(price, amount, fee))
         try:
             desc = exchange.create_order(symbol, _type, side, amount, price, params)
             self.logger.debug('order complete : {}'.format(desc))
@@ -110,7 +119,7 @@ class SmartTrader:
         3. exchange에 가용 가능한 모든 머니
         """
         print(base)
-        sm = exchange.get_limit(base)
+        sm = exchange.get_availabel_size(base)
         self.logger.debug('seed_money : {}'.format(sm))
         return sm
     
