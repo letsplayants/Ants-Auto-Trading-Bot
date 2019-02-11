@@ -167,26 +167,10 @@ class Upbit(Base):
     def get_fee(self, market):
         fee = 0.0015
         #업비트의 원화 수수료는 0.05% 이다
-        if(market == 'KRW'):
+        if(market.upper() == 'KRW'):
             fee = 0.0005
             
         return fee
-        
-    def get_limit(self, coin_name):
-        coin_name = coin_name.upper()
-        limit_conf = self.config.get('market_limit')
-        if(limit_conf != None):
-            coin_limit = limit_conf.get(coin_name)
-            if(coin_limit != None):
-                return coin_limit
-            
-        balance = self.get_balance(coin_name)
-        if(balance == None or balance.get(coin_name) == None):
-            #해당 코인의 잔고가 0일 경우
-            return 0
-        
-        
-        return balance.get(coin_name)['free']
         
         
 if __name__ == '__main__':
@@ -242,12 +226,13 @@ if __name__ == '__main__':
     print('order : ', up.check_amount('BTC/KRW', 10000, 12.9157))
     print('order : ', up.check_amount('BTC/KRW', 10000, 163.9157))
     print('order : ', up.check_amount('BTC/KRW', 10000, 8823.9157))
+    print('order : ', up.check_amount('BTC/KRW', 0.005, 4000000))
     
-    print('seed limit : ', up.get_limit('KRW'))
-    print('seed limit : ', up.get_limit('BTC'))
-    print('seed limit : ', up.get_limit('ETH'))
-    print('seed limit : ', up.get_limit('EOS'))
-    print('seed limit : ', up.get_limit('EOS111'))
+    print('KRW seed limit : ', up.get_availabel_size('KRW'))
+    print('BTC seed limit : ', up.get_availabel_size('BTC'))
+    print('ETH seed limit : ', up.get_availabel_size('ETH'))
+    print('EOS seed limit : ', up.get_availabel_size('EOS'))
+    print('seed limit : ', up.get_availabel_size('EOS111'))
     
     print('has_market :', up.has_market('BTC/KRW'))
     print('has_market :', up.has_market('BTC/NONE'))

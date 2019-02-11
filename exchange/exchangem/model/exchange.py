@@ -50,14 +50,48 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def get_fee(self, market):
         pass
-
-    @abc.abstractmethod
-    def get_limit(self, coin_name):
+    
+    def get_availabel_size(self, coin_name):
         """
         coin_name의 사용 제한 값을 돌려준다
         법정화폐 및 통화도 코인으로 간주하여 처리한다
+        freeze_size : 사용하지 않고 남겨둘 자산의 크기
+        availabel_size : 사용할 자산의 크기
         """
-        pass
+        coin_name = coin_name.upper()
+        
+        freeze_conf = self.config.get('freeze_size')
+        if(freeze_conf == None):
+            freeze_size = 0
+        else:
+            freeze_size = freeze_conf.get(coin_name)
+            if(freeze_size == None):
+                freeze_size = 0
+        
+        availabel_conf = self.config.get('availabel_size')
+        if(availabel_conf != None):
+            coin_size = availabel_conf.get(coin_name)
+            if(coin_size != None):
+                coin_size = coin_size - freeze_size
+                if(coin_size < 0):
+                    coin_size = 0
+            else :
+                coin_size = None    #설정값이 없음
+
+        balance = self.get_balance(coin_name)
+        if(balance == None or balance.get(coin_name) == None):
+            #해당 코인의 잔고가 0일 경우
+            return 0
+        
+        if(coin_size == None):
+            #None이란 의미는 설정값이 없다는 의미
+            return balance.get(coin_name)['free']
+        
+        if(coin_size < balance.get(coin_name)['free']):
+            return coin_size
+        else:
+            return balance.get(coin_name)['free']
+    
     
     def has_market(self, market):
         try:
