@@ -70,10 +70,12 @@ class EmailProvider(Provider):
                 
                 mailConn = self.connectionReset()
                 
-                self.errorCnt += 1
-                if(self.errorCnt > 10) :
-                    self.logger.error('email connection has some probleam. : errorCnt > 10')
-                    break;
+                if(mailConn == None):
+                    self.errorCnt += 1
+                    if(self.errorCnt > 10) :
+                        self.logger.error('email connection has some probleam. PROVIDER BE STOP!! : errorCnt > 10')
+                        #TODO 사용자에게 알림을 날려준다.
+                        break;
         
         self.logout(mailConn)
         self.logger.info('Thread will terminate!')
@@ -81,9 +83,13 @@ class EmailProvider(Provider):
     def connectionReset(self):
         self.logger.warning('connetion has some program. Connection will reset.')
         M = self.conn()
+        if(M == None):
+            return M
+            
         ret = self.login(M)
         if ret != 'OK' :
             self.logger.error('Can''t get connetion() : {}'.format(ret))
+            return None
             # sys.exit(1)
             
         return M
