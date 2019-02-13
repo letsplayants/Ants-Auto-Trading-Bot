@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+
 from exchangem.exchanges.upbit import Upbit
 from exchangem.model.observers import Observer
 
@@ -88,7 +89,6 @@ class SmartTrader:
         _type = 'limit'  # or 'market' or 'limit'
         side = 'sell'  # 'buy' or 'sell'
         
-        
         if(price == None):
             price = exchange.get_last_price(symbol)
         
@@ -100,10 +100,13 @@ class SmartTrader:
         
         # amount, price, fee = exchange.check_amount(symbol, amount, price)
         fee_p = exchange.get_fee(market)
-        fee = amount * fee_p
+        fee = float(amount) * fee_p
         params = {}
         desc = None
         
+        price = exchange.decimal_to_precision(price)
+        amount = exchange.decimal_to_precision(amount)
+        fee = exchange.decimal_to_precision(fee)
         self.logger.info('_sell - price: {}, amount: {}, fee: {}'.format(price, amount, fee))
         try:
             desc = exchange.create_order(symbol, _type, side, amount, price, params)
@@ -120,9 +123,8 @@ class SmartTrader:
         2. exchange별 설정된 값
         3. exchange에 가용 가능한 모든 머니
         """
-        print(base)
         sm = exchange.get_availabel_size(base)
-        self.logger.debug('seed_money : {}'.format(sm))
+        self.logger.debug('{} seed_money : {}'.format(base, sm))
         return sm
     
     def trading_limit(self, exchange, action, count, price):

@@ -4,6 +4,7 @@ from ants.provider.observers import Observer
 from ants.performer.smart_trader import SmartTrader
 from exchangem.exchanges.upbit import Upbit as cUpbit
 from exchangem.exchanges.bithumb import Bithumb as cBithumb
+from exchangem.exchanges.binance import Binance as cBinance
 
 class EmailAlretStrategy(Observer):
     """
@@ -20,6 +21,9 @@ class EmailAlretStrategy(Observer):
         
         self.bithumb = cBithumb({'key_file':'configs/bithumb.key', 'config_file':'configs/bithumb.conf'})
         self.trader.add_exchange('BITHUMB', self.bithumb)
+        
+        self.binance = cBinance({'key_file':'configs/binance.key', 'config_file':'configs/binance.conf'})
+        self.trader.add_exchange('BINANCE', self.binance)
     
     def run(self):
         self.logger.info('strategy run')
@@ -78,10 +82,10 @@ if __name__ == '__main__':
     logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
     
     st = EmailAlretStrategy()
-    msg = {'market': 'BTCKRW', 'time': '10M', 'action': 'BUY', 'exchange': 'BITHUMB'}
+    msg = {'market': 'CNDBTC', 'time': '10M', 'action': 'BUY', 'exchange': 'BINANCE'}
     # st.do_action(msg)
     
     print('try sell-------------------------------------------------------------------')
-    msg = {'market': 'BTCKRW', 'time': '10M', 'action': 'SELL', 'exchange': 'BITHUMB'}
-    st.do_action(msg)
+    msg = {'market': 'CNDBTC', 'time': '10M', 'action': 'SELL', 'exchange': 'BINANCE'}
+    # st.do_action(msg)
     
