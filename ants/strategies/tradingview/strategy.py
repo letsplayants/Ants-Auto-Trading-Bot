@@ -51,8 +51,9 @@ class EmailAlretStrategy(Observer):
     
     def do_action(self, msg):
         exchange = msg['exchange'].upper()
-        coinName = msg['market'][0:3].upper()
-        market = msg['market'][3:6].upper()
+        coinName = msg['market'].split('/')[0]
+        market = msg['market'].split('/')[1]
+        
         action = msg['action'].upper()
         
         if(self.actionState == action) :
@@ -82,10 +83,10 @@ if __name__ == '__main__':
     logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
     
     st = EmailAlretStrategy()
-    msg = {'market': 'CNDBTC', 'time': '10M', 'action': 'BUY', 'exchange': 'BINANCE'}
-    # st.do_action(msg)
+    msg = {'market': 'BTC/USDT', 'time': '10M', 'action': 'BUY', 'exchange': 'BINANCE'}
+    st.do_action(msg)
     
     print('try sell-------------------------------------------------------------------')
-    msg = {'market': 'CNDBTC', 'time': '10M', 'action': 'SELL', 'exchange': 'BINANCE'}
+    msg = {'market': 'BTC/USDT', 'time': '10M', 'action': 'SELL', 'exchange': 'BINANCE'}
     # st.do_action(msg)
     
