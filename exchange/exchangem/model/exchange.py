@@ -5,6 +5,15 @@
 """
 
 import abc
+import decimal
+from ccxt.base.decimal_to_precision import decimal_to_precision  # noqa F401
+from ccxt.base.decimal_to_precision import TRUNCATE              # noqa F401
+from ccxt.base.decimal_to_precision import ROUND                 # noqa F401
+from ccxt.base.decimal_to_precision import DECIMAL_PLACES        # noqa F401
+from ccxt.base.decimal_to_precision import SIGNIFICANT_DIGITS    # noqa F401
+from ccxt.base.decimal_to_precision import PAD_WITH_ZERO         # noqa F401
+from ccxt.base.decimal_to_precision import NO_PADDING            # noqa F401
+
 from exchangem.model.observers import ObserverNotifier
 from exchangem.utils import Util
 
@@ -85,13 +94,18 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         
         if(coin_size == None):
             #None이란 의미는 설정값이 없다는 의미
-            return balance.get(coin_name)['free']
+            ret = balance.get(coin_name)['free']
+            ret = decimal_to_precision(ret, TRUNCATE, 8, DECIMAL_PLACES)
+            return ret
+
         
         if(coin_size < balance.get(coin_name)['free']):
             return coin_size
         else:
-            return balance.get(coin_name)['free']
-    
+            ret = balance.get(coin_name)['free']
+            ret = decimal_to_precision(ret, TRUNCATE, 8, DECIMAL_PLACES)
+            return ret
+
     
     def has_market(self, market):
         try:
@@ -104,6 +118,9 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             return True
         else:
             return False
+        
+    def decimal_to_precision(self, value):
+        return decimal_to_precision(value, TRUNCATE, 8, DECIMAL_PLACES)
         
 class SupportWebSocket(metaclass=abc.ABCMeta):
     @abc.abstractmethod
