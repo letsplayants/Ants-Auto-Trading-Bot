@@ -12,7 +12,7 @@ from exchangem.utils import Util
 class CryptoTest(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        self.pub = Util.readKey('configs/ants.conf')['ras_pub_file']
+        self.pub = Util.readKey('configs/ants.conf')['rsa_pub_file']
         self.pri = Util.readKey('configs/ants.conf')['rsa_key_file']
         pass
 
@@ -27,7 +27,7 @@ class CryptoTest(unittest.TestCase):
         from Crypto.Random import get_random_bytes
         from Crypto.Cipher import AES, PKCS1_OAEP
         
-        data = "I met aliens in UFO. Here is the map.".encode("utf-8")
+        data = msg.encode("utf-8")
         
         with open(self.pub) as key:
             recipient_key = RSA.import_key(key.read())
@@ -44,6 +44,8 @@ class CryptoTest(unittest.TestCase):
         
         with open("encrypted_data.bin", "wb") as file_out:
             [ file_out.write(x) for x in (enc_session_key, cipher_aes.nonce, tag, ciphertext) ]
+            
+        return enmsg
         
     def decrypt(self, msg):
         from Crypto.PublicKey import RSA
@@ -67,9 +69,38 @@ class CryptoTest(unittest.TestCase):
         data = cipher_aes.decrypt_and_verify(ciphertext, tag)
         print(data.decode("utf-8"))
 
+    def encrypt_sample(self, msg):
+        from Crypto.PublicKey import RSA
+        from Crypto.Random import get_random_bytes
+        from Crypto.Cipher import AES, PKCS1_OAEP
+        
+        data = msg.encode("utf-8")
+        
+        with open(self.pub) as key:
+            recipient_key = RSA.import_key(key.read())
+        
+        # Encrypt the session key with the public RSA key
+        cipher_rsa = PKCS1_OAEP.new(recipient_key)
+        enmsg = cipher_rsa.encrypt(data)
+        
+        return enmsg
+    
+    def decrypt_sample(self, msg):
+        from Crypto.PublicKey import RSA
+        from Crypto.Cipher import AES, PKCS1_OAEP
+        
+        with open(self.pri) as key:
+            private_key = RSA.import_key(key.read())
+        
+        # Decrypt the session key with the private RSA key
+        cipher_rsa = PKCS1_OAEP.new(private_key)
+        data = cipher_rsa.decrypt(msg)
+        
+        return data.decode("utf-8")
+
     def test_readRsaFile(self):
-        self.encrypt('test')
-        self.decrypt('test')
+        msg = self.encrypt_sample('test string')
+        print(self.decrypt_sample(msg))
         
     
 if __name__ == '__main__':
