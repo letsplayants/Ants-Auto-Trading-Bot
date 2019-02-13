@@ -29,8 +29,8 @@ pip install python-telegram-bot
 ### 트레이딩뷰 얼러트 설정
 
 ~~~
-#BTCKRW #1M #SELL #BITHUMB
-#종목심볼 #봉 #BUY/SELL타입 #거래소
+#BTC/KRW #1M #SELL #BITHUMB
+#종목심볼/마켓 #봉 #BUY/SELL타입 #거래소
 ~~~
 얼러트 내용부분을 위의 형태로 적용.
 
@@ -41,6 +41,12 @@ pip install python-telegram-bot
 python ./ants/ants.py
 ~~~
 
+
+### 지원거래소
+
+#### 업비트
+#### 빗썸
+#### 바이낸스
 
 
 ### 주의사항
