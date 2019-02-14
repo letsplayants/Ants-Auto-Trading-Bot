@@ -28,7 +28,7 @@ def readKey(filePath):
 def saveConf(filePath, data):
     try:
         with open(filePath, 'w') as fp:
-            fp.write(json.dumps(data, indent=4))
+            fp.write(json.dumps(data, sort_keys=True, indent=4))
             
     except Exception as exp:
         print("Can't load json : {}".format(exp))
@@ -64,16 +64,20 @@ def decrypt(key_file, msg):
     return data.decode("utf-8")
 
      
-def add_exchange(config_file, new_exchange):
+def add_exchange(config_file, output_file, new_exchange):
     #파일을 열어서 기존 설정을 읽어온다
     config = readKey(config_file)
+    try:
+        exchanges = readKey(output_file)
+    except :
+        exchanges = {}
+        
     new_exchange = new_exchange.upper()
-    
+
     try:
         pub_key = config['key_file']['rsa_pub_file']
         private_key = config['key_file']['rsa_key_file']
-    
-        
+
         key = getpass.getpass(prompt='input key :')
         secret = getpass.getpass(prompt='secret key :')
         
@@ -87,13 +91,13 @@ def add_exchange(config_file, new_exchange):
             'apiKey': en_apiKey,
             'secret': en_secret
         }
-        config[new_exchange] = key_set
+        exchanges[new_exchange] = key_set
         
-        saveConf(config_file, config)
+        saveConf(output_file, exchanges)
         print('config file save done')
         
         try:
-            test_exchange(config_file, new_exchange)
+            test_exchange(config_file, output_file, new_exchange)
         except Exception as texp:
             print('Did not add new key. try again...')
             sys.exit(1)
@@ -102,21 +106,22 @@ def add_exchange(config_file, new_exchange):
         print('except : {}'.format(exp))
         sys.exit(1)
     
-def test_exchange(config_file, new_exchange):
+def test_exchange(config_file, output_file, new_exchange):
     print('exchange connection test with key')
     
     config = readKey(config_file)
+    exchanges = readKey(output_file)
     new_exchange = new_exchange.upper()
     
     try:
         pub_key = config['key_file']['rsa_pub_file']
         private_key = config['key_file']['rsa_key_file']
         
-        data = config[new_exchange]['apiKey']
+        data = exchanges[new_exchange]['apiKey']
         borg = binascii.a2b_base64(data)
         apiKey = decrypt(private_key, borg)
         
-        data = config[new_exchange]['secret']
+        data = exchanges[new_exchange]['secret']
         borg = binascii.a2b_base64(data)
         secret = decrypt(private_key, borg)
         
@@ -148,8 +153,8 @@ def test_exchange(config_file, new_exchange):
 
 if __name__ == "__main__":
     """
-      crypt_cli add exchange --file config_file_name
-      crypt_cli test exchange -f config_file_name
+      crypt_cli add exchange --file rsa_config_file --output encrypt_file.key
+      crypt_cli test exchange -f rsa_config_file -o encrypt_file.key
     """
     
     def signal_handler(sig, frame):
@@ -162,24 +167,29 @@ if __name__ == "__main__":
     parser.add_argument("cmd", help="add or test", choices=['add', 'test'])
     parser.add_argument("exchange", help="exchange name or ALL", default=None)
     parser.add_argument("-f", "--file", help="config file")
+    parser.add_argument("-o", "--output", help="config file")
     args = parser.parse_args()
     
-    if(args.exchange == 'ALL'):
-        print("Can't add exchange name 'ALL'")
+    if(args.exchange == '__ALL__'):
+        print("Can't add exchange name '__ALL__'")
         sys.exit(0)
     
     if(args.file):
         configFile = args.file
     else:
-        configFile = 'configs/exchanges.key'
+        configFile = 'configs/ants.conf'
+        
+    if(args.output):
+        outputFile = args.output
+    else:
+        outputFile = 'configs/exchanges.key'
         
     if(args.cmd == 'add'):
-        print("got it", args.cmd)
-        add_exchange(configFile, args.exchange)
+        add_exchange(configFile, outputFile, args.exchange)
     elif(args.cmd == 'test'):
         if(args.exchange == 'ALL'):
-            test_exchange(configFile, 'ALL')
+            test_exchange(configFile, outputFile, '__ALL__')
         else:
-            test_exchange(configFile, args.exchange)
+            test_exchange(configFile, outputFile, args.exchange)
     
     pass
