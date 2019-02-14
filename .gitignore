@@ -4,6 +4,7 @@ bin/
 lib64
 pyvenv.cfg
 share/
+configs/ants.conf
 
 #config files
 *.key
