@@ -16,13 +16,14 @@ class EmailAlretStrategy(Observer):
         self.actionState = 'READY'  #BUY, SELL, READY
         self.trader = SmartTrader()
         
-        self.upbit = cUpbit({'key_file':'configs/upbit.key', 'config_file':'configs/upbit.conf'})
+        
+        self.upbit = cUpbit({'private_key_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/upbit.conf'})
         self.trader.add_exchange('UPBIT', self.upbit)
         
-        self.bithumb = cBithumb({'key_file':'configs/bithumb.key', 'config_file':'configs/bithumb.conf'})
+        self.bithumb = cBithumb({'private_key_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/bithumb.conf'})
         self.trader.add_exchange('BITHUMB', self.bithumb)
         
-        self.binance = cBinance({'key_file':'configs/binance.key', 'config_file':'configs/binance.conf'})
+        self.binance = cBinance({'private_key_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/binance.conf'})
         self.trader.add_exchange('BINANCE', self.binance)
     
     def run(self):
@@ -83,8 +84,8 @@ if __name__ == '__main__':
     logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
     
     st = EmailAlretStrategy()
-    msg = {'market': 'BTC/USDT', 'time': '10M', 'action': 'BUY', 'exchange': 'BINANCE'}
-    st.do_action(msg)
+    msg = {'market': 'BTC/USDT', 'time': '10M', 'action': 'BUY', 'exchange': 'BITHUMB'}
+    # st.do_action(msg)
     
     print('try sell-------------------------------------------------------------------')
     msg = {'market': 'BTC/USDT', 'time': '10M', 'action': 'SELL', 'exchange': 'BINANCE'}

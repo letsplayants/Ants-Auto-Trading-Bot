@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 import logging
 
-from exchangem.exchanges.upbit import Upbit
 from exchangem.model.observers import Observer
 
 class SmartTrader:
     """
     config 
       - 트레이딩에 사용할 금액. 없으면 거래소에서 사용가능한 금액으로 사용한다
-    
     """
     
     def __init__(self):
