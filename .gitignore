@@ -2,6 +2,7 @@
 .DS_store
 .c9/
 ants-env/
+configs/ants.conf
 
 #config files
 *.key
