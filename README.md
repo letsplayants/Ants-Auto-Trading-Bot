@@ -17,13 +17,52 @@ pip install python-telegram-bot
 
 
 ### config 파일 생성
+configs폴더에 'sample_'로 시작하는 샘플 파일이 있습니다.
+해당 샘플 파일을 아래와 같이 수정하여 사용하시면 됩니다
 
+#### Ants config
 ~~~
-./configs/bithumb.key
+./configs/ants.conf
+~~~
+
+#### Mail config
+~~~
 ./configs/mail.key
 ~~~
-
 메일지원 : 네이버 IMAP 설정 (OTP 미지원)
+
+#### Exchange config
+거래소 지정파일은 자동으로 생성됩니다. 자동 생성을 위해서는 아래의 프로그램을 사용하여야합니다.
+~~~
+python exchange/crypt_cli.py [add/test] [exchange name]
+~~~
+
+ex) upbit key 추가
+~~~
+$ exchange/crypt_cli.py add upbit
+input key :
+secret key :
+config file save done
+exchange connection test with key
+test pass
+~~~
+
+ex) bithumb key 추가
+~~~
+$ exchange/crypt_cli.py add bithumb
+~~~
+
+ex) binance key 추가
+~~~
+$ exchange/crypt_cli.py add bithumb
+~~~
+
+ex) upbit key 연결 테스트
+~~~
+$ exchange/crypt_cli.py test upbit
+exchange connection test with key
+test pass
+~~~
 
 
 ### 트레이딩뷰 얼러트 설정
