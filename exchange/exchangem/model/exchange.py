@@ -6,6 +6,10 @@
 
 import abc
 import decimal
+import binascii
+import logging
+import ccxt
+
 from ccxt.base.decimal_to_precision import decimal_to_precision  # noqa F401
 from ccxt.base.decimal_to_precision import TRUNCATE              # noqa F401
 from ccxt.base.decimal_to_precision import ROUND                 # noqa F401
@@ -15,17 +19,60 @@ from ccxt.base.decimal_to_precision import PAD_WITH_ZERO         # noqa F401
 from ccxt.base.decimal_to_precision import NO_PADDING            # noqa F401
 
 from exchangem.model.observers import ObserverNotifier
+from exchangem.crypto import Crypto
 from exchangem.utils import Util
 
 class Base(ObserverNotifier, metaclass=abc.ABCMeta):
-    def __init__(self):
+    def __init__(self, args={}):
         ObserverNotifier.__init__(self)
         orderes = []
         self.exchange = None
         self.config = {}
+        
+        self.logger = logging.getLogger(__name__)
+        
+        exchange_obj = None
+        for id in ccxt.exchanges:
+            if(id == self.__class__.__name__.lower()):
+                exchange_obj = getattr(ccxt, id)
+                break
+            
+        try:
+            key_set = self.load_key(args['private_key_file'], args['key_file'], self.__class__.__name__)
+            self.exchange = exchange_obj(key_set)
+        except :
+            self.exchange = exchange_obj()
+            self.logger.warning('Key file loading failed.')
+        
+        self.markets = self.exchange.loadMarkets()
+
+        if(args.get('config_file')):
+            self.logger.info('config file file : {}'.format(args.get('config_file')))
+            self.config = self.load_config(args.get('config_file'))
     pass
 
-    def loadKey(self, file_name):
+    def load_key(self, private_key_file, encrypted_file, exchange_name):
+        crypto = Crypto()
+        crypto.readKey(private_key_file)
+        exchanges = crypto.read_encrytion_file(encrypted_file)
+        
+        en_key_set = exchanges[exchange_name.upper()]
+        
+        data = en_key_set['apiKey']
+        borg = binascii.a2b_base64(data)
+        apiKey = crypto.decrypt(borg)
+        
+        data = en_key_set['secret']
+        borg = binascii.a2b_base64(data)
+        secret = crypto.decrypt(borg)
+        
+        key_set = {
+            'apiKey': apiKey,
+            'secret': secret
+        }
+        return key_set
+    
+    def load_config(self, file_name):
         return Util.readKey(file_name)
         
     @abc.abstractmethod

@@ -12,23 +12,7 @@ from exchangem.model.balance import Balance
 
 class Upbit(Base):
     def __init__(self, args={}):
-        Base.__init__(self)
-        self.logger = logging.getLogger(__name__)
-
-        if(args.get('key_file')):
-            _ret = self.loadKey(args['key_file'])
-            self.exchange = ccxt.upbit(_ret)
-            self.logger.info('load key file : {}'.format(args.get('key_file')))
-        else:
-            self.exchange = ccxt.upbit()
-        pass
-        
-        self.exchange.loadMarkets()
-        
-        if(args.get('config_file')):
-            self.logger.info('config file file : {}'.format(args.get('config_file')))
-            self.config = self.loadKey(args.get('config_file'))
-            
+        Base.__init__(self, args)
    
     def connect(self):
         self.noti_msg( '### 연결 중..')
@@ -186,7 +170,8 @@ if __name__ == '__main__':
     # logging.getLogger("ccxt").setLevel(logging.WARNING)
     # logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
     
-    up = Upbit({'key_file':'configs/upbit.key', 'config_file':'configs/upbit.conf'})
+    
+    up = Upbit({'private_key_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/upbit.conf'})
     
     coins = ['KRW-ETH', 'KRW-DASH', 'ETH-DASH', 'KRW-LTC', 'ETH-LTC', 'KRW-STRAT', 'ETH-STRAT', 'KRW-XRP', 'ETH-XRP', 'KRW-ETC', 'ETH-ETC', 'KRW-OMG', 'ETH-OMG', 'KRW-SNT', 'ETH-SNT', 'KRW-WAVES', 'ETH-WAVES', 'KRW-XEM', 'ETH-XEM', 'KRW-ZEC', 'ETH-ZEC', 'KRW-XMR', 'ETH-XMR', 'KRW-QTUM', 'ETH-QTUM', 'KRW-GNT', 'ETH-GNT', 'KRW-XLM', 'ETH-XLM', 'KRW-REP', 'ETH-REP', 'KRW-ADA', 'ETH-ADA', 'KRW-POWR', 'ETH-POWR', 'KRW-STORM', 'ETH-STORM', 'KRW-TRX', 'ETH-TRX', 'KRW-MCO', 'ETH-MCO', 'KRW-SC', 'ETH-SC', 'KRW-POLY', 'ETH-POLY', 'KRW-ZRX', 'ETH-ZRX', 'KRW-SRN', 'ETH-SRN', 'KRW-BCH', 'ETH-BCH', 'KRW-ADX', 'ETH-ADX', 'KRW-BAT', 'ETH-BAT', 'KRW-DMT', 'ETH-DMT', 'KRW-CVC', 'ETH-CVC', 'KRW-WAX', 'ETH-WAX']
 

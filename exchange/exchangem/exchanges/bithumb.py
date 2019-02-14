@@ -13,22 +13,7 @@ from exchangem.model.balance import Balance
 
 class Bithumb(Base):
     def __init__(self, args={}):
-        Base.__init__(self)
-        self.logger = logging.getLogger(__name__)
-
-        if(args.get('key_file')):
-            _ret = self.loadKey(args['key_file'])
-            self.exchange = ccxt.bithumb(_ret)
-            self.logger.info('load key file : {}'.format(args.get('key_file')))
-        else:
-            self.exchange = ccxt.bithumb()
-        pass
-        
-        self.markets = self.exchange.loadMarkets()
-        
-        if(args.get('config_file')):
-            self.logger.info('config file file : {}'.format(args.get('config_file')))
-            self.config = self.loadKey(args.get('config_file'))
+        Base.__init__(self, args)
     
     def update(self, args):
         #빗썸은 소켓 방식을 지원하지 않으므로 옵져버 패턴을 사용하지 않는다
@@ -180,7 +165,7 @@ if __name__ == '__main__':
     # logging.getLogger("ccxt").setLevel(logging.WARNING)
     # logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
     
-    ex = Bithumb({'key_file':'configs/bithumb.key', 'config_file':'configs/bithumb.conf'})
+    ex = Bithumb({'private_key_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/bithumb.conf'})
 
     print(Bithumb.mro())
     bal = ex.get_balance('없는코인')

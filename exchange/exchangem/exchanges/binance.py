@@ -10,29 +10,13 @@ from ccxt.base.decimal_to_precision import decimal_to_precision  # noqa F401
 from ccxt.base.decimal_to_precision import TRUNCATE              # noqa F401
 from ccxt.base.decimal_to_precision import DECIMAL_PLACES        # noqa F401
 
-
 from exchangem.model.exchange import Base
 from exchangem.model.balance import Balance
 
 class Binance(Base):
     def __init__(self, args={}):
-        Base.__init__(self)
-        self.logger = logging.getLogger(__name__)
-
-        if(args.get('key_file')):
-            _ret = self.loadKey(args['key_file'])
-            self.exchange = ccxt.binance(_ret)
-            self.logger.info('load key file : {}'.format(args.get('key_file')))
-        else:
-            self.exchange = ccxt.binance()
-        pass
+        Base.__init__(self, args)
         
-        self.markets = self.exchange.loadMarkets()
-
-        if(args.get('config_file')):
-            self.logger.info('config file file : {}'.format(args.get('config_file')))
-            self.config = self.loadKey(args.get('config_file'))
-    
     def update(self, args):
         #TODO 소켓방식을 위하여 남겨둔다
         pass
@@ -188,7 +172,7 @@ if __name__ == '__main__':
     # logging.getLogger("ccxt").setLevel(logging.WARNING)
     # logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
     
-    ex = Binance({'key_file':'configs/binance.key', 'config_file':'configs/binance.conf'})
+    ex = Binance({'private_key_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/binance.conf'})
 
     print(Binance.mro())
     bal = ex.get_balance('없는코인')
