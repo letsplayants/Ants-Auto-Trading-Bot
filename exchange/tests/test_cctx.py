@@ -5,6 +5,8 @@ import sys
 import os
 import pkgutil
 import ccxt
+import base64
+import binascii
 
 from exchangem.utils import Util as util
 
@@ -192,9 +194,15 @@ class CcxtTest(unittest.TestCase):
             desc : {'info': {'uuid': 'e6c58e82-1ddb-4783-8376-3723763e365a', 'side': 'bid', 'ord_type': 'limit', 'price': '3900000.0', 'state': 'wait', 'market': 'KRW-BTC', 'created_at': '2019-02-09T10:07:30+09:00', 'volume': '0.003', 'remaining_volume': '0.003', 'reserved_fee': '5.85', 'remaining_fee': '5.85', 'paid_fee': '0.0', 'locked': '11705.85', 'executed_volume': '0.0', 'trades_count': 0}, 'id': 'e6c58e82-1ddb-4783-8376-3723763e365a', 'timestamp': 1549674450000, 'datetime': '2019-02-09T01:07:30.000Z', 'lastTradeTimestamp': None, 'symbol': 'BTC/KRW', 'type': 'limit', 'side': 'buy', 'price': 3900000.0, 'cost': 0.0, 'average': 3900000.0, 'amount': 0.003, 'filled': 0.0, 'remaining': 0.003, 'status': 'open', 'fee': {'currency': 'KRW', 'cost': 0.0}, 'trades': None}
             """
         except Exception as exp:
-            print(exp)
+            print(self.except_parsing(exp))
+
     
-    
+    def except_parsing(self, exp):
+        #ccxt에서 예외 args를 공백(' ')으로 구분해서 넣어줌.
+        exp_str = exp.args[0]
+        error = exp.args[0][exp_str.index(' '):]
+        dd = eval(error)
+        return dd.get('error').get('message')
         
     
     def _test_upbit_sell(self):

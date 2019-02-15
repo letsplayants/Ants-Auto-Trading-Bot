@@ -169,6 +169,13 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
     def decimal_to_precision(self, value):
         return decimal_to_precision(value, TRUNCATE, 8, DECIMAL_PLACES)
         
+    def except_parsing(self, exp):
+        #ccxt에서 예외 args를 공백(' ')으로 구분해서 넣어줌.
+        exp_str = exp.args[0]
+        error = exp.args[0][exp_str.index(' '):]
+        dd = eval(error)
+        return dd.get('error').get('message')
+    
 class SupportWebSocket(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def open(self):

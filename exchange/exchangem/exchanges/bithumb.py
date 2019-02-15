@@ -14,7 +14,7 @@ from exchangem.model.balance import Balance
 class Bithumb(Base):
     def __init__(self, args={}):
         Base.__init__(self, args)
-    
+
     def update(self, args):
         #빗썸은 소켓 방식을 지원하지 않으므로 옵져버 패턴을 사용하지 않는다
         pass
