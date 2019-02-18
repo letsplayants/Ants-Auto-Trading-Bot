@@ -4,6 +4,7 @@
 ants-env/
 configs/ants.conf
 *.pub
+*.db
 
 #config files
 *.key
