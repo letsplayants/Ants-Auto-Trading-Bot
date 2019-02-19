@@ -84,10 +84,10 @@ if __name__ == '__main__':
     logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
     
     st = EmailAlretStrategy()
-    msg = {'market': 'BTC/USDT', 'time': '10M', 'action': 'BUY', 'exchange': 'BITHUMB'}
+    msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
     # st.do_action(msg)
     
     print('try sell-------------------------------------------------------------------')
-    msg = {'market': 'BTC/USDT', 'time': '10M', 'action': 'SELL', 'exchange': 'BINANCE'}
-    # st.do_action(msg)
+    msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
+    st.do_action(msg)
     

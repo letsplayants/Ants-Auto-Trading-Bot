@@ -56,6 +56,9 @@ class Trading(Base):
         self.time = time
         self.request_id = request_id
         self.exchange_name = exchange_name
+        
+        self.logger = logging.getLogger(__name__)
+        self.logger.info('{},{},{},{},{},{},{},{},{},{}'.format(coin_name, market, type, side, amount, price, params, time, request_id, exchange_name))
         pass
 
 
@@ -103,10 +106,10 @@ if __name__ == '__main__':
     side = 'buy'
     amount = 1.1
     price = 0.45
-    params = ''
+    params = str({})
     time = datetime.now()
     request_id = ''
-    exchange_name = 'binance'
+    exchange_name = 'Test'
     
     tr = Trading(
                  coin_name,
@@ -136,7 +139,7 @@ if __name__ == '__main__':
     params = ''
     time = datetime.now()
     request_id = ''
-    exchange_name = 'binance'
+    exchange_name = 'Test'
     tr = Trading(
                  coin_name,
                  market,
@@ -160,5 +163,5 @@ if __name__ == '__main__':
     
     print(sqlite.query(Trading).all())
     
-    sqlite.close()
+    # sqlite.close()
     

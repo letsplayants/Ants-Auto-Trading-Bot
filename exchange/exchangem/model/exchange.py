@@ -9,6 +9,8 @@ import decimal
 import binascii
 import logging
 import ccxt
+import base64
+from datetime import datetime
 
 from ccxt.base.decimal_to_precision import decimal_to_precision  # noqa F401
 from ccxt.base.decimal_to_precision import TRUNCATE              # noqa F401
@@ -21,6 +23,8 @@ from ccxt.base.decimal_to_precision import NO_PADDING            # noqa F401
 from exchangem.model.observers import ObserverNotifier
 from exchangem.crypto import Crypto
 from exchangem.utils import Util
+from exchangem.model.trading import Trading
+from exchangem.database.sqlite_db import Sqlite
 
 class Base(ObserverNotifier, metaclass=abc.ABCMeta):
     def __init__(self, args={}):
@@ -28,6 +32,10 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         orderes = []
         self.exchange = None
         self.config = {}
+        #exchange가 생성될 때 마다 sqlite가 생성된다.
+        #session이 race condition에 걸릴 수 있다. 
+        #구조를 고쳐야함
+        self.db = Sqlite()
         
         self.logger = logging.getLogger(__name__)
         
@@ -80,8 +88,39 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         pass
     
     def create_order(self, symbol, type, side, amount, price, params):
-        desc = self.exchange.create_order(symbol, type, side, amount, price, params)
-        return desc
+        try:
+            desc = self.exchange.create_order(symbol, type, side, amount, price, params)
+            #DB에 기록
+            coin_name = symbol.split('/')[0]
+            market = symbol.split('/')[1]
+            # type = type
+            # side = 'buy'
+            # amount = 1.1
+            # price = 0.45
+            params = str(params)
+            time = datetime.now()
+            request_id = str(desc)
+            exchange_name = self.__class__.__name__.lower()
+            
+            # request_id = base64.encodebytes(desc).decode('utf-8')
+            
+            record = Trading(
+                         coin_name,
+                         market,
+                         type,
+                         side,
+                         amount,
+                         price,
+                         params,
+                         time,
+                         request_id,
+                         exchange_name)
+            
+            self.db.add(record)
+            
+            return desc
+        except Exception as exp:
+            raise exp
 
     @abc.abstractmethod
     def check_amount(self, coin_name, seed_size, price):
