@@ -12,7 +12,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
-class Trading(Base):
+class Balance(Base):
     """
     coin_name, 코인 이름(BTC, ETH, XRP)
     market, 마켓 종류(WON, USDT, BTC, ETH, BNB)
@@ -31,7 +31,7 @@ class Trading(Base):
     - 날짜별 매매 기록
     
     """
-    __tablename__ = 'trading'
+    __tablename__ = 'balance'
     
     id = Column(Integer, primary_key=True)
     coin_name = Column(String(8))
@@ -46,6 +46,9 @@ class Trading(Base):
     exchange_name = Column(String(10))
     
     def __init__(self, coin_name, market, type, side, amount, price, params, time, request_id, exchange_name):
+        # engine = create_engine('sqlite://') #make in memory
+        # engine = create_engine('sqlite:///foo.db')
+        
         self.con_name = coin_name
         self.market = market
         self.type = type
@@ -59,7 +62,9 @@ class Trading(Base):
         pass
 
 
+
 def init_db():
+# 	import models
     from sqlalchemy import create_engine
     engine = create_engine('sqlite:///data.db', echo=True)
     Base.metadata.create_all(bind=engine)
@@ -108,7 +113,7 @@ if __name__ == '__main__':
     request_id = ''
     exchange_name = 'binance'
     
-    tr = Trading(
+    tr = Balance(
                  coin_name,
                  market,
                  type,
@@ -137,7 +142,7 @@ if __name__ == '__main__':
     time = datetime.now()
     request_id = ''
     exchange_name = 'binance'
-    tr = Trading(
+    tr = Balance(
                  coin_name,
                  market,
                  type,
@@ -157,8 +162,6 @@ if __name__ == '__main__':
     print('--------------------------------------')
     # sqlite.query(Trading).all()
     # print(s.query(Trading).all())
-    
-    print(sqlite.query(Trading).all())
     
     sqlite.close()
     
