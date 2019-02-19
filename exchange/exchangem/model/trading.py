@@ -46,7 +46,7 @@ class Trading(Base):
     exchange_name = Column(String(10))
     
     def __init__(self, coin_name, market, type, side, amount, price, params, time, request_id, exchange_name):
-        self.con_name = coin_name
+        self.coin_name = coin_name
         self.market = market
         self.type = type
         self.side = side
@@ -161,7 +161,8 @@ if __name__ == '__main__':
     # sqlite.query(Trading).all()
     # print(s.query(Trading).all())
     
-    print(sqlite.query(Trading).all())
+    # print(sqlite.query(Trading).all())
     
     # sqlite.close()
     
+    sqlite.export_csv(Trading)
