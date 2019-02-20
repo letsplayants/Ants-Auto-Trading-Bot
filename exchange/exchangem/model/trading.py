@@ -64,7 +64,7 @@ class Trading(Base):
 
 def init_db():
     from sqlalchemy import create_engine
-    engine = create_engine('sqlite:///data.db', echo=True)
+    engine = create_engine('sqlite:///data.db', echo=False)
     Base.metadata.create_all(bind=engine)
     
 init_db()
@@ -165,4 +165,4 @@ if __name__ == '__main__':
     
     # sqlite.close()
     
-    sqlite.export_csv(Trading)
+    sqlite.export_csv(Trading.__tablename__)

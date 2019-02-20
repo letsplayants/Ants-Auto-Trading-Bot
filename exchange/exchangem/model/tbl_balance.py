@@ -66,7 +66,7 @@ class Balance(Base):
 def init_db():
 # 	import models
     from sqlalchemy import create_engine
-    engine = create_engine('sqlite:///data.db', echo=True)
+    engine = create_engine('sqlite:///data.db', echo=False)
     Base.metadata.create_all(bind=engine)
     
 init_db()
