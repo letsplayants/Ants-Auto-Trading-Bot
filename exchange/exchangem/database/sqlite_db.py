@@ -1,6 +1,8 @@
 #-*- coding: utf-8 -*-
 import os
 import sys
+from datetime import datetime
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 import exchangem.model.trading
@@ -31,13 +33,16 @@ class Sqlite():
         self.session.close()
         pass
     
-    def export_csv(self, model):
+    def export_csv(self, model, fileName=None):
         # https://stackoverflow.com/questions/2952366/dump-csv-from-sqlalchemy
         # https://stackoverflow.com/questions/51549821/sqlalchemy-how-to-access-column-names-from-resultproxy-and-write-to-csv-header
         import csv
-        result = self.engine.execute('select * from {}'.format(model.__tablename__))
+        result = self.engine.execute('select * from {}'.format(model))
 
-        outfile = open('report.csv', 'w', newline='')
+        if(fileName == None):
+            fileName = 'report_{}.csv'.format(datetime.now().strftime('%Y%m%d%H%M%S'))
+        
+        outfile = open(fileName, 'w', newline='')
         outcsv = csv.writer(outfile, delimiter=',')
         outcsv.writerow(result.keys())
         outcsv.writerows(result.fetchall())
@@ -53,3 +58,19 @@ class Sqlite():
 
 #mysql+pymysql://test_user:test_user!@#$@127.0.0.1/test
 #mysql+mysqldb://test_user:test_user!@#$@127.0.0.1/test
+if __name__ == '__main__':
+    print('test')
+    import logging
+    logger = logging.getLogger()
+    logger.setLevel(logging.WARNING)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    stream_hander = logging.StreamHandler()
+    stream_hander.setFormatter(formatter)
+    logger.addHandler(stream_hander)
+    
+    logging.getLogger("__main__").setLevel(logging.DEBUG)
+    
+    
+    time = datetime.now()
+    fileName = 'report_{}.csv'.format(datetime.now().strftime('%Y%m%d%H%M%S'))
+    print(fileName)
