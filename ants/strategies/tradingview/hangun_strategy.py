@@ -3,18 +3,21 @@ import logging
 from datetime import datetime
 from datetime import timedelta
 
+import ants.strategies.strategy
 from ants.provider.observers import Observer
 from ants.performer.smart_trader import SmartTrader
+from ants.provider.email_provider import EmailProvider
+
 from exchangem.exchanges.upbit import Upbit as cUpbit
 from exchangem.exchanges.bithumb import Bithumb as cBithumb
 from exchangem.exchanges.binance import Binance as cBinance
 
-class HanGunStrategy(Observer):
+class HanGunStrategy(ants.strategies.strategy.StrategyBase, Observer):
     """
     한군 전용 전략
     Email에 메일이 수신되면 거기에 맞춰서 거래를 하도록 한다
     """
-    def __init__(self):
+    def __init__(self, args={}):
         self.logger = logging.getLogger(__name__)
         self.data_provider = None
         self.actionState = 'READY'  #BUY, SELL, READY
@@ -32,18 +35,13 @@ class HanGunStrategy(Observer):
         self.trader.add_exchange('BINANCE', self.binance)
     
     def run(self):
-        self.logger.info('strategy run')
-        
-        
-    def register_data_provider(self, provider):
-        self.data_provider = provider
+        #전략에서 사용할 데이터 제공자를 등록 후 실행
+        self.data_provider = EmailProvider()
         self.data_provider.attach(self)
-
-    def __perform(self, obu):
-        #obu을 사용하여 판정을 한다
-        #판정 후 등록된 func를 호출한다
-        self.logger.info('perform strategy')
+        self.data_provider.run()
         
+        self.logger.info('strategy run')
+
     def update(self, msg):
         """
         데이터 제공자가 요청한 데이터가 수신되면 호출한다
@@ -56,7 +54,11 @@ class HanGunStrategy(Observer):
         self.logger.info('Strategy will stop')
     
     def check_signal(self, msg):
-        action = msg['action'].upper()
+        try:
+            action = msg['action'].upper()
+        except Exception as ex:
+            self.logger.warning('Can''t get action : {}'.format(ex))
+            return;
         
         current = datetime.now()
         timeGap = self.actionTime + timedelta(minutes=self.cooldown)
@@ -82,11 +84,14 @@ class HanGunStrategy(Observer):
             
         
     def do_action(self, msg, second_buy=False):
-        exchange = msg['exchange'].upper()
-        coinName = msg['market'].split('/')[0]
-        market = msg['market'].split('/')[1]
-        
-        action = msg['action'].upper()
+        try:
+            exchange = msg['exchange'].upper()
+            coinName = msg['market'].split('/')[0]
+            market = msg['market'].split('/')[1]
+            action = msg['action'].upper()
+        except :
+            self.logger.warning('msg format is wrong : {}'.format(msg))
+            return
         
         result = self.trader.trading(exchange, market, action, coinName)
         if(result == None):
