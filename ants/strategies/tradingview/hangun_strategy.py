@@ -51,6 +51,7 @@ class HanGunStrategy(ants.strategies.strategy.StrategyBase, Observer):
         pass
     
     def stop(self):
+        self.data_provider.stop()
         self.logger.info('Strategy will stop')
     
     def check_signal(self, msg):
