@@ -1,16 +1,20 @@
 # -*- coding: utf-8 -*-
 import logging
+
+import ants.strategies.strategy
 from ants.provider.observers import Observer
+from ants.provider.email_provider import EmailProvider
 from ants.performer.smart_trader import SmartTrader
+
 from exchangem.exchanges.upbit import Upbit as cUpbit
 from exchangem.exchanges.bithumb import Bithumb as cBithumb
 from exchangem.exchanges.binance import Binance as cBinance
 
-class EmailAlretStrategy(Observer):
+class EmailAlretStrategy(ants.strategies.strategy.StrategyBase, Observer):
     """
     Email에 메일이 수신되면 거기에 맞춰서 거래를 하도록 한다
     """
-    def __init__(self):
+    def __init__(self, args={}):
         self.logger = logging.getLogger(__name__)
         self.data_provider = None
         self.actionState = 'READY'  #BUY, SELL, READY
@@ -27,18 +31,19 @@ class EmailAlretStrategy(Observer):
         self.trader.add_exchange('BINANCE', self.binance)
     
     def run(self):
+        #전략에서 사용할 데이터 제공자를 등록 후 실행
+        self.data_provider = EmailProvider()
+        self.data_provider.attach(self)
+        self.data_provider.run()
+        
         self.logger.info('strategy run')
         
         
     def register_data_provider(self, provider):
         self.data_provider = provider
         self.data_provider.attach(self)
-
-    def __perform(self, obu):
-        #obu을 사용하여 판정을 한다
-        #판정 후 등록된 func를 호출한다
-        self.logger.info('perform strategy')
-        
+    
+    
     def update(self, msg):
         """
         데이터 제공자가 요청한 데이터가 수신되면 호출한다
@@ -48,14 +53,18 @@ class EmailAlretStrategy(Observer):
         pass
     
     def stop(self):
+        self.data_provider.stop()
         self.logger.info('Strategy will stop')
     
     def do_action(self, msg):
-        exchange = msg['exchange'].upper()
-        coinName = msg['market'].split('/')[0]
-        market = msg['market'].split('/')[1]
-        
-        action = msg['action'].upper()
+        try:
+            exchange = msg['exchange'].upper()
+            coinName = msg['market'].split('/')[0]
+            market = msg['market'].split('/')[1]
+            action = msg['action'].upper()
+        except :
+            self.logger.warning('msg format is wrong : {}'.format(msg))
+            return
         
         if(self.actionState == action) :
             self.logger.info('Already {} state'.format(action))
@@ -89,5 +98,5 @@ if __name__ == '__main__':
     
     print('try sell-------------------------------------------------------------------')
     msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
-    st.do_action(msg)
+    # st.do_action(msg)
     

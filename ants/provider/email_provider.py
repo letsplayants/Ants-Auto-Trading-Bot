@@ -65,7 +65,7 @@ class EmailProvider(Provider):
                         
                 self.closeFolder(mailConn)
             except Exception as exp:
-                self.logger.warning(exp)
+                self.logger.warning('_run : {}'.format(exp))
                 time.sleep(60)
                 
                 mailConn = self.connectionReset()
@@ -81,7 +81,7 @@ class EmailProvider(Provider):
         self.logger.info('Thread will terminate!')
     
     def connectionReset(self):
-        self.logger.warning('connetion has some program. Connection will reset.')
+        self.logger.warning('connetion has some probleam. Connection will reset.')
         M = self.conn()
         if(M == None):
             return M

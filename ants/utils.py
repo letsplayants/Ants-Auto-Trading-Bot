@@ -8,6 +8,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+def readConfig(filePath):
+    return readKey(filePath)
+    
 def readKey(filePath):
     logger.info('read file {}'.format(filePath))
     if not os.path.isfile(filePath):

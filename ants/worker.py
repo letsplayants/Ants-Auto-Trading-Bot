@@ -1,28 +1,44 @@
 # -*- coding: utf-8 -*-
 import logging
 import alogger
-from ants.provider.email_provider import EmailProvider
-from ants.strategies.tradingview.strategy import EmailAlretStrategy
+import importlib
+import ants.utils as utils
 
 class Worker:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
+        #설정파일을 읽어들인다.
+        config = utils.readConfig('configs/ants.conf')
+    
+        try:
+            strategy_path = 'ants.strategies.' + config['strategy']['strategy']
+            strategy_class = strategy_path[strategy_path.rindex('.') + 1:]
+            strategy_path = strategy_path[:strategy_path.rindex('.')]
+            self.logger.debug('strategy_path : {}'.format(strategy_path))
+            self.logger.debug('strategy_lcass : {}'.format(strategy_class))
+
+            try:
+                #전략에 사용할 설정 파일을 읽어들인다
+                self.strategy_config = config['strategy']['config']
+            except:
+                self.strategy_config = None
+            self.logger.debug('strategy_config : {}'.format(self.strategy_config))    
+            
+            #사용할 전략을 만든다
+            loaded_module = importlib.import_module(strategy_path)
+            klass = getattr(loaded_module, strategy_class)
+            self.strategy = klass({'config': self.strategy_config, })
+            
+            self.logger.info('USING STRATEGY {}'.format(klass))
+        except Exception as exp:
+            msg = 'Can''t load strategy : \n{}'.format(exp)
+            self.logger.error(msg)
+            raise Exception(msg)
+
         pass
     
     def run(self):
         self.logger.info('run')
-        
-        #사용할 전략을 만든다
-        self.strategy = EmailAlretStrategy()
-        
-        #전략에서 필요로 하는 모듈들을 선언
-        self.data_provider = EmailProvider()
-        
-        #전략에서 사용할 데이터 제공자를 등록
-        self.strategy.register_data_provider(self.data_provider)
-        
-        #데이터 제공자를 실행한다
-        self.data_provider.run()
         
         #전략을 실행한다
         self.strategy.run()
@@ -38,7 +54,6 @@ class Worker:
     
     def stop(self):
         self.strategy.stop()
-        self.data_provider.stop()
     
 if __name__ == '__main__':
     print('worker test')
