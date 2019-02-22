@@ -46,7 +46,7 @@ class HanGunStrategy(ants.strategies.strategy.StrategyBase, Observer):
         """
         데이터 제공자가 요청한 데이터가 수신되면 호출한다
         """
-        self.logger.debug('got msg in data strategy')
+        self.logger.debug('got msg in data strategy : {}'.format(msg))
         self.check_signal(msg)
         pass
     
@@ -64,11 +64,12 @@ class HanGunStrategy(ants.strategies.strategy.StrategyBase, Observer):
         current = datetime.now()
         timeGap = self.actionTime + timedelta(minutes=self.cooldown)
         if(current < timeGap):
-            self.logger.debug('{} signal ignore cause now is cooldown'.format(action))
+            self.logger.warning('{} signal ignore cause now is cooldown'.format(action))
             return
         
         if(self.actionState == 'READY'):
             if(action == 'SELL'):
+                self.logger.warning('This signal({}) will be ignore cause last signal : {}'.format(action, self.actionState))
                 return
             elif(action == 'BUY'):
                 self.do_action(msg)
@@ -79,12 +80,14 @@ class HanGunStrategy(ants.strategies.strategy.StrategyBase, Observer):
                 self.do_action(msg)
         elif(self.actionState == '2ND_BUY'):
             if(action == 'BUY'):
+                self.logger.warning('This signal({}) will be ignore cause last signal : {}'.format(action, self.actionState))
                 return
             elif(action == 'SELL'):
                 self.do_action(msg)
             
         
     def do_action(self, msg, second_buy=False):
+        print('do action : {}'.format(msg))
         try:
             exchange = msg['exchange'].upper()
             coinName = msg['market'].split('/')[0]
@@ -125,16 +128,17 @@ if __name__ == '__main__':
     logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
     
     st = HanGunStrategy()
+    st.run()
     
     # print('SELL Fail-------------------------------------------------------------------')
     # msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
     # st.update(msg)
     
     print('BUY SELL-------------------------------------------------------------------')
-    msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
-    st.update(msg)
+    msg = {'market': 'BTCKRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
+    # st.update(msg)
     msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
-    st.update(msg)
+    # st.update(msg)
     
     # print('BUY BUY BUY SELL-------------------------------------------------------------------')
     # msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
