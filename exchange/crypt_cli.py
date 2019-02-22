@@ -13,7 +13,7 @@ import ccxt
 
 def readKey(filePath):
     if not os.path.isfile(filePath):
-        print("File path {} does not exist. Exiting...".format(filePath))
+        print("File path {} does not exist. Will Create.".format(filePath))
         sys.exit(1)
     
     try:
@@ -27,7 +27,7 @@ def readKey(filePath):
     
 def saveConf(filePath, data):
     try:
-        with open(filePath, 'w') as fp:
+        with open(filePath, 'w+') as fp:
             fp.write(json.dumps(data, sort_keys=True, indent=4))
             
     except Exception as exp:
