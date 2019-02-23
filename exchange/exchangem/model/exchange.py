@@ -154,7 +154,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         availabel_size : 사용할 자산의 크기
         """
         coin_name = coin_name.upper()
-        
+
         freeze_conf = self.config.get('freeze_size')
         if(freeze_conf == None):
             freeze_size = 0
@@ -162,7 +162,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             freeze_size = freeze_conf.get(coin_name)
             if(freeze_size == None):
                 freeze_size = 0
-        
+
         availabel_conf = self.config.get('availabel_size')
         if(availabel_conf != None):
             coin_size = availabel_conf.get(coin_name)
@@ -172,16 +172,22 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
                     coin_size = 0
             else :
                 coin_size = None    #설정값이 없음
+        self.logger.debug('get_availabel_size name : {}, freeze_size: {}, availabel_size: {}'.format(coin_name, freeze_size, coin_size))
 
         balance = self.get_balance(coin_name)
         if(balance == None or balance.get(coin_name) == None):
             #해당 코인의 잔고가 0일 경우
+            self.logger.debug('get_availabel_size balance : {}'.format(balance))
             return 0
         
         if(coin_size == None):
             #None이란 의미는 설정값이 없다는 의미
-            ret = balance.get(coin_name)['free']
+            #설정값이 없으면 잔고에 남아있는 모든 금액을 사용할 수 있으므로 
+            #0으로 설정해 거래를 막아버린다
+            # ret = balance.get(coin_name)['free']
+            ret = 0
             ret = decimal_to_precision(ret, TRUNCATE, 8, DECIMAL_PLACES)
+            self.logger.debug('get_availabel_size availabel_size is not setting : {}'.format(coin_size))
             return ret
 
         
