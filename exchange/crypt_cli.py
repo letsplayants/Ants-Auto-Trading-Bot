@@ -8,8 +8,7 @@ import getpass
 import os
 import json
 import base64
-import binascii
-import ccxt
+import importlib
 
 def readKey(filePath):
     if not os.path.isfile(filePath):
@@ -105,48 +104,40 @@ def add_exchange(config_file, output_file, new_exchange):
     except Exception as exp:
         print('except : {}'.format(exp))
         sys.exit(1)
-    
-def test_exchange(config_file, output_file, new_exchange):
+
+def upper(input):
+    return input.upper()
+
+def test_exchange(config_file, output_file, new_exchange, coin_name=None):
     print('exchange connection test with key')
     
-    config = readKey(config_file)
-    exchanges = readKey(output_file)
-    new_exchange = new_exchange.upper()
-    
     try:
-        pub_key = config['key_file']['rsa_pub_file']
-        private_key = config['key_file']['rsa_key_file']
+        # 거래소 클래스를 찾는다
+        exchange_class_path = 'exchangem.exchanges.{}'.format(new_exchange)
+        class_name = new_exchange
+        class_name = upper(class_name[0]) + class_name[1:len(class_name)]
+        exchange_setting_conf = 'configs/{}.conf'.format(new_exchange)
+        print('load class {}\tconfig file : {}\tkey file: {}'.format(class_name, exchange_setting_conf, config_file))
         
-        data = exchanges[new_exchange]['apiKey']
-        borg = binascii.a2b_base64(data)
-        apiKey = decrypt(private_key, borg)
         
-        data = exchanges[new_exchange]['secret']
-        borg = binascii.a2b_base64(data)
-        secret = decrypt(private_key, borg)
+        #사용할 전략을 만든다
+        loaded_module = importlib.import_module(exchange_class_path)
+        klass = getattr(loaded_module, class_name)
+        exchange = klass({'private_key_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':exchange_setting_conf})
+        print('Text exchange : {}'.format(klass))
         
-        #TODO ccxt를 사용하여 동작테스트를 한다
-        new_exchange = new_exchange.lower()
-        exchange = None
-        for id in ccxt.exchanges:
-            if(id == new_exchange):
-                type_exchange = getattr(ccxt, id)
-                exchange = type_exchange({
-                                'apiKey': apiKey,
-                                'secret': secret,
-                                })
+        
+        #코인별 잔고를 찍는다.
+        #설정 파일에 설정된 코인의 잔고를 찍는다
+        #해당 거래소에 입력된 코인이 없을 수도 있다.
+        #이를 대비하여 거래소에 존재하는 코인이나 설정 파일에 설정된 내용을 
+        #기반으로 잔고 및 가용 금액을 조회, 테스트 해야한다
+        if(coin_name == None):
+            coin_name = 'KRW'
             
-        if(exchange == None):
-            print('Can''t find exchange {}'.format(new_exchange))
-            return
-
-        try:
-            exchange.fetch_balance()
-        except Exception as texp:
-            print('something is wrong : {}'.format(texp))
-            return
-
-        print('test pass')
+        print(exchange.get_balance(coin_name).get_all())
+        print('Availabel {} size : {}'.format(coin_name, exchange.get_availabel_size(coin_name)))
+        
     except Exception as exp:
         print('except : {}'.format(exp))
         sys.exit(1)
@@ -167,7 +158,8 @@ if __name__ == "__main__":
     parser.add_argument("cmd", help="add or test", choices=['add', 'test'])
     parser.add_argument("exchange", help="exchange name or ALL", default=None)
     parser.add_argument("-f", "--file", help="config file")
-    parser.add_argument("-o", "--output", help="config file")
+    parser.add_argument("-o", "--output", help="output file path")
+    parser.add_argument("-c", "--coin", help="test coin name")
     args = parser.parse_args()
     
     if(args.exchange == '__ALL__'):
@@ -190,6 +182,6 @@ if __name__ == "__main__":
         if(args.exchange == 'ALL'):
             test_exchange(configFile, outputFile, '__ALL__')
         else:
-            test_exchange(configFile, outputFile, args.exchange)
+            test_exchange(configFile, outputFile, args.exchange, args.coin)
     
     pass
