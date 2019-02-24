@@ -142,10 +142,11 @@ class Bithumb(Base):
         
     def create_order(self, symbol, type, side, amount, price, params):
         #빗썸은 100원 이하의 경우에만 소숫점 둘째 자리까지만 지원한다
+        price = decimal.Decimal(price).quantize(decimal.Decimal('.01'), rounding=decimal.ROUND_DOWN)
         if(price >= 100):
             price = int(price)
-        else:
-            price = float("{:.2f}".format(price))
+        # else:
+        #     price = float("{:.2f}".format(price))
             
         amount = decimal.Decimal(amount).quantize(decimal.Decimal('.0001'), rounding=decimal.ROUND_DOWN)
 
