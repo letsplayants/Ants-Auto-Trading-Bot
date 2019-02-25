@@ -33,12 +33,12 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         orderes = []
         self.exchange = None
         self.config = {}
-        self.telegram = TelegramRepoter()
+        self.telegram = args.get('telegram')
         
         #exchange가 생성될 때 마다 sqlite가 생성된다.
         #session이 race condition에 걸릴 수 있다. 
         #구조를 고쳐야함
-        self.db = Sqlite()
+        self.db = args.get('db')
         
         self.logger = logging.getLogger(__name__)
         
@@ -119,12 +119,12 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
                          request_id,
                          exchange_name)
             
-            total = decimal_to_precision(float(amount) * float(price), TRUNCATE, 8, DECIMAL_PLACES)
-            self.telegram.send_message('거래소{}, 판매(Sell)/구매(Buy):{}, 코인:{}, 시장:{}, 주문 개수:{}, 주문단가:{}, 총 주문금액:{}'.format(
-                                        exchange_name, 
-                                        side, 
-                                        coin_name, 
-                                        market, 
+            total = self.decimal_to_precision(float(amount) * float(price))
+            self.telegram.send_message('{}, {}, {}/{}, 주문 개수:{}, 주문단가:{}, 총 주문금액:{}'.format(
+                                        exchange_name.upper(), 
+                                        side.upper(),
+                                        coin_name.upper(), 
+                                        market.upper(), 
                                         amount, 
                                         price, 
                                         total) )
@@ -198,7 +198,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             #0으로 설정해 거래를 막아버린다
             # ret = balance.get(coin_name)['free']
             ret = 0
-            ret = decimal_to_precision(ret, TRUNCATE, 8, DECIMAL_PLACES)
+            ret = self.decimal_to_precision(ret)
             self.logger.debug('get_availabel_size availabel_size is not setting : {}'.format(coin_size))
             return ret
 
@@ -207,7 +207,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             return coin_size
         else:
             ret = balance.get(coin_name)['free']
-            ret = decimal_to_precision(ret, TRUNCATE, 8, DECIMAL_PLACES)
+            ret = self.decimal_to_precision(ret)
             return ret
 
     
@@ -224,7 +224,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             return False
         
     def decimal_to_precision(self, value):
-        return decimal_to_precision(value, TRUNCATE, 8, DECIMAL_PLACES)
+        return float(decimal_to_precision(value, TRUNCATE, 8, DECIMAL_PLACES))
         
     def except_parsing(self, exp):
         #ccxt에서 예외 args를 공백(' ')으로 구분해서 넣어줌.

@@ -11,6 +11,8 @@ from ants.provider.email_provider import EmailProvider
 from exchangem.exchanges.upbit import Upbit as cUpbit
 from exchangem.exchanges.bithumb import Bithumb as cBithumb
 from exchangem.exchanges.binance import Binance as cBinance
+from exchangem.database.sqlite_db import Sqlite
+from exchangem.telegram_repoter import TelegramRepoter
 
 class HanGunStrategy(ants.strategies.strategy.StrategyBase, Observer):
     """
@@ -24,14 +26,16 @@ class HanGunStrategy(ants.strategies.strategy.StrategyBase, Observer):
         self.cooldown = 55  #minitue
         self.actionTime = datetime.now() - timedelta(minutes=self.cooldown)
         self.trader = SmartTrader()
+        self.telegram = TelegramRepoter()
+        self.db = Sqlite()
         
-        self.upbit = cUpbit({'private_key_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/upbit.conf'})
+        self.upbit = cUpbit({'private_key_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/upbit.conf', 'telegram': self.telegram, 'db':self.db})
         self.trader.add_exchange('UPBIT', self.upbit)
         
-        self.bithumb = cBithumb({'private_key_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/bithumb.conf'})
+        self.bithumb = cBithumb({'private_key_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/bithumb.conf', 'telegram': self.telegram, 'db':self.db})
         self.trader.add_exchange('BITHUMB', self.bithumb)
         
-        self.binance = cBinance({'private_key_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/binance.conf'})
+        self.binance = cBinance({'private_key_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/binance.conf', 'telegram': self.telegram, 'db':self.db})
         self.trader.add_exchange('BINANCE', self.binance)
     
     def run(self):
@@ -128,17 +132,17 @@ if __name__ == '__main__':
     logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
     
     st = HanGunStrategy()
-    st.run()
+    # st.run()
     
     # print('SELL Fail-------------------------------------------------------------------')
     # msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
     # st.update(msg)
     
     print('BUY SELL-------------------------------------------------------------------')
-    msg = {'market': 'BTCKRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
-    # st.update(msg)
+    msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
+    st.update(msg)
     msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
-    # st.update(msg)
+    st.update(msg)
     
     # print('BUY BUY BUY SELL-------------------------------------------------------------------')
     # msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}

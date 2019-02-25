@@ -9,6 +9,8 @@ from ants.performer.smart_trader import SmartTrader
 from exchangem.exchanges.upbit import Upbit as cUpbit
 from exchangem.exchanges.bithumb import Bithumb as cBithumb
 from exchangem.exchanges.binance import Binance as cBinance
+from exchangem.database.sqlite_db import Sqlite
+from exchangem.telegram_repoter import TelegramRepoter
 
 class EmailAlretStrategy(ants.strategies.strategy.StrategyBase, Observer):
     """
@@ -19,15 +21,16 @@ class EmailAlretStrategy(ants.strategies.strategy.StrategyBase, Observer):
         self.data_provider = None
         self.actionState = 'READY'  #BUY, SELL, READY
         self.trader = SmartTrader()
+        self.telegram = TelegramRepoter()
+        self.db = Sqlite()
         
-        
-        self.upbit = cUpbit({'private_key_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/upbit.conf'})
+        self.upbit = cUpbit({'private_key_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/upbit.conf', 'telegram': self.telegram, 'db':self.db})
         self.trader.add_exchange('UPBIT', self.upbit)
         
-        self.bithumb = cBithumb({'private_key_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/bithumb.conf'})
+        self.bithumb = cBithumb({'private_key_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/bithumb.conf', 'telegram': self.telegram, 'db':self.db})
         self.trader.add_exchange('BITHUMB', self.bithumb)
         
-        self.binance = cBinance({'private_key_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/binance.conf'})
+        self.binance = cBinance({'private_key_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/binance.conf', 'telegram': self.telegram, 'db':self.db})
         self.trader.add_exchange('BINANCE', self.binance)
     
     def run(self):
@@ -94,9 +97,9 @@ if __name__ == '__main__':
     
     st = EmailAlretStrategy()
     msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
-    # st.do_action(msg)
+    st.do_action(msg)
     
     print('try sell-------------------------------------------------------------------')
     msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
-    # st.do_action(msg)
+    st.do_action(msg)
     
