@@ -25,6 +25,7 @@ from exchangem.crypto import Crypto
 from exchangem.utils import Util
 from exchangem.model.trading import Trading
 from exchangem.database.sqlite_db import Sqlite
+from exchangem.telegram_repoter import TelegramRepoter
 
 class Base(ObserverNotifier, metaclass=abc.ABCMeta):
     def __init__(self, args={}):
@@ -32,6 +33,8 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         orderes = []
         self.exchange = None
         self.config = {}
+        self.telegram = TelegramRepoter()
+        
         #exchange가 생성될 때 마다 sqlite가 생성된다.
         #session이 race condition에 걸릴 수 있다. 
         #구조를 고쳐야함
@@ -116,6 +119,15 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
                          request_id,
                          exchange_name)
             
+            total = decimal_to_precision(float(amount) * float(price), TRUNCATE, 8, DECIMAL_PLACES)
+            self.telegram.send_message('거래소{}, 판매(Sell)/구매(Buy):{}, 코인:{}, 시장:{}, 주문 개수:{}, 주문단가:{}, 총 주문금액:{}'.format(
+                                        exchange_name, 
+                                        side, 
+                                        coin_name, 
+                                        market, 
+                                        amount, 
+                                        price, 
+                                        total) )
             self.db.add(record)
             
             return desc

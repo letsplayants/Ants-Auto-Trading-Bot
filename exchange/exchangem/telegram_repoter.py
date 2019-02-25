@@ -24,7 +24,7 @@ class TelegramRepoter():
             self.bot = telegram.Bot(token=mtoken["bot_token"])
             
             self.logger.info('Telegram is Ready, {}'.format(self.bot.get_me()))
-
+            self.send_message('Telegram Repoter is ready')
         except Exception as exp:
             self.logger.warning('Can''t load Telegram Config : {}'.format(exp))
             self.use = False
@@ -37,6 +37,13 @@ class TelegramRepoter():
         # on different commands - answer in Telegram
         dp.add_handler(CommandHandler("start", self.start))
         dp.add_handler(CommandHandler("help", self.help))
+        #총 수익
+        #오늘 수익
+        #거래소 잔고
+        #거래소 오더 상황(미체결)
+        #거래소 동작(빤스런, 올매수)
+        #거래소 스탑로스 설정 및 동작
+        
         
         # on noncommand i.e message - echo the message on Telegram
         dp.add_handler(MessageHandler(Filters.text, self.echo))
@@ -54,21 +61,19 @@ class TelegramRepoter():
         # start_polling() is non-blocking and will stop the bot gracefully.
         self.updater.idle()
         
-    def sendMessage(self, msg):
-        logger.debug('sendMessage : {}'.format(self.use))
+    def send_message(self, msg):
+        self.logger.debug('send_message : {}'.format(self.use))
         if(self.use) :
-            logger.debug('sendMsg : {}-{}'.format(self.chat_id, msg))
+            self.logger.debug('send_msg : {}-{}'.format(self.chat_id, msg))
             self.bot.sendMessage(self.chat_id, msg)
     
     def start(self, update, context):
         """Send a message when the command /start is issued."""
         context.message.reply_text('Hi!')
 
-    
     def help(self, update, context):
         """Send a message when the command /help is issued."""
         context.message.reply_text('Help!')
-    
     
     def echo(self, update, context):
         """Echo the user message."""
@@ -93,7 +98,7 @@ if __name__ == '__main__':
     print('strategy test')
     
     logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     stream_hander = logging.StreamHandler()
     stream_hander.setFormatter(formatter)
@@ -104,6 +109,6 @@ if __name__ == '__main__':
     
     tel = TelegramRepoter()
 
-    # tel.sendMessage("봇클래스 테스트.")
+    tel.send_message("봇클래스 테스트.")
 
     tel.run_listener()
