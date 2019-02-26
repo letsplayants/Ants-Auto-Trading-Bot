@@ -71,7 +71,7 @@ def add_exchange(config_file, output_file, new_exchange):
     except :
         exchanges = {}
         
-    new_exchange = new_exchange.upper()
+    # new_exchange = new_exchange.upper()
 
     try:
         pub_key = config['key_file']['rsa_pub_file']
