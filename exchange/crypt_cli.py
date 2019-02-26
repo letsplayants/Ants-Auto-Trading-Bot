@@ -135,6 +135,10 @@ def test_exchange(config_file, output_file, new_exchange, coin_name=None):
         if(coin_name == None):
             coin_name = 'KRW'
             
+        balance = exchange.get_balance(coin_name)
+        if(balance == None):
+            raise Exception('{} is not support {}'.format(exchange, coin_name))
+            
         print(exchange.get_balance(coin_name).get_all())
         print('Availabel {} size : {}'.format(coin_name, exchange.get_availabel_size(coin_name)))
         
