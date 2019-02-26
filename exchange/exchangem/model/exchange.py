@@ -24,8 +24,6 @@ from exchangem.model.observers import ObserverNotifier
 from exchangem.crypto import Crypto
 from exchangem.utils import Util
 from exchangem.model.trading import Trading
-from exchangem.database.sqlite_db import Sqlite
-from exchangem.telegram_repoter import TelegramRepoter
 
 class Base(ObserverNotifier, metaclass=abc.ABCMeta):
     def __init__(self, args={}):
