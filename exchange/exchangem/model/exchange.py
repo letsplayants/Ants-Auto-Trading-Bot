@@ -118,7 +118,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
                          exchange_name)
             
             total = self.decimal_to_precision(float(amount) * float(price))
-            self.telegram.send_message('{}, {}, {}/{}, 주문 개수:{}, 주문단가:{}, 총 주문금액:{}'.format(
+            self.telegram.send_message('오더를 냄 : {}, {}, {}/{}, 주문 개수:{}, 주문단가:{}, 총 주문금액:{}'.format(
                                         exchange_name.upper(), 
                                         side.upper(),
                                         coin_name.upper(), 
