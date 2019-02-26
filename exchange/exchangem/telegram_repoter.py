@@ -44,11 +44,14 @@ class TelegramRepoter():
         
         # on different commands - answer in Telegram
         dp.add_handler(CommandHandler("menu", self.menu))
-        dp.add_handler(CommandHandler("help", self.help))
-        dp.add_handler(CommandHandler("whoami", self.whoami))
-        dp.add_handler(CommandHandler("room", self.roominfo))
-        dp.add_handler(CommandHandler("setid", self.setid))
-        dp.add_handler(CallbackQueryHandler(self.button))
+        # dp.add_handler(CommandHandler("help", self.help))
+        # dp.add_handler(CommandHandler("whoami", self.whoami))
+        # dp.add_handler(CommandHandler("room", self.roominfo))
+        # dp.add_handler(CommandHandler("setid", self.setid))
+        
+        dp.add_handler(CallbackQueryHandler(self.whoami, pattern='whoami'))
+        dp.add_handler(CallbackQueryHandler(self.roominfo, pattern='roominfo'))
+        dp.add_handler(CallbackQueryHandler(self.setid, pattern='setid'))
         #총 수익
         #오늘 수익
         #거래소 잔고
@@ -68,10 +71,22 @@ class TelegramRepoter():
         # https://github.com/python-telegram-bot/python-telegram-bot/blob/master/telegram/ext/updater.py
         self.updater.start_polling()
     
-        # Run the bot until you press Ctrl-C or the process receives SIGINT,
-        # SIGTERM or SIGABRT. This should be used most of the time, since
-        # start_polling() is non-blocking and will stop the bot gracefully.
         self.updater.idle()
+    
+    def menu(self, update, context):
+        context.message.reply_text('Please choose:', reply_markup=self.menu_keyboard())
+        
+    def menu_keyboard(self):
+        keyboard = [[InlineKeyboardButton("내 ID 정보", callback_data='whoami'),
+                    InlineKeyboardButton("현재 방 정보", callback_data='roominfo')],
+                    [InlineKeyboardButton("환영 인사", callback_data='setid')]]
+
+        return InlineKeyboardMarkup(keyboard)
+        
+    def button(self, update, context):
+        query = context.callback_query
+        query.edit_message_text(text="Selected option: {}".format(query.data))
+    
         
     def send_message(self, msg):
         self.logger.debug('send_message : {}'.format(self.use))
@@ -80,62 +95,30 @@ class TelegramRepoter():
             self.bot.sendMessage(self.chat_id, msg)
     
     def roominfo(self, update, context):
-        context.message.reply_text(str(context.message.chat.type))
-        context.message.reply_text(str(context.message.chat))
+        query = context.callback_query
+        
+        self.edit_message(update, query, '방 속성 : {}\n 룸 id : {}'.format(query.message.chat.type, query.message.chat.id))
+        
         
     def whoami(self, update, context):
-        context.message.reply_text(str(context.message.chat.type))
-        
-        if(context.message.chat.type != 'private'):
-            context.message.reply_text('1:1방에서 확인하세요')
+        query = context.callback_query
+        if(query.message.chat.type != 'private'):
+            self.edit_message(update, query, '1:1방에서만 설정 가능합니다')
             return
-            
-        # self.send_message(str(context.message.chat.id))
-        context.message.reply_text(str(context.message.chat.id))
+        self.edit_message(update, query, '당신의 ID : {}'.format(query.message.chat.id))
+
+    def edit_message(self, bot, query, msg):
+        bot.edit_message_text(chat_id=query.message.chat_id,
+                        message_id=query.message.message_id,
+                        text=msg,
+                        reply_markup=self.menu_keyboard())
     
     def setid(self, update, context):
-        if(context.message.chat.type != 'private'):
-            context.message.reply_text('1:1방에서만 설정 가능합니다')
-            return
-        
-        # 'from': {'id': 444609550, 'first_name': 'LeMY', 'is_bot': False, 'username': 'lemy0715',
-        
-        user = context.effective_user
-        print(user)
-        
-        self.chat_id = user.id
-        
-        msg = '환영합니다. {}님'.format(user.first_name)
-        self.send_message(msg)
-    
-        
-    def menu(self, update, context):
-        """Send a message when the command /start is issued."""
-        """
-        {'message_id': 4034, 'date': 1551111044, 'chat': {'id': -241706808, 'type': 'group', 'title': 'TestGroup', 'all_members_are_administrators': False}, 
-        'text': '/whoami', 
-        'entities': [{'type': 'bot_command', 'offset': 0, 'length': 7}], 
-        'caption_entities': [], 
-        'photo': [], 
-        'new_chat_members': [], 
-        'new_chat_photo': [], 
-        'delete_chat_photo': False, 
-        'group_chat_created': False, 
-        'supergroup_chat_created': False, 
-        'channel_chat_created': False, 
-        'from': {'id': 444609550, 'first_name': 'LeMY', 'is_bot': False, 'username': 'lemy0715', 'language_code': 'ko'}}
-        """
-        keyboard = [[InlineKeyboardButton("Option 1", callback_data='1'),
-                    InlineKeyboardButton("Option 2", callback_data='2')],
-                    [InlineKeyboardButton("Option 3", callback_data='3')]]
-
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        context.message.reply_text('Please choose:', reply_markup=reply_markup)
-        
-    def button(self, update, context):
         query = context.callback_query
-        query.edit_message_text(text="Selected option: {}".format(query.data))
+        
+        user = query.from_user
+        msg = '환영합니다. {}님'.format(user.first_name)
+        self.edit_message(update, query, msg)
     
     def help(self, update, context):
         """Send a message when the command /help is issued."""
@@ -155,9 +138,9 @@ class TelegramRepoter():
         context.message.reply_text(context.message.text)
     
     
-    def error(self, update, context):
+    def error(self, bot_info, update, message):
         """Log Errors caused by Updates."""
-        self.logger.warning('Update "%s" caused error "%s"', update, context.error)
+        self.logger.warning('Update "%s" caused error "%s"', bot_info, message)
     
 
 if __name__ == '__main__':
