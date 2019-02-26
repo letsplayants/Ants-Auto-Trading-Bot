@@ -145,13 +145,10 @@ class Bithumb(Base):
         price = decimal.Decimal(price).quantize(decimal.Decimal('.01'), rounding=decimal.ROUND_DOWN)
         if(price >= 100):
             price = int(price)
-        # else:
-        #     price = float("{:.2f}".format(price))
             
         amount = decimal.Decimal(amount).quantize(decimal.Decimal('.0001'), rounding=decimal.ROUND_DOWN)
 
-        desc = self.exchange.create_order(symbol, type, side, amount, price, params)
-        return desc
+        return super().create_order(symbol, type, side, amount, price, params)
         
 if __name__ == '__main__':
     print('test')
