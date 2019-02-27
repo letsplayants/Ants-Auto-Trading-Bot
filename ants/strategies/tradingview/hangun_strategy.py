@@ -72,11 +72,7 @@ class HanGunStrategy(ants.strategies.strategy.StrategyBase, Observer):
             return
         
         if(self.actionState == 'READY'):
-            if(action == 'SELL'):
-                self.logger.warning('This signal({}) will be ignore cause last signal : {}'.format(action, self.actionState))
-                return
-            elif(action == 'BUY'):
-                self.do_action(msg)
+            self.do_action(msg)
         elif(self.actionState == 'BUY'):
             if(action == 'BUY'):
                 self.do_action(msg, True)
@@ -132,7 +128,7 @@ if __name__ == '__main__':
     logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
     
     st = HanGunStrategy()
-    # st.run()
+    st.run()
     
     # print('SELL Fail-------------------------------------------------------------------')
     # msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
@@ -140,9 +136,9 @@ if __name__ == '__main__':
     
     print('BUY SELL-------------------------------------------------------------------')
     msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
-    st.update(msg)
+    # st.update(msg)
     msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
-    st.update(msg)
+    # st.update(msg)
     
     # print('BUY BUY BUY SELL-------------------------------------------------------------------')
     # msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
