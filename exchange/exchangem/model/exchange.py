@@ -47,6 +47,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
                 break
             
         try:
+            self.logger.debug(args)
             key_set = self.load_key(args['private_key_file'], args['key_file'], self.__class__.__name__)
             self.exchange = exchange_obj(key_set)
         except :
@@ -65,7 +66,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         crypto.readKey(private_key_file)
         exchanges = crypto.read_encrytion_file(encrypted_file)
         
-        en_key_set = exchanges[exchange_name.upper()]
+        en_key_set = exchanges[exchange_name.lower()]
         
         data = en_key_set['apiKey']
         borg = binascii.a2b_base64(data)
