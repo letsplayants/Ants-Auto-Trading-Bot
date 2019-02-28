@@ -7,6 +7,11 @@
 ### 요구사항
 Python 3.6.7
 
+3.7버젼에서 오류가 발생합니다.</p>
+3.6 아래 버젼에서도 테스트해보지 못했습니다.</p>
+</p>
+</p>
+무조건 3.6으로 맞추세요 </p>
 </br>
 
 
@@ -31,7 +36,9 @@ RSA키와 어떤 전략을 사용할지 결정합니다.</p>
 ~~~
 RSA키를 설정하는 방법은 다양한데 pem포멧 RSA만 지원합니다</p>
 윈도우 10의 경우 ssh-keygen을 사용하시면 됩니다</p>
-윈도우 7의 경우 git-bash를 받으신 후 ssh-keygen을 사용하시면됩니다. 이 때 private key 포멧을 pem으로 지정해주셔야 동작합니다.</p>
+윈도우 7의 경우 git-bash를 받으신 후 ssh-keygen을 사용하시면됩니다.</p>
+이 때 private key 포멧을 pem으로 지정해주셔야 동작합니다.</p>
+
 우분투 18.04의 경우 ssh-keygen(?)으로 생성하시면 됩니다.</p>
 </br>
   
@@ -49,14 +56,16 @@ RSA키를 설정하는 방법은 다양한데 pem포멧 RSA만 지원합니다</
 자동 생성을 위해서는 아래의 프로그램을 사용하여야합니다.</p>
 파일이 생성된 후 거래소랑 연결 테스트를 하는데 test가 pass하지 않으면 설정이 잘못된 것입니다.</p>
 test할 내용은 거래소의 잔고를 조회하여 연결 테스트를 합니다.</p>
+coin name은 거래소에서 사용할 잔고를 테스트하는 용도입니다</p>
+거래소에 없는 코인을 입력할 경우 오류가 발생할 수 있습니다</p>
 거래소 API를 만들 때 잔고 조회 권한이 필요합니다.</p>
 ~~~
-python exchange/crypt_cli.py [add/test] [exchange name]
+python exchange/crypt_cli.py [add/test] [exchange name] [coin name]
 ~~~
 
 ex) upbit key 추가
 ~~~
-$ python exchange/crypt_cli.py add upbit
+$ python exchange/crypt_cli.py add upbit -c krw
 input key :
 secret key :
 config file save done
@@ -66,17 +75,17 @@ test pass
 
 ex) python bithumb key 추가
 ~~~
-$ exchange/crypt_cli.py add bithumb
+$ exchange/crypt_cli.py add bithumb -c btc
 ~~~
 
 ex) python binance key 추가
 ~~~
-$ exchange/crypt_cli.py add bithumb
+$ exchange/crypt_cli.py add bithumb -c krw
 ~~~
 
 ex) upbit key 연결 테스트
 ~~~
-$ python exchange/crypt_cli.py test upbit
+$ python exchange/crypt_cli.py test upbit -c krw
 exchange connection test with key
 test pass
 ~~~
@@ -90,13 +99,12 @@ test pass
 사용가능한 금액은 한번의 시그널에서 사용할 금액을 결정하는 것입니다</p>
 
  - 남겨둘 금액(freeze_size)</p>
-</p>
 남겨둘 금액은 매매요청이 들어왔을 때 남겨둘 금액을 의미합니다.</p>
 남겨둘 금액 보다 더 많은 SELL 요청이 들어오면 해당 요청은 거부됩니다.</p>
 </br>
 사용 가능한 금액과 남겨둘 금액이 상충이 날 경우 남겨둘 금액을 최우선합니다.</p>
 
-####남겨둘 금액
+#### 남겨둘 금액
 ~~~
 "freeze_size" : {
         "KRW" : 0,
@@ -142,23 +150,23 @@ SELL시그널이 여러번 들어오면 한번에 최대 5,000개씩 시그널 �
 원화 마켓을 예로 들어보겠습니다.
 case1.
 원화 잔고 : 만원
-지켜야할 금액 : 오천원
-사용가능한 금액 : 만원
+freeze_size : 오천원
+availabel_size  : 만원
 
-이 때 BUY 시그널이 뜰 경우 지켜야할 금액이 우선시 되기 때문에 "오천원"치 금액을 구매하게 됩니다.
+이 때 BUY 시그널이 뜰 경우 지켜야할 금액이 우선시 되기 때문에 "오천원"치 금액(availabel_size - freeze_size)을 구매하게 됩니다.
 
 case2.
 원화 잔고 : 사천원
-지켜야할 금액 : 오천원
-사용가능한 금액 : 만원
+freeze_size : 오천원
+availabel_size : 만원
 
 이 때 BUY 시그널이 떠도 지켜할 금액보다 잔고가 낮으므로 매매를 진행하지 않습니다.
 
 
 case3.
 BTC 잔고 : 1 BTC
-지켜햐 할 BTC : 0.5 BTC
-사용 가능한 BTC : 1 BTC
+freeze_size BTC : 0.5 BTC
+availabel_size BTC : 1 BTC
 
 BUY시그널이 뜰 경우 case1과 동일합니다. 0.5BTC만 구매에 사용합니다.
 ~~~
@@ -170,12 +178,26 @@ BUY시그널이 뜰 경우 case1과 동일합니다. 0.5BTC만 구매에 사용�
 #종목심볼/마켓 #봉 #BUY/SELL타입 #거래소
 ~~~
 얼러트 내용부분을 위의 형태로 적용.</p>
+
+얼럿트의 앞에 어떤 문자가 들어와도 상관없음. 다만 '#'표시만 안들어가면 됨</p>
+~~~
+올바른 예) 이 얼럿트는 전략 1번 : #BTC/KRW #1M #SELL #BITHUMB
+잘못된 예) 이 얼럿트는 #전략 1번 : #BTC/KRW #1M #SELL #BITHUMB
+~~~
+
+또는 얼럿트의 뒷부분에 문자를 넣을 때 #을 시작으로 넣어야함
+~~~
+올바른 예) #BTC/KRW #1M #SELL #BITHUMB #이 뒤로는 전부 무시 된다
+잘못된 예) #BTC/KRW #1M #SELL #BITHUMB 샾을 붙이지 않으면 거래소 이름을 올바르게 인식하지 못한다
+~~~
+
 </br>
 
 ### 실행
-
+실행을 하게되면 ants.conf에 설정된 전략('strategy' 항목)을 찾아서 사용하게 된다
 ~~~
-python ./ants/ants.py
+zip 파일을 풀어둔 폴더로 이동 후 아래의 명령어 
+python ants/main.py
 ~~~
 </br>
 
