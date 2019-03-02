@@ -66,7 +66,7 @@ class EmailProvider(Provider):
                 self.closeFolder(mailConn)
             except Exception as exp:
                 self.logger.warning('_run : {}'.format(exp))
-                time.sleep(60)
+                time.sleep(30)
                 
                 mailConn = self.connectionReset()
                 
@@ -75,8 +75,11 @@ class EmailProvider(Provider):
                     if(self.errorCnt > 10) :
                         self.logger.error('email connection has some probleam. PROVIDER BE STOP!! : errorCnt > 10')
                         #TODO 사용자에게 알림을 날려준다.
+                        self.isRun = False
                         break;
-        
+                else:
+                    self.errorCnt = 0
+                
         self.logout(mailConn)
         self.logger.info('Thread will terminate!')
     
