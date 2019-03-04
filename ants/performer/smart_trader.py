@@ -48,6 +48,7 @@ class SmartTrader:
             self.logger.warning('{} has not market : {}'.format(exchange, market))
             return None
 
+        self.logger.info('Try Action {} {}/{} {}'.format(exchange, coin_name, market, action))
         seed_money = self.availabel_seed_money(exchange, market)
         if(action == 'BUY'):
             ret = self._buy(exchange, market, coin_name, seed_money, price)
@@ -130,6 +131,40 @@ class SmartTrader:
         """
         pass
     
+    def get_balance(self, exchange_name, coin_name, market):
+        """
+        거래소 잔고를 가져온다. 
+        이 때 small balance의 경우 0으로 처리한다
+        """
+        exchange = self.exchanges.get(exchange_name)
+        symbol = coin_name + '/'+ market
+        
+        if(not exchange.has_market(symbol)):
+            raise Exception('{} is not support in {}'.format(symbol, exchange_name))
+        
+        bal = exchange.get_balance(coin_name)
+        if(bal is None):
+            return 0
+            
+        
+        target_price = exchange.get_last_price(symbol)
+        print(bal.get(coin_name))
+        
+        target_cnt = bal.get(coin_name)['free']
+        t_price = target_price * target_cnt
+        
+        if(exchange.is_small_balance(t_price, market) is True):
+            return 0
+        
+        return target_cnt
+        
+        #KRW, USDT를 기축으로 계산해야함
+        #프로그램의 계산 기축은 USDT로 측정 모든 기준은 USDT를 기준으로 계산함
+        #달러로 1달러 미만은 스몰 밸런스로 판정한다
+        #다만 화면에 표시할 때에는 KRW로 환산하여 계산할 수 있음
+        #기축으로 BTC만 받도록한다. BTC이외는 구매할 수 없는 가격을 돌려준다.
+        
+        # Is it small balance?
     
 if __name__ == '__main__':
     print('SmartTrader test')

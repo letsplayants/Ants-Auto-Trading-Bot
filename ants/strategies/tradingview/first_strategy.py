@@ -54,13 +54,44 @@ class EmailAlretStrategy(ants.strategies.strategy.StrategyBase, Observer):
         데이터 제공자가 요청한 데이터가 수신되면 호출한다
         """
         self.logger.debug('got msg in data strategy')
-        self.do_action(msg)
+        self.new_do_action(msg)
         pass
     
     def stop(self):
         self.data_provider.stop()
         self.logger.info('Strategy will stop')
     
+    def new_do_action(self, msg):
+        try:
+            exchange = msg['exchange'].upper()
+            coin_name = msg['market'].split('/')[0]
+            market = msg['market'].split('/')[1]
+            action = msg['action'].upper()
+        except :
+            self.logger.warning('msg format is wrong : {}'.format(msg))
+            return
+        
+        self.logger.info('Try Action {} {}/{} {}'.format(exchange, coin_name, market, action))
+        try:
+            availabel_size = self.trader.get_balance(exchange, coin_name, market)
+        except Exception as exp:
+            self.logger.warning('Trading was failed : {}'.format(exp))
+            return
+        
+        if(action.upper() == 'BUY'):
+            if(availabel_size > 0):
+                self.logger.info('\'BUY\' Signal will ignore cause balance is enought {} {}'.format(coin_name, availabel_size))
+                return
+        
+        result = self.trader.trading(exchange, market, action, coin_name)
+        if(result == None):
+            #트레이딩 실패
+            self.logger.warning('Trading was failed')
+            return
+        
+        self.logger.info('Action Done {}'.format(result))
+        
+        
     def do_action(self, msg):
         try:
             exchange = msg['exchange'].upper()
@@ -163,25 +194,29 @@ if __name__ == '__main__':
     
     st = EmailAlretStrategy()
     msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
-    st.do_action(msg)
+    # st.do_action(msg)
     
     msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
-    st.do_action(msg)
+    # st.do_action(msg)
     
     msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'BITHUMB'}
-    st.do_action(msg)
+    # st.do_action(msg)
     
     msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
-    st.do_action(msg)
+    # st.do_action(msg)
     
     # print('try sell-------------------------------------------------------------------')
     msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
-    st.do_action(msg)
+    # st.do_action(msg)
     
     msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
-    st.do_action(msg)
+    # st.do_action(msg)
     
+    msg = {'market': 'XRP/BNB', 'time': '10M', 'action': 'BUY', 'exchange': 'BINANCE'}
+    # st.new_do_action(msg)
     
+    msg = {'market': 'XRP/BNB', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
+    # st.new_do_action(msg)
     
     # exchange, market, action, coin
     # st.save_state('UPBIT', 'BTC', 'KRW', 'BUY')
