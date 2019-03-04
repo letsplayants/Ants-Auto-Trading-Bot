@@ -18,11 +18,11 @@ class EmailProvider(Provider):
         Provider.__init__(self)
         self.logger = logging.getLogger(__name__)
         self.isRun = True
+        self.load_setting('configs/mail.key')
         pass
     
     def run(self):
         self.logger.info('email provider run.')
-        self.load_setting('configs/mail.key')
         mailConn = self.conn()
         if mailConn is None:
             self.logger.error('Can''t get mail connect')
@@ -103,7 +103,7 @@ class EmailProvider(Provider):
         pass
     
     def load_setting(self, file_name):
-        config = utils.readKey('./configs/mail.key')
+        config = utils.readKey(file_name)
         self.account = config['id']
         self.password = config['password']
         self.folder = config['folder']
@@ -238,6 +238,6 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal_handler)
 
     ep = EmailProvider()
-    ep.load_setting('configs/mail.key')
+    ep.load_setting('configs/ggmail.key')
     ep.run()
     
