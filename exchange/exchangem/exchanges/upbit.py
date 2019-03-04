@@ -65,6 +65,7 @@ class Upbit(Base):
         balance = Balance()
         ret = self.exchange.fetch_balance()
         if(not ret.get(target)):
+            #보유한 것이 없어서 None일 수도 있고 미지원 코인일 때도 None가 뜬다
             return None
             
         balance.add(target, ret[target]['total'], 
@@ -160,14 +161,15 @@ class Upbit(Base):
 if __name__ == '__main__':
     print('test')
     logger = logging.getLogger()
-    logger.setLevel(logging.WARNING)
+    logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     stream_hander = logging.StreamHandler()
     stream_hander.setFormatter(formatter)
     logger.addHandler(stream_hander)
     
     logging.getLogger("__main__").setLevel(logging.DEBUG)
-    # logging.getLogger("ccxt").setLevel(logging.WARNING)
+    logging.getLogger("ccxt").setLevel(logging.WARNING)
+    logging.getLogger("exchangem.model.exchange").setLevel(logging.DEBUG)
     # logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
     
     
@@ -222,6 +224,14 @@ if __name__ == '__main__':
     print('has_market :', up.has_market('BTC/KRW'))
     print('has_market :', up.has_market('BTC/NONE'))
     
+    print(up.get_key_market_price('BTC'))
+    
+    print('1200 won is small balance ? ', up.is_small_balance(1200, 'KRW'))
+    print('1310 won is small balance ? ', up.is_small_balance(1310, 'KRW'))
+    print('$0.9 is small balance ? ', up.is_small_balance(0.9, 'USDT'))
+    print('$1 is small balance ? ', up.is_small_balance(1, 'USDT'))
+    print('0.00000001 satosi is small balance ? ', up.is_small_balance(0.00000001, 'BTC'))
+    print('0.001 satosi is small balance ? ', up.is_small_balance(0.001, 'BTC'))
     
     # up.connect()
     
