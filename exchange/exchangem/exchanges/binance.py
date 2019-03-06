@@ -172,7 +172,7 @@ if __name__ == '__main__':
     # logging.getLogger("ccxt").setLevel(logging.WARNING)
     # logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
     
-    ex = Binance({'private_key_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/binance.conf'})
+    ex = Binance({'root_config_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/binance.conf'})
 
     print(Binance.mro())
     bal = ex.get_balance('없는코인')

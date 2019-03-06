@@ -163,7 +163,7 @@ if __name__ == '__main__':
     # logging.getLogger("ccxt").setLevel(logging.WARNING)
     # logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
     
-    ex = Bithumb({'private_key_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/bithumb.conf'})
+    ex = Bithumb({'root_config_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/bithumb.conf'})
 
     print(Bithumb.mro())
     bal = ex.get_balance('없는코인')

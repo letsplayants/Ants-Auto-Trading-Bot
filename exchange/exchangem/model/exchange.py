@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 
 """
-거래소가 반드시 가져야하는 기능 목록을 넣어둔다.
+거래소
+- 공통 기능
+- 필수 기능 목록을 넣어둔다.
 """
 
 import abc
@@ -23,7 +25,7 @@ from ccxt.base.decimal_to_precision import NO_PADDING            # noqa F401
 
 from exchangem.model.observers import ObserverNotifier
 from exchangem.crypto import Crypto
-from exchangem.utils import Util
+from exchangem.utils import Util as util
 from exchangem.model.trading import Trading
 
 class Base(ObserverNotifier, metaclass=abc.ABCMeta):
@@ -33,6 +35,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         self.exchange = None
         self.config = {}
         self.telegram = args.get('telegram')
+        self.is_debug_mode = False
         
         #exchange가 생성될 때 마다 sqlite가 생성된다.
         #session이 race condition에 걸릴 수 있다. 
@@ -49,7 +52,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             
         try:
             self.logger.debug(args)
-            key_set = self.load_key(args['private_key_file'], args['key_file'], self.__class__.__name__)
+            key_set = self.load_key(args['root_config_file'], args['key_file'], self.__class__.__name__)
             self.exchange = exchange_obj(key_set)
         except :
             self.exchange = exchange_obj()
@@ -61,6 +64,18 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         if(args.get('config_file')):
             self.logger.info('config file file : {}'.format(args.get('config_file')))
             self.config = self.load_config(args.get('config_file'))
+            
+        if(args.get('root_config_file')):
+            try:
+                self.is_debug_mode = self.load_config(args.get('root_config_file')).get('test_mode')
+                if(self.is_debug_mode.upper() == 'TRUE'):
+                    self.logger.info('EXCHANGE RUN IN DEBUG MODE. WILL NOT DO BUY/SELL')
+                    self.is_debug_mode = True
+                else:
+                    self.is_debug_mode = False
+            except:
+                self.is_debug_mode = False
+            
     pass
 
     def load_key(self, private_key_file, encrypted_file, exchange_name):
@@ -85,15 +100,23 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         return key_set
     
     def load_config(self, file_name):
-        return Util.readKey(file_name)
+        return util.readConfig(file_name)
         
     @abc.abstractmethod
     def get_balance(self, target):
         pass
     
     def create_order(self, symbol, type, side, amount, price, params):
-        try:
+        if(self.is_debug_mode == True):
+            self.logger.info('EXCHANGE IN TEST MODE : {} {} {} {} {}'.format(symbol, type, side, amount, price))
+            return {'TEST_MODE':'True'}
+                
+        try:    
             desc = self.exchange.create_order(symbol, type, side, amount, price, params)
+        except Exception as exp:
+            raise exp
+        
+        try:
             #DB에 기록
             coin_name = symbol.split('/')[0]
             market = symbol.split('/')[1]
@@ -105,8 +128,6 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             time = datetime.now()
             request_id = str(desc)
             exchange_name = self.__class__.__name__.lower()
-            
-            # request_id = base64.encodebytes(desc).decode('utf-8')
             
             record = Trading(
                          coin_name,
@@ -121,6 +142,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
                          exchange_name)
             
             total = self.decimal_to_precision(float(amount) * float(price))
+                
             self.telegram.send_message('오더를 냄 : {}, {}, {}/{}, 주문 개수:{}, 주문단가:{}, 총 주문금액:{}'.format(
                                         exchange_name.upper(), 
                                         side.upper(),
@@ -131,9 +153,11 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
                                         total) )
             self.db.add(record)
             
-            return desc
+            
         except Exception as exp:
             raise exp
+            
+        return desc
 
     @abc.abstractmethod
     def check_amount(self, coin_name, seed_size, price):

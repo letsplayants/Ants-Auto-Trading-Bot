@@ -10,6 +10,10 @@ logger = logging.getLogger(__name__)
 
 class Util:
     @staticmethod
+    def readConfig(filePath):
+        return Util.readKey(filePath)
+    
+    @staticmethod
     def readKey(filePath):
         logger.info('read file {}'.format(filePath))
         if not os.path.isfile(filePath):

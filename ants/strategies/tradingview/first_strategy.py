@@ -26,13 +26,13 @@ class EmailAlretStrategy(ants.strategies.strategy.StrategyBase, Observer):
         self.telegram = TelegramRepoter()
         self.db = Sqlite()
         
-        self.upbit = cUpbit({'private_key_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/upbit.conf', 'telegram': self.telegram, 'db':self.db})
+        self.upbit = cUpbit({'root_config_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/upbit.conf', 'telegram': self.telegram, 'db':self.db})
         self.trader.add_exchange('UPBIT', self.upbit)
         
-        self.bithumb = cBithumb({'private_key_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/bithumb.conf', 'telegram': self.telegram, 'db':self.db})
+        self.bithumb = cBithumb({'root_config_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/bithumb.conf', 'telegram': self.telegram, 'db':self.db})
         self.trader.add_exchange('BITHUMB', self.bithumb)
         
-        self.binance = cBinance({'private_key_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/binance.conf', 'telegram': self.telegram, 'db':self.db})
+        self.binance = cBinance({'root_config_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/binance.conf', 'telegram': self.telegram, 'db':self.db})
         self.trader.add_exchange('BINANCE', self.binance)
     
     def run(self):
@@ -193,11 +193,12 @@ if __name__ == '__main__':
     logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
     
     st = EmailAlretStrategy()
-    msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
+    # st.run()
+    msg = {'market': 'VET/USDT', 'time': '10M', 'action': 'SELL', 'exchange': 'BINANCE'}
     # st.do_action(msg)
     
     msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
-    # st.do_action(msg)
+    st.do_action(msg)
     
     msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'BITHUMB'}
     # st.do_action(msg)
