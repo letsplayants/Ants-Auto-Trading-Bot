@@ -107,14 +107,16 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         pass
     
     def create_order(self, symbol, type, side, amount, price, params):
+        prefix_str = ''
         if(self.is_debug_mode == True):
             self.logger.info('EXCHANGE IN TEST MODE : {} {} {} {} {}'.format(symbol, type, side, amount, price))
-            return {'TEST_MODE':'True'}
-                
-        try:    
-            desc = self.exchange.create_order(symbol, type, side, amount, price, params)
-        except Exception as exp:
-            raise exp
+            desc = {'TEST_MODE':'True'}
+            prefix_str = '가상 '
+        else:
+            try:
+                desc = self.exchange.create_order(symbol, type, side, amount, price, params)
+            except Exception as exp:
+                raise exp
         
         try:
             #DB에 기록
@@ -143,7 +145,8 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             
             total = self.decimal_to_precision(float(amount) * float(price))
                 
-            self.telegram.send_message('오더를 냄 : {}, {}, {}/{}, 주문 개수:{}, 주문단가:{}, 총 주문금액:{}'.format(
+            self.telegram.send_message('{}오더를 냄 : {}, {}, {}/{}, 주문 개수:{}, 주문단가:{}, 총 주문금액:{}'.format(
+                                        prefix_str,
                                         exchange_name.upper(), 
                                         side.upper(),
                                         coin_name.upper(), 
