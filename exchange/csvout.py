@@ -31,10 +31,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     #TODO 설정파일에서 읽어오도록 바꾼다
-    if(args.db):
-        configFile = args.file
-    else:
-        configFile = 'data.db'
+    # if(args.db):
+    #     configFile = args.file
+    # else:
+    #     configFile = 'data.db'
         
     if(args.output):
         outputFile = args.output
