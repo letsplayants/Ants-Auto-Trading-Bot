@@ -108,6 +108,14 @@ class EmailProvider(Provider):
         self.password = config['password']
         self.folder = config['folder']
         self.imap_server = config['imap_server']
+        try:
+            self.delete_mail = config['after_read_delete'].upper()
+            if(self.delete_mail == 'TRUE'):
+                self.delete_mail = True
+            else:
+                self.delete_mail = False
+        except :
+            self.delete_mail = False
     
     def parsingMsg(self, data):
         # 샘플 확보용 코드
@@ -131,7 +139,11 @@ class EmailProvider(Provider):
         return ret
         
     def setFlag(self, M, msg_num, flag, value):
-        typ, data = M.store(msg_num, '+FLAGS', '\\Seen')
+        action = '\\Seen'
+        if(self.delete_mail):
+            action = '\\Deleted'
+        
+        typ, data = M.store(msg_num, '+FLAGS', action)
         if typ != 'OK':
             self.logger.warning('FLAGS setting error {}'.format(typ))
             return
@@ -238,6 +250,6 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal_handler)
 
     ep = EmailProvider()
-    ep.load_setting('configs/ggmail.key')
+    ep.load_setting('configs/mail.key')
     ep.run()
     
