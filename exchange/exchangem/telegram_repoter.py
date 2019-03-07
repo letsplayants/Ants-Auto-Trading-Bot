@@ -30,6 +30,7 @@ class TelegramRepoter():
             
             self.logger.info('Telegram is Ready, {}'.format(self.bot.get_me()))
             self.send_message('Telegram Repoter is ready')
+            self.run_listener()
         except Exception as exp:
             self.logger.warning('Can''t load Telegram Config : {}'.format(exp))
             self.use = False
@@ -71,7 +72,7 @@ class TelegramRepoter():
         # https://github.com/python-telegram-bot/python-telegram-bot/blob/master/telegram/ext/updater.py
         self.updater.start_polling()
     
-        self.updater.idle()
+        # self.updater.idle()
     
     def menu(self, update, context):
         context.message.reply_text('Please choose:', reply_markup=self.menu_keyboard())
