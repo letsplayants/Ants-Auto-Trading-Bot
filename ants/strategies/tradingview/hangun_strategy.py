@@ -68,7 +68,7 @@ class HanGunStrategy(ants.strategies.strategy.StrategyBase, Observer):
         
         state = self.get_state(exchange, coin_name, market)
         
-        if(state == None):
+        if(state == None or state == 'READY'):
             self.do_action(msg)
         elif(state == 'BUY'):
             if(action == 'BUY'):
@@ -181,6 +181,7 @@ if __name__ == '__main__':
     
     logging.getLogger("ccxt.base.exchange").setLevel(logging.WARNING)
     logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
+    logging.getLogger("telegram").setLevel(logging.WARNING)
     
     st = HanGunStrategy()
     # st.run()
@@ -206,6 +207,26 @@ if __name__ == '__main__':
     msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
     st.update(msg)
     msg = {'market': 'ETH/KRW', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
+    st.update(msg)
+    
+    msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
+    st.update(msg)
+    msg = {'market': 'ETH/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
+    st.update(msg)
+    
+    msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
+    st.update(msg)
+    msg = {'market': 'ETH/KRW', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
+    st.update(msg)
+    
+    msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
+    st.update(msg)
+    msg = {'market': 'ETH/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
+    st.update(msg)
+    
+    msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
+    st.update(msg)
+    msg = {'market': 'ETH/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
     st.update(msg)
     
     msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
