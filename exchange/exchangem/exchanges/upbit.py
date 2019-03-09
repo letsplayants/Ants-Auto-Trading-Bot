@@ -129,14 +129,17 @@ class Upbit(Base):
             
             price -= price % div
         
+        
         if(seed > 0):
             fee = self.get_fee(symbol.split('/')[1])
             fee_p = (seed / price) * fee
-            seed -= fee_p
-            amount = seed / price    
+            amount = (seed / price) - fee_p
         else:
             fee_p = 0
             amount = 0
+    
+            
+            
 
         amount = float("{:.8f}".format(amount))
         seed = float("{:.8f}".format(seed))
