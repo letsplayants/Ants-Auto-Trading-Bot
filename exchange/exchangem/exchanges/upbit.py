@@ -103,40 +103,45 @@ class Upbit(Base):
         """
         #TODO KRW일 때는 확인했는데.. USDT, BTC, ETH일 때 확인을 안했음..
         
+        market = symbol.split('/')[1]
+        if(market == 'KRW'):
+            #가격에 따라 주문할 수 있는 범위가 달라진다
+            #이에 맞춰 주문할 수 있는 범위를 조정해준다
+            # https://docs.upbit.com/docs/market-info-trade-price-detail
+            if(price > 2000000):
+                div = 1000
+            elif(price > 1000000):
+                div = 500
+            elif(price > 500000):
+                div = 100
+            elif(price > 100000):
+                div = 50
+            elif(price > 10000):
+                div = 10
+            elif(price > 1000):
+                div = 5
+            elif(price > 100):
+                div = 1
+            elif(price > 10):
+                div = 0.1
+            elif(price > 0):
+                div = 0.01
+            
+            price -= price % div
         
-        #가격에 따라 주문할 수 있는 범위가 달라진다
-        #이에 맞춰 주문할 수 있는 범위를 조정해준다
-        # https://docs.upbit.com/docs/market-info-trade-price-detail
-        if(price > 2000000):
-            div = 1000
-        elif(price > 1000000):
-            div = 500
-        elif(price > 500000):
-            div = 100
-        elif(price > 100000):
-            div = 50
-        elif(price > 10000):
-            div = 10
-        elif(price > 1000):
-            div = 5
-        elif(price > 100):
-            div = 1
-        elif(price > 10):
-            div = 0.1
-        elif(price > 0):
-            div = 0.01
-        
-        price -= price % div
-        
-        fee = self.get_fee(symbol.split('/')[1])
-        fee_p = (seed / price) * fee
-        seed -= fee_p
-        amount = seed / price
-        
+        if(seed > 0):
+            fee = self.get_fee(symbol.split('/')[1])
+            fee_p = (seed / price) * fee
+            seed -= fee_p
+            amount = seed / price    
+        else:
+            fee_p = 0
+            amount = 0
+
         amount = float("{:.8f}".format(amount))
         seed = float("{:.8f}".format(seed))
         fee_p = float("{:.8f}".format(fee_p))
-
+            
         return amount, price, fee_p
         pass
 
