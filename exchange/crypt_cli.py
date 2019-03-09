@@ -123,7 +123,7 @@ def test_exchange(config_file, output_file, new_exchange, coin_name=None):
         #사용할 전략을 만든다
         loaded_module = importlib.import_module(exchange_class_path)
         klass = getattr(loaded_module, class_name)
-        exchange = klass({'private_key_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':exchange_setting_conf})
+        exchange = klass({'root_config_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':exchange_setting_conf})
         print('Text exchange : {}'.format(klass))
         
         
@@ -145,6 +145,12 @@ def test_exchange(config_file, output_file, new_exchange, coin_name=None):
     except Exception as exp:
         print('except : {}'.format(exp))
         sys.exit(1)
+
+    def test_config_file_rsa_key():
+        #rsa키가 pem 포멧인지 테스트한다
+        #rsa키의 위치가 올바른지 테스트한다
+        
+        pass
 
 if __name__ == "__main__":
     """
