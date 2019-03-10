@@ -1,2 +1,1 @@
-export PYTHONPATH=$PYTHONPATH;$(pwd)/ants
-python ants/ants.py
+python3 ants/main.py &
