@@ -48,9 +48,9 @@ class SmartTrader:
             self.logger.warning('{} has not market : {}'.format(exchange, market))
             return None
 
-        self.logger.info('Try Action {} {}/{} {}'.format(exchange, coin_name, market, action))
-        seed_money = self.availabel_seed_money(exchange, market)
+        self.logger.info('Try Action {} {}/{} {}'.format(exchange_name, coin_name, market, action))
         if(action == 'BUY'):
+            seed_money = self.availabel_seed_money(exchange, market)
             ret = self._buy(exchange, market, coin_name, seed_money, price)
         elif(action == 'SELL'):
             ret = self._sell(exchange, market, coin_name, price, amount)

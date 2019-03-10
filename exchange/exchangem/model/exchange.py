@@ -108,8 +108,11 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
     
     def create_order(self, symbol, type, side, amount, price, params):
         prefix_str = ''
+        d_amount = self.decimal_to_precision(amount)
+        d_price = self.decimal_to_precision(price)
+        
         if(self.is_debug_mode == True):
-            self.logger.info('EXCHANGE IN TEST MODE : {} {} {} {} {}'.format(symbol, type, side, amount, price))
+            self.logger.info('EXCHANGE IN TEST MODE : {} {} {} {} {}'.format(symbol, type, side, d_amount, d_price))
             desc = {'TEST_MODE':'True'}
             prefix_str = '가상 '
         else:
@@ -151,8 +154,8 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
                                         side.upper(),
                                         coin_name.upper(), 
                                         market.upper(), 
-                                        amount, 
-                                        price, 
+                                        d_amount, 
+                                        d_price, 
                                         total) )
             self.db.add(record)
             
@@ -211,7 +214,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
                 if(coin_size < 0):
                     coin_size = 0
             else :
-                coin_size = None    #설정값이 없음
+                coin_size = 0    #설정값이 없음
         self.logger.debug('get_availabel_size name : {}, freeze_size: {}, availabel_size: {}'.format(coin_name, freeze_size, coin_size))
 
         balance = self.get_balance(coin_name)
@@ -224,6 +227,9 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             #None이란 의미는 설정값이 없다는 의미
             #설정값이 없으면 잔고에 남아있는 모든 금액을 사용할 수 있으므로 
             #0으로 설정해 거래를 막아버린다
+            # 코인 종류를 다이나믹하게 바꾸는 상황에서 설정값이 없다고 막아버리면...
+            # 추후 핫컨피그로 가서 동적으로 바꾸는 기능을 지원할 때 설정값이 없으면 막아버리는 루틴으로 가야할듯..
+            # 지금은 설정값이 없으면 전부를 매매 대상으로 봄
             # ret = balance.get(coin_name)['free']
             ret = 0
             ret = self.decimal_to_precision(ret)

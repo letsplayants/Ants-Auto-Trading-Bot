@@ -30,7 +30,7 @@ class TelegramRepoter():
             
             self.logger.info('Telegram is Ready, {}'.format(self.bot.get_me()))
             self.send_message('Telegram Repoter is ready')
-            self.run_listener()
+            # self.run_listener()
         except Exception as exp:
             self.logger.warning('Can''t load Telegram Config : {}'.format(exp))
             self.use = False
@@ -73,6 +73,10 @@ class TelegramRepoter():
         self.updater.start_polling()
     
         # self.updater.idle()
+    
+    def stop_listener(self):
+        print('stop')
+        self.updater.stop()
     
     def menu(self, update, context):
         context.message.reply_text('Please choose:', reply_markup=self.menu_keyboard())
@@ -148,7 +152,7 @@ if __name__ == '__main__':
     print('strategy test')
     
     logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     stream_hander = logging.StreamHandler()
     stream_hander.setFormatter(formatter)
@@ -162,3 +166,7 @@ if __name__ == '__main__':
     # tel.send_message("봇클래스 테스트.")
 
     tel.run_listener()
+    
+    
+    for i in range(100):
+        tel.stop_listener()
