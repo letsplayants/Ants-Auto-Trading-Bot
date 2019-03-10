@@ -145,9 +145,9 @@ class EmailProvider(Provider):
         
         typ, data = M.store(msg_num, '+FLAGS', action)
         if typ != 'OK':
-            self.logger.warning('FLAGS setting error {}'.format(typ))
+            self.logger.warning('{}/{} FLAGS setting error {}'.format(msg_num, action, typ))
             return
-        self.logger.debug('{} is seen'.format(msg_num))
+        self.logger.debug('{} is {}'.format(msg_num, action))
     
     def getLocalTime(self, msg):
         # Now convert to local date-time
@@ -181,7 +181,7 @@ class EmailProvider(Provider):
                 pass
             
             mailList.append(data)
-            self.setFlag(M, msg_num, '+FLAGS', '\\Seen')
+            self.setFlag(M, msg_num, '+FLAGS', '\\Deleted')
             
         return mailList
         
