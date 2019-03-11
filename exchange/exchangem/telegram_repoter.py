@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # https://github.com/python-telegram-bot/python-telegram-bot
 
+from signal import signal, SIGINT, SIGTERM, SIGABRT
+
 import telegram
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
@@ -9,6 +11,7 @@ from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
 import ants.utils as utils
 import logging
 import json
+
 
 class TelegramRepoter():
     def __init__(self):
@@ -30,7 +33,7 @@ class TelegramRepoter():
             
             self.logger.info('Telegram is Ready, {}'.format(self.bot.get_me()))
             self.send_message('Telegram Repoter is ready')
-            # self.run_listener()
+            self.run_listener()
         except Exception as exp:
             self.logger.warning('Can''t load Telegram Config : {}'.format(exp))
             self.use = False
@@ -75,8 +78,8 @@ class TelegramRepoter():
         # self.updater.idle()
     
     def stop_listener(self):
-        print('stop')
-        self.updater.stop()
+        self.logger.info('telegram will be stop')
+        self.updater.signal_handler(SIGINT, 0)
     
     def menu(self, update, context):
         context.message.reply_text('Please choose:', reply_markup=self.menu_keyboard())
@@ -102,7 +105,7 @@ class TelegramRepoter():
     def roominfo(self, update, context):
         query = context.callback_query
         
-        self.edit_message(update, query, '방 속성 : {}\n 룸 id : {}'.format(query.message.chat.type, query.message.chat.id))
+        self.edit_message(update, query, '방(Group) 속성 : {}\n Group id : {}'.format(query.message.chat.type, query.message.chat.id))
         
         
     def whoami(self, update, context):
@@ -165,8 +168,15 @@ if __name__ == '__main__':
 
     # tel.send_message("봇클래스 테스트.")
 
-    tel.run_listener()
+    # tel.run_listener()
     
-    
-    for i in range(100):
+    import signal
+    from time import sleep
+    def signal_handler(sig, frame):
+        logger.info('Program will exit by user Ctrl + C')
+        # w.stop()
         tel.stop_listener()
+        logger.info('Program Exit')
+
+    signal.signal(signal.SIGINT, signal_handler)
+    
