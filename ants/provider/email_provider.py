@@ -138,15 +138,24 @@ class EmailProvider(Provider):
         
         return ret
         
-    def setFlag(self, M, msg_num, flag, value):
+    def setFlag(self, M, msg_num):
+        """
+        Gmail에선 Delete가 제대로 되지 않는 경우가 있다
+        https://stackoverflow.com/questions/3180891/imap-deleting-messages
+        그래서 Trash로 이동하는 루틴으로 바꿈
+        """
         action = '\\Seen'
         if(self.delete_mail):
             action = '\\Deleted'
         
+        if(self.is_gmail):
+            M.store(msg_num, '+X-GM-LABELS', '\\Trash')
+            
         typ, data = M.store(msg_num, '+FLAGS', action)
         if typ != 'OK':
             self.logger.warning('{}/{} FLAGS setting error {}'.format(msg_num, action, typ))
             return
+        
         self.logger.debug('{} is {}'.format(msg_num, action))
     
     def getLocalTime(self, msg):
@@ -181,7 +190,7 @@ class EmailProvider(Provider):
                 pass
             
             mailList.append(data)
-            self.setFlag(M, msg_num, '+FLAGS', '\\Deleted')
+            self.setFlag(M, msg_num)
             
         return mailList
         
@@ -193,6 +202,11 @@ class EmailProvider(Provider):
         mailConn = None
         try:
             mailConn = imaplib.IMAP4_SSL(self.imap_server)
+            if(self.imap_server.find('gmail') > -1):
+                self.is_gmail = True
+            else:
+                self.is_gmail = False
+                
         except Exception as exp:
             self.logger.error("Connecting error : {}".format(exp))
         
