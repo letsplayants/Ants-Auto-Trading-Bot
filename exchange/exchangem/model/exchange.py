@@ -13,7 +13,8 @@ import logging
 import ccxt
 import base64
 import requests
-from datetime import datetime
+import time
+from datetime import datetime, timezone
 
 from ccxt.base.decimal_to_precision import decimal_to_precision  # noqa F401
 from ccxt.base.decimal_to_precision import TRUNCATE              # noqa F401
@@ -189,7 +190,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
     def get_fee(self, market):
         pass
     
-    def get_availabel_size(self, coin_name):
+    def get_availabel_size(self, coin_name, is_buy=True):
         """
         coin_name의 사용 제한 값을 돌려준다
         법정화폐 및 통화도 코인으로 간주하여 처리한다
@@ -218,28 +219,37 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             self.logger.debug('get_availabel_size balance : {}'.format(balance))
             return 0
         
-        if(availabel_size == None):
-            #None이란 의미는 설정값이 없다는 의미
-            #설정값이 없으면 잔고에 남아있는 모든 금액을 사용할 수 있으므로 
-            #0으로 설정해 거래를 막아버린다
-            # 코인 종류를 다이나믹하게 바꾸는 상황에서 설정값이 없다고 막아버리면...
-            # 추후 핫컨피그로 가서 동적으로 바꾸는 기능을 지원할 때 설정값이 없으면 막아버리는 루틴으로 가야할듯..
-            # 지금은 설정값이 없으면 전부를 매매 대상으로 봄
-            # ret = balance.get(coin_name)['free']
-            ret = 0
-            ret = self.decimal_to_precision(ret)
-            self.logger.debug('get_availabel_size availabel_size is not setting : {}'.format(availabel_size))
-            return ret
-
         bal_left = balance.get(coin_name)['free'] - freeze_size
         if(bal_left < 0):
             self.logger.debug('get_availabel_size 0 caseu balance, freeze_size : {}/{}'.format(balance.get(coin_name)['free'], freeze_size))
             return 0
         
-        if(availabel_size < bal_left):
-            return self.decimal_to_precision(availabel_size)
-        else:
-            return self.decimal_to_precision(ret)
+        if(is_buy):    
+            if(availabel_size == None):
+                #None이란 의미는 설정값이 없다는 의미
+                #설정값이 없으면 잔고에 남아있는 모든 금액을 사용할 수 있으므로 
+                #0으로 설정해 거래를 막아버린다
+                # 코인 종류를 다이나믹하게 바꾸는 상황에서 설정값이 없다고 막아버리면...
+                # 추후 핫컨피그로 가서 동적으로 바꾸는 기능을 지원할 때 설정값이 없으면 막아버리는 루틴으로 가야할듯..
+                # 지금은 설정값이 없으면 전부를 매매 대상으로 봄
+                # ret = balance.get(coin_name)['free']
+                availabel_size = 0    
+                self.logger.debug('get_availabel_size(BUY) availabel_size is not setting : {}'.format(availabel_size))
+                return availabel_size
+            
+            
+            if(availabel_size < bal_left):
+                return self.decimal_to_precision(availabel_size)
+            else:
+                return self.decimal_to_precision(ret)
+        else: #sell mode일 떄
+            if(availabel_size == None):
+                return bal_left
+            
+            if(availabel_size < bal_left):
+                return availabel_size
+            else:
+                return bal_left
 
     
     def has_market(self, market):
@@ -340,7 +350,24 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
                 
         self.logger.debug('key market price : {}'.format(self.key_market_price))
         self.logger.debug('-'*80)
+    
+    def get_order_book(self, symbol):
+        st = int(datetime.now(tz=timezone.utc).timestamp() * 1000)
+        result = self.exchange.fetchOrderBook(symbol)
+        tgap = st - result.get('timestamp') #milliseconds
+        print('st:{}, rl:{}, tgap : {}'.format(st, result.get('timestamp'), tgap))
+        return result
         
+    def get_order_books(self, symbols, params={}):
+        try:
+            st = int(datetime.now(tz=timezone.utc).timestamp() * 1000)
+            result = self.exchange.fetchOrderBooks(symbols, params)
+            #result[symbol]['timestamp'] 형식으로 돌아온다. 코인마다 각각 시간이 다르다
+            return result
+        except Exception as e:
+            self.logger.warning('exchange is not support getOrderBooks : {}'.format(e))
+            return None
+    
     
 class SupportWebSocket(metaclass=abc.ABCMeta):
     @abc.abstractmethod

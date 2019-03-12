@@ -91,7 +91,7 @@ class SmartTrader:
             price = exchange.get_last_price(symbol)
         
         if(amount == None):
-            amount = exchange.get_availabel_size(coin_name)
+            amount = exchange.get_availabel_size(coin_name, False)
         
         if(amount == 0):
             self.logger.warning('{} is not enought {}'.format(coin_name, amount))

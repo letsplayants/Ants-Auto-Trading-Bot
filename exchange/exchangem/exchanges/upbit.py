@@ -54,7 +54,7 @@ class Upbit(Base):
     def target_coins(self, coins):
         self.coins = coins
     
-    def get_order_book(self):
+    def async_get_order_book(self):
         self.connect()
     
     def register_callback(self, cb):
@@ -164,7 +164,8 @@ class Upbit(Base):
             fee = 0.0005
             
         return fee
-        
+       
+      
         
 if __name__ == '__main__':
     print('test')
@@ -176,7 +177,7 @@ if __name__ == '__main__':
     logger.addHandler(stream_hander)
     
     logging.getLogger("__main__").setLevel(logging.DEBUG)
-    logging.getLogger("ccxt").setLevel(logging.WARNING)
+    logging.getLogger("ccxt").setLevel(logging.DEBUG)
     logging.getLogger("exchangem.model.exchange").setLevel(logging.DEBUG)
     # logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
     
@@ -197,7 +198,7 @@ if __name__ == '__main__':
     print(Update.mro())
     up.target_coins(coins)
     up.attach(udt)
-    up.get_order_book()
+    up.async_get_order_book()
     
     bal = up.get_balance('없는코인')
     if(bal is not None):
@@ -243,4 +244,8 @@ if __name__ == '__main__':
     
     # up.connect()
     
+    # print('get order books', up.get_order_books(None))
+    # print('get order book', up.get_order_book('GNT/KRW'))
+    # print(up.exchange.ids)
+    print('get order books', up.get_order_books(['GNT/KRW', 'BTC/KRW', 'BTC/USDT']))
     
