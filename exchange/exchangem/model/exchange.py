@@ -208,14 +208,9 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
 
         availabel_conf = self.config.get('availabel_size')
         if(availabel_conf != None):
-            coin_size = availabel_conf.get(coin_name)
-            if(coin_size != None):
-                coin_size = coin_size - freeze_size
-                if(coin_size < 0):
-                    coin_size = 0
-            else :
-                coin_size = 0    #설정값이 없음
-        self.logger.debug('get_availabel_size name : {}, freeze_size: {}, availabel_size: {}'.format(coin_name, freeze_size, coin_size))
+            availabel_size = availabel_conf.get(coin_name)
+            
+        self.logger.debug('get_availabel_size name : {}, freeze_size: {}, availabel_size: {}'.format(coin_name, freeze_size, availabel_size))
 
         balance = self.get_balance(coin_name)
         if(balance == None or balance.get(coin_name) == None):
@@ -223,7 +218,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             self.logger.debug('get_availabel_size balance : {}'.format(balance))
             return 0
         
-        if(coin_size == None):
+        if(availabel_size == None):
             #None이란 의미는 설정값이 없다는 의미
             #설정값이 없으면 잔고에 남아있는 모든 금액을 사용할 수 있으므로 
             #0으로 설정해 거래를 막아버린다
@@ -233,16 +228,18 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             # ret = balance.get(coin_name)['free']
             ret = 0
             ret = self.decimal_to_precision(ret)
-            self.logger.debug('get_availabel_size availabel_size is not setting : {}'.format(coin_size))
+            self.logger.debug('get_availabel_size availabel_size is not setting : {}'.format(availabel_size))
             return ret
 
+        bal_left = balance.get(coin_name)['free'] - freeze_size
+        if(bal_left < 0):
+            self.logger.debug('get_availabel_size 0 caseu balance, freeze_size : {}/{}'.format(balance.get(coin_name)['free'], freeze_size))
+            return 0
         
-        if(coin_size < balance.get(coin_name)['free']):
-            return coin_size
+        if(availabel_size < bal_left):
+            return self.decimal_to_precision(availabel_size)
         else:
-            ret = balance.get(coin_name)['free']
-            ret = self.decimal_to_precision(ret)
-            return ret
+            return self.decimal_to_precision(ret)
 
     
     def has_market(self, market):
