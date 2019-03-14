@@ -68,9 +68,28 @@ class Upbit(Base):
             #보유한 것이 없어서 None일 수도 있고 미지원 코인일 때도 None가 뜬다
             return None
             
-        balance.add(target, ret[target]['total'], 
-                            ret[target]['used'], 
-                            ret[target]['free'])
+        #업빗에서는 total = used + free
+        #free는 매도 오더를 냈을 때 '-100' 마이너스 값으로 나온다
+        # free = -194
+        # total = 0
+        # used = 194
+        # 위의 경우 버그로 예상된다.
+        # free = 24954
+        # total = 39882
+        # used = 14928
+        # 이 경우는 올바르게 나온다.
+        # 즉 전량매도 했을 때 free가 마이너스로 나오고 이 때문에 total이 잘못된 값을 가진다
+        # 이 버그는 ccxt에서 발생하는 것으로 보인다. 빗썸 REST API를 호출하면 올바른 값을 돌려준다. 2019-03-14
+        
+
+        #그러므로 여기서 해당 버그를 감안해 보정해준다. 2019-03-14        
+        free = ret[target]['free']
+        used = ret[target]['used']
+        if(free < 0):
+            free = 0
+        total = free + used
+        
+        balance.add(target, total, used, free)
 
         return balance
     

@@ -131,10 +131,11 @@ class SmartTrader:
         """
         pass
     
-    def get_balance(self, exchange_name, coin_name, market):
+    def get_balance(self, exchange_name, coin_name, market, only_free=True):
         """
         거래소 잔고를 가져온다. 
         이 때 small balance의 경우 0으로 처리한다
+        잔고는 free와 used와 total로 구성된다. only_free가 아니면 total(free + used)값을 돌려준다.
         """
         exchange = self.exchanges.get(exchange_name)
         symbol = coin_name + '/'+ market
@@ -145,12 +146,13 @@ class SmartTrader:
         bal = exchange.get_balance(coin_name)
         if(bal is None):
             return 0
-            
+        self.logger.debug('{} balance : {}'.format(symbol, bal.get(coin_name)))
         
         target_price = exchange.get_last_price(symbol)
-        print(bal.get(coin_name))
-        
         target_cnt = bal.get(coin_name)['free']
+        if(not only_free):
+            target_cnt += bal.get(coin_name)['used']
+            
         t_price = target_price * target_cnt
         
         if(exchange.is_small_balance(t_price, market) is True):

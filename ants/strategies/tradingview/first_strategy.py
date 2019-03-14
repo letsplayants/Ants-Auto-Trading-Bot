@@ -54,7 +54,7 @@ class EmailAlretStrategy(ants.strategies.strategy.StrategyBase, Observer):
         데이터 제공자가 요청한 데이터가 수신되면 호출한다
         """
         self.logger.debug('got msg in data strategy')
-        self.new_do_action(msg)
+        self.do_action(msg)
         pass
     
     def stop(self):
@@ -62,7 +62,7 @@ class EmailAlretStrategy(ants.strategies.strategy.StrategyBase, Observer):
         self.data_provider.stop()
         self.logger.info('Strategy will stop')
     
-    def new_do_action(self, msg):
+    def do_action(self, msg):
         try:
             exchange = msg['exchange'].upper()
             coin_name = msg['market'].split('/')[0]
@@ -74,7 +74,7 @@ class EmailAlretStrategy(ants.strategies.strategy.StrategyBase, Observer):
         
         self.logger.info('Try Action {} {}/{} {}'.format(exchange, coin_name, market, action))
         try:
-            availabel_size = self.trader.get_balance(exchange, coin_name, market)
+            availabel_size = self.trader.get_balance(exchange, coin_name, market, False)
         except Exception as exp:
             self.logger.warning('Trading was failed : {}'.format(exp))
             return
@@ -93,7 +93,7 @@ class EmailAlretStrategy(ants.strategies.strategy.StrategyBase, Observer):
         self.logger.info('Action Done {}'.format(result))
         
         
-    def do_action(self, msg):
+    def old_do_action(self, msg):
         try:
             exchange = msg['exchange'].upper()
             coin_name = msg['market'].split('/')[0]
@@ -198,7 +198,7 @@ if __name__ == '__main__':
     msg = {'market': 'VET/USDT', 'time': '10M', 'action': 'SELL', 'exchange': 'BINANCE'}
     # st.do_action(msg)
     
-    msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
+    msg = {'market': 'XLM/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
     st.do_action(msg)
     
     msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'BITHUMB'}
@@ -232,4 +232,5 @@ if __name__ == '__main__':
     # st.save_state('UPBIT', 'BTC', 'KRW', 'SELL')
     # print('----------------------RESULT : ', st.get_state('BITHUMB', 'BTC', 'KRW'))
     
-    
+    print('-'*160)
+    st.telegram.stop_listener()
