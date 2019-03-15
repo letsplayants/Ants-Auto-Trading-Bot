@@ -150,6 +150,12 @@ class Bithumb(Base):
 
         return super().create_order(symbol, type, side, amount, price, params)
         
+    def get_private_order(self):
+        ex = self.exchange
+        print(ex.privatePostInfoOrders) #이 함수를 사용하여 자체적으로 private order를 가지고 와야함
+        return self.exchange.fetch_open_orders()
+        
+        
 if __name__ == '__main__':
     print('test')
     logger = logging.getLogger()
@@ -202,4 +208,9 @@ if __name__ == '__main__':
     
     # up.connect()
     
+    print('get order book', ex.get_order_book('BTC/KRW'))
     
+    #bithumb엔 오더북스가 없음.
+    # print('get order books', ex.get_order_books(['NPXS/KRW', 'XRP/KRW', 'ETH/KRW']))
+    
+    print('get private orders', ex.get_private_order())

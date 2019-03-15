@@ -62,14 +62,16 @@ class Trading(Base):
         pass
 
 
-def init_db():
-    from sqlalchemy import create_engine
-    engine = create_engine('sqlite:///data.db', echo=False)
-    Base.metadata.create_all(bind=engine)
-    
-init_db()
+
 
 if __name__ == '__main__':
+    def init_db():
+        from sqlalchemy import create_engine
+        engine = create_engine('sqlite:///test_data.db', echo=False)
+        Base.metadata.create_all(bind=engine)
+        
+    init_db()
+
     print('test')
     logger = logging.getLogger()
     logger.setLevel(logging.WARNING)

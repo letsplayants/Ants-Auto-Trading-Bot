@@ -158,6 +158,8 @@ class Binance(Base):
     #     desc = self.exchange.create_order(symbol, type, side, amount, price, params)
     #     return desc
     
+    def get_private_order(self, symbol=None):
+        return self.exchange.fetch_open_orders(symbol)  
         
 if __name__ == '__main__':
     print('test')
@@ -211,6 +213,10 @@ if __name__ == '__main__':
     
     
     
-    # up.connect()
+    # print(up.exchange.ids)
+    # print('get order books', ex.get_order_books(None))
+    # print('get order book', ex.get_order_book('GNT/KRW'))
+    # print('get order books', ex.get_order_books(['GNT/KRW', 'BTC/KRW', 'BTC/USDT']))
     
+    print('get my orders : ', ex.get_private_order('NPXS/BTC'))
     

@@ -9,6 +9,7 @@ import ccxt
 
 from exchangem.model.exchange import Base
 from exchangem.model.balance import Balance
+from exchangem.model.order_info import OrderInfo
 
 class Upbit(Base):
     def __init__(self, args={}):
@@ -183,8 +184,49 @@ class Upbit(Base):
             fee = 0.0005
             
         return fee
-       
-      
+    
+    def parsing_order_info(self, msg):
+        """
+        업빗 오더 후 들어오는 포멧
+        {'info': {'uuid': '5b79be70-6a7d-4716-abd7-b5cad4ce9312', 'side': 'bid', 'ord_type': 'limit', 'price': '45.2', 'state': 'wait', 'market': 'KRW-ADA', 'created_at': '2019-03-15T23:39:32+09:00', 'volume': '100.0', 'remaining_volume': '100.0', 'reserved_fee': '2.26', 'remaining_fee': '2.26', 'paid_fee': '0.0', 'locked': '4522.26', 'executed_volume': '0.0', 'trades_count': 0}, 'id': '5b79be70-6a7d-4716-abd7-b5cad4ce9312', 'timestamp': 1552660772000, 'datetime': '2019-03-15T14:39:32.000Z', 'lastTradeTimestamp': None, 'symbol': 'ADA/KRW', 'type': 'limit', 'side': 'buy', 'price': 45.2, 'cost': 0.0, 'average': 45.2, 'amount': 100.0, 'filled': 0.0, 'remaining': 100.0, 'status': 'open', 'fee': {'currency': 'KRW', 'cost': 0.0}, 'trades': None}
+        """
+        self.logger.debug('parsing msg to orderInfo : {}'.format(msg))
+        r = OrderInfo()
+        r.add(
+            msg['symbol'],
+            msg['info']['uuid'],
+            msg['side'],
+            msg['price'],
+            msg['amount'],
+            msg['status'],
+            msg['remaining'],
+            msg['info']['created_at'],
+            msg['lastTradeTimestamp']
+            )
+        return r
+    
+    def get_private_order(self, symbol=None):
+        po = dict()
+        ret = self.exchange.fetch_open_orders(symbol)
+        if(ret == None):
+            return po
+        
+        for i in ret:
+            r = OrderInfo()
+            r.add(
+                i['symbol'],
+                i['info']['uuid'],
+                i['side'],
+                i['price'],
+                i['amount'],
+                i['status'],
+                i['remaining'],
+                i['info']['created_at'],
+                i['lastTradeTimestamp']
+                )
+            po[i['symbol']] = r
+            
+        return po
         
 if __name__ == '__main__':
     print('test')
@@ -263,8 +305,20 @@ if __name__ == '__main__':
     
     # up.connect()
     
+    #공개 오더북 읽어오는 테스트
     # print('get order books', up.get_order_books(None))
     # print('get order book', up.get_order_book('GNT/KRW'))
     # print(up.exchange.ids)
-    print('get order books', up.get_order_books(['GNT/KRW', 'BTC/KRW', 'BTC/USDT']))
+    # print('get order books', up.get_order_books(['GNT/KRW', 'BTC/KRW', 'BTC/USDT']))
     
+    #개인 오더북 읽어오는 테스트
+    print('get private orders', up.get_private_order())
+    # print('get my orders : ', up.get_private_order('BCH/KRW'))
+    # print('get my orders', up.get_private_order(['BCH/KRW','ZEC/KRW'])) #이렇게 동작하도록 만들어야지..
+    
+    #거래 취소 테스트
+    
+    order = up.create_order('ADA/KRW', 'limit', 'buy', '100', '45.2', '')
+    print('*' * 160)
+    print(order)
+        

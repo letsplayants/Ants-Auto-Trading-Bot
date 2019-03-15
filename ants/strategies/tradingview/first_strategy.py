@@ -29,11 +29,11 @@ class EmailAlretStrategy(ants.strategies.strategy.StrategyBase, Observer):
         self.upbit = cUpbit({'root_config_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/upbit.conf', 'telegram': self.telegram, 'db':self.db})
         self.trader.add_exchange('UPBIT', self.upbit)
         
-        self.bithumb = cBithumb({'root_config_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/bithumb.conf', 'telegram': self.telegram, 'db':self.db})
-        self.trader.add_exchange('BITHUMB', self.bithumb)
+        # self.bithumb = cBithumb({'root_config_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/bithumb.conf', 'telegram': self.telegram, 'db':self.db})
+        # self.trader.add_exchange('BITHUMB', self.bithumb)
         
-        self.binance = cBinance({'root_config_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/binance.conf', 'telegram': self.telegram, 'db':self.db})
-        self.trader.add_exchange('BINANCE', self.binance)
+        # self.binance = cBinance({'root_config_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/binance.conf', 'telegram': self.telegram, 'db':self.db})
+        # self.trader.add_exchange('BINANCE', self.binance)
     
     def run(self):
         #전략에서 사용할 데이터 제공자를 등록 후 실행
@@ -198,7 +198,7 @@ if __name__ == '__main__':
     msg = {'market': 'VET/USDT', 'time': '10M', 'action': 'SELL', 'exchange': 'BINANCE'}
     # st.do_action(msg)
     
-    msg = {'market': 'XLM/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
+    msg = {'market': 'ADA/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
     st.do_action(msg)
     
     msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'BITHUMB'}

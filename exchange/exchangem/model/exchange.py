@@ -122,6 +122,8 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             except Exception as exp:
                 raise exp
         
+        order_info = self.parsing_order_info(desc)
+        
         try:
             #DB에 기록
             coin_name = symbol.split('/')[0]
@@ -148,23 +150,41 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
                          exchange_name)
             
             total = self.decimal_to_precision(float(amount) * float(price))
-                
-            self.telegram.send_message('{}오더를 냄 : {}, {}, {}/{}, 주문 개수:{}, 주문단가:{}, 총 주문금액:{}'.format(
-                                        prefix_str,
-                                        exchange_name.upper(), 
-                                        side.upper(),
-                                        coin_name.upper(), 
-                                        market.upper(), 
-                                        d_amount, 
-                                        d_price, 
-                                        total) )
-            self.db.add(record)
             
+            if(self.telegram != None):
+                self.telegram.send_message('{}오더를 냄 : {}, {}, {}/{}, 주문 개수:{}, 주문단가:{}, 총 주문금액:{}'.format(
+                                            prefix_str,
+                                            exchange_name.upper(), 
+                                            side.upper(),
+                                            coin_name.upper(), 
+                                            market.upper(), 
+                                            d_amount, 
+                                            d_price, 
+                                            total) )
+            if(self.db != None):
+                self.db.add(record)
             
         except Exception as exp:
             raise exp
             
-        return desc
+        
+        
+        return order_info
+
+
+
+    @abc.abstractmethod
+    def parsing_order_info(self, desc):
+        """
+        오더 정보가 거래소마다 각각 다르다.
+        이를 받아서 OrderInfo 구조체에 담아서 리턴해준다
+        return OrderInfo()
+        """
+        pass
+    
+    @abc.abstractmethod
+    def get_private_order(self, order_id=None, symbol=None):
+        pass
 
     @abc.abstractmethod
     def check_amount(self, coin_name, seed_size, price):
@@ -241,7 +261,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             if(availabel_size < bal_left):
                 return self.decimal_to_precision(availabel_size)
             else:
-                return self.decimal_to_precision(ret)
+                return self.decimal_to_precision(bal_left)
         else: #sell mode일 떄
             if(availabel_size == None):
                 return bal_left
@@ -353,7 +373,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
     
     def get_order_book(self, symbol):
         st = int(datetime.now(tz=timezone.utc).timestamp() * 1000)
-        result = self.exchange.fetchOrderBook(symbol)
+        result = self.exchange.fetch_order_book(symbol)
         tgap = st - result.get('timestamp') #milliseconds
         print('st:{}, rl:{}, tgap : {}'.format(st, result.get('timestamp'), tgap))
         return result
@@ -361,13 +381,21 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
     def get_order_books(self, symbols, params={}):
         try:
             st = int(datetime.now(tz=timezone.utc).timestamp() * 1000)
-            result = self.exchange.fetchOrderBooks(symbols, params)
+            result = self.exchange.fetch_order_books(symbols, params)
             #result[symbol]['timestamp'] 형식으로 돌아온다. 코인마다 각각 시간이 다르다
             return result
         except Exception as e:
             self.logger.warning('exchange is not support getOrderBooks : {}'.format(e))
             return None
     
+    @abc.abstractmethod
+    def get_private_order(self, symbol=None):
+        # return self.exchange.fetch_open_orders(symbol)
+        pass
+        
+    
+    def cancel_private_order(self, id, symbol=None, params={}):
+        return self.exchange.cancel_order(id, symbol, params)
     
 class SupportWebSocket(metaclass=abc.ABCMeta):
     @abc.abstractmethod
