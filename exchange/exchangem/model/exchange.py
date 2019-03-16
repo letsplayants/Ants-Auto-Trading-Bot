@@ -183,10 +183,6 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         pass
     
     @abc.abstractmethod
-    def get_private_order(self, order_id=None, symbol=None):
-        pass
-
-    @abc.abstractmethod
     def check_amount(self, coin_name, seed_size, price):
         """
         코인 이름과 시드 크기를 입력받아서 매매 가능한 값을 돌려준다
@@ -389,10 +385,13 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             return None
     
     @abc.abstractmethod
-    def get_private_order(self, symbol=None):
-        # return self.exchange.fetch_open_orders(symbol)
+    def get_private_orders(self, symbol=None):
+        return self.exchange.fetch_open_orders(symbol)
         pass
-        
+    
+    @abc.abstractmethod
+    def get_private_orders_detail(self, id):
+        pass    
     
     def cancel_private_order(self, id, symbol=None, params={}):
         return self.exchange.cancel_order(id, symbol, params)

@@ -205,7 +205,7 @@ class Upbit(Base):
             )
         return r
     
-    def get_private_order(self, symbol=None):
+    def get_private_orders(self, symbol=None):
         po = dict()
         ret = self.exchange.fetch_open_orders(symbol)
         if(ret == None):
@@ -228,6 +228,11 @@ class Upbit(Base):
             
         return po
         
+    def get_private_orders_detail(self, id):
+        msg = self.exchange.fetch_order(id)
+        return self.parsing_order_info(msg)
+    
+    
 if __name__ == '__main__':
     print('test')
     logger = logging.getLogger()
@@ -312,13 +317,20 @@ if __name__ == '__main__':
     # print('get order books', up.get_order_books(['GNT/KRW', 'BTC/KRW', 'BTC/USDT']))
     
     #개인 오더북 읽어오는 테스트
-    print('get private orders', up.get_private_order())
-    # print('get my orders : ', up.get_private_order('BCH/KRW'))
-    # print('get my orders', up.get_private_order(['BCH/KRW','ZEC/KRW'])) #이렇게 동작하도록 만들어야지..
+    print('get private orders', up.get_private_orders())
+    # print('get my orders : ', up.get_private_orders('BCH/KRW'))
+    # print('get my orders', up.get_private_orders(['BCH/KRW','ZEC/KRW'])) #이렇게 동작하도록 만들어야지..
     
     #거래 취소 테스트
-    
-    order = up.create_order('ADA/KRW', 'limit', 'buy', '100', '45.2', '')
+    order = up.create_order('BTC/KRW', 'limit', 'buy', '1', '10000', '')
+    uuid = order.get()['id']
     print('*' * 160)
-    print(order)
-        
+    print(order.get())
+    print(uuid)
+    o_detail = up.get_private_orders_detail(uuid)
+    print(o_detail.get())
+    # up.cancel_private_order(uuid)
+    o_detail = up.get_private_orders_detail(uuid)
+    print(o_detail.get())
+    
+    
