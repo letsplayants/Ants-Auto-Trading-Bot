@@ -28,6 +28,8 @@ from exchangem.model.observers import ObserverNotifier
 from exchangem.crypto import Crypto
 from exchangem.utils import Util as util
 from exchangem.model.trading import Trading
+from exchangem.model.order_info import OrderInfo
+
 
 class Base(ObserverNotifier, metaclass=abc.ABCMeta):
     def __init__(self, args={}):
@@ -70,7 +72,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             try:
                 self.is_debug_mode = self.load_config(args.get('root_config_file')).get('test_mode')
                 if(self.is_debug_mode.upper() == 'TRUE'):
-                    self.logger.info('EXCHANGE RUN IN DEBUG MODE. WILL NOT DO BUY/SELL')
+                    self.logger.info('EXCHANGE RUN IN TEST MODE. WILL NOT DO BUY/SELL')
                     self.is_debug_mode = True
                 else:
                     self.is_debug_mode = False
@@ -171,16 +173,33 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         
         return order_info
 
-
-
-    @abc.abstractmethod
-    def parsing_order_info(self, desc):
+    def parsing_order_info(self, msg):
         """
-        오더 정보가 거래소마다 각각 다르다.
-        이를 받아서 OrderInfo 구조체에 담아서 리턴해준다
-        return OrderInfo()
+        binance 값 예제
+        {'info': {'symbol': 'BTTBTC', 'orderId': 1588726, 'clientOrderId': 'and_3f55e388f97e463fa3776d02e726ec12', 'price': '0.00000034', 'origQty': '18633.00000000', 'executedQty': '0.00000000', 'cummulativeQuoteQty': '0.00000000', 'status': 'NEW', 'timeInForce': 'GTC', 'type': 'LIMIT', 'side': 'SELL', 'stopPrice': '0.00000000', 'icebergQty': '0.00000000', 'time': 1549975901810, 'updateTime': 1549975901810, 'isWorking': True}, 'id': '1588726', 'timestamp': 1549975901810, 'datetime': '2019-02-12T12:51:41.810Z', 'lastTradeTimestamp': None, 'symbol': 'BTT/BTC', 'type': 'limit', 'side': 'sell', 'price': 3.4e-07, 'amount': 18633.0, 'cost': 0.0, 'average': None, 'filled': 0.0, 'remaining': 18633.0, 'status': 'open', 'fee': None, 'trades': None}, 
+        
+        {
+        'info': {'symbol': 'NPXSBTC', 'orderId': 8887249, 'clientOrderId': 'and_a4eceda1a93242f69892ff2668e5bfd1', 'price': '0.00000021', 'origQty': '3567423.00000000', 'executedQty': '0.00000000', 'cummulativeQuoteQty': '0.00000000', 'status': 'NEW', 'timeInForce': 'GTC', 'type': 'LIMIT', 'side': 'SELL', 'stopPrice': '0.00000000', 'icebergQty': '0.00000000', 'time': 1552729837991, 'updateTime': 1552729837991, 'isWorking': True}, 
+        'id': '8887249', 'timestamp': 1552729837991, 'datetime': '2019-03-16T09:50:37.991Z', 'lastTradeTimestamp': None, 'symbol': 'NPXS/BTC', 'type': 'limit', 'side': 'sell', 'price': 2.1e-07, 'amount': 3567423.0, 'cost': 0.0, 'average': None, 'filled': 0.0, 'remaining': 3567423.0, 'status': 'open', 'fee': None, 'trades': None    
+        }
+    
+        위의 구조에서 'info'를 키로 사용하는 것은 거래소에서 raw로 응답온 값들이다
+        info를 제외한 다른 key들은 모든 거래소 공통 값이다
         """
-        pass
+        self.logger.debug('parsing msg to orderInfo : {}'.format(msg))
+        r = OrderInfo()
+        r.add(
+            msg['symbol'],
+            msg['id'],
+            msg['side'],
+            msg['price'],
+            msg['amount'],
+            msg['status'],
+            msg['remaining'],
+            msg['timestamp'],
+            msg['lastTradeTimestamp']
+            )
+        return r
     
     @abc.abstractmethod
     def check_amount(self, coin_name, seed_size, price):
@@ -384,10 +403,8 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             self.logger.warning('exchange is not support getOrderBooks : {}'.format(e))
             return None
     
-    @abc.abstractmethod
-    def get_private_orders(self, symbol=None):
+    def get_private_order(self, symbol=None):
         return self.exchange.fetch_open_orders(symbol)
-        pass
     
     @abc.abstractmethod
     def get_private_orders_detail(self, id):

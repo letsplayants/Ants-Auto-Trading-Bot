@@ -12,6 +12,7 @@ from ccxt.base.decimal_to_precision import DECIMAL_PLACES        # noqa F401
 
 from exchangem.model.exchange import Base
 from exchangem.model.balance import Balance
+from exchangem.model.order_info import OrderInfo
 
 class Binance(Base):
     def __init__(self, args={}):
@@ -158,8 +159,23 @@ class Binance(Base):
     #     desc = self.exchange.create_order(symbol, type, side, amount, price, params)
     #     return desc
     
-    def get_private_order(self, symbol=None):
-        return self.exchange.fetch_open_orders(symbol)  
+    def get_private_orders(self, symbol=None):
+        list = []
+        self.exchange.options['warnOnFetchOpenOrdersWithoutSymbol'] = False
+        ret = self.exchange.fetch_open_orders(symbol)
+        if(ret == None):
+            return list
+        
+        for i in ret:
+            r = self.parsing_order_info(i)
+            list.append(r)
+            
+        return list
+        
+    def get_private_orders_detail(self, id, symbol):
+        msg = self.exchange.fetch_order(id, symbol)
+        return self.parsing_order_info(msg)
+        
         
 if __name__ == '__main__':
     print('test')
@@ -218,5 +234,27 @@ if __name__ == '__main__':
     # print('get order book', ex.get_order_book('GNT/KRW'))
     # print('get order books', ex.get_order_books(['GNT/KRW', 'BTC/KRW', 'BTC/USDT']))
     
-    print('get my orders : ', ex.get_private_order('NPXS/BTC'))
+    #공개 오더북 읽어오는 테스트
+    print('get order books', ex.get_order_books(None))
+    # print('get order book', up.get_order_book('GNT/KRW'))
+    # print(up.exchange.ids)
+    # print('get order books', up.get_order_books(['GNT/KRW', 'BTC/KRW', 'BTC/USDT']))
+    
+    #개인 오더북 읽어오는 테스트
+    print('get private orders', ex.get_private_orders())
+    # print('get my orders : ', up.get_private_orders('BCH/KRW'))
+    # print('get my orders', up.get_private_orders(['BCH/KRW','ZEC/KRW'])) #이렇게 동작하도록 만들어야지..
+    
+    #거래 취소 테스트, 실제 거래를 넣고 취소하는 테스트이므로 주의를 요구함
+    # order = ex.create_order('BTC/USDT', 'limit', 'buy', '0.004', '3100', '')
+    # uuid = order.get()['id']
+    # print('*' * 160)
+    # print(order.get())
+    # print(uuid)
+    # o_detail = ex.get_private_orders_detail(uuid, order.get()['symbol'])
+    # print(o_detail.get())
+    # ex.cancel_private_order(uuid, order.get()['symbol'])
+    # o_detail = ex.get_private_orders_detail(uuid, order.get()['symbol'])
+    # print(o_detail.get())
+    #거래 취소 테스트 - 끝
     

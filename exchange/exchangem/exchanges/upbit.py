@@ -184,49 +184,18 @@ class Upbit(Base):
             fee = 0.0005
             
         return fee
-    
-    def parsing_order_info(self, msg):
-        """
-        업빗 오더 후 들어오는 포멧
-        {'info': {'uuid': '5b79be70-6a7d-4716-abd7-b5cad4ce9312', 'side': 'bid', 'ord_type': 'limit', 'price': '45.2', 'state': 'wait', 'market': 'KRW-ADA', 'created_at': '2019-03-15T23:39:32+09:00', 'volume': '100.0', 'remaining_volume': '100.0', 'reserved_fee': '2.26', 'remaining_fee': '2.26', 'paid_fee': '0.0', 'locked': '4522.26', 'executed_volume': '0.0', 'trades_count': 0}, 'id': '5b79be70-6a7d-4716-abd7-b5cad4ce9312', 'timestamp': 1552660772000, 'datetime': '2019-03-15T14:39:32.000Z', 'lastTradeTimestamp': None, 'symbol': 'ADA/KRW', 'type': 'limit', 'side': 'buy', 'price': 45.2, 'cost': 0.0, 'average': 45.2, 'amount': 100.0, 'filled': 0.0, 'remaining': 100.0, 'status': 'open', 'fee': {'currency': 'KRW', 'cost': 0.0}, 'trades': None}
-        """
-        self.logger.debug('parsing msg to orderInfo : {}'.format(msg))
-        r = OrderInfo()
-        r.add(
-            msg['symbol'],
-            msg['info']['uuid'],
-            msg['side'],
-            msg['price'],
-            msg['amount'],
-            msg['status'],
-            msg['remaining'],
-            msg['info']['created_at'],
-            msg['lastTradeTimestamp']
-            )
-        return r
-    
+
     def get_private_orders(self, symbol=None):
-        po = dict()
+        list = []
         ret = self.exchange.fetch_open_orders(symbol)
         if(ret == None):
-            return po
+            return list
         
         for i in ret:
-            r = OrderInfo()
-            r.add(
-                i['symbol'],
-                i['info']['uuid'],
-                i['side'],
-                i['price'],
-                i['amount'],
-                i['status'],
-                i['remaining'],
-                i['info']['created_at'],
-                i['lastTradeTimestamp']
-                )
-            po[i['symbol']] = r
+            r = self.parsing_order_info(i)
+            list.append(r)
             
-        return po
+        return list
         
     def get_private_orders_detail(self, id):
         msg = self.exchange.fetch_order(id)
@@ -321,7 +290,7 @@ if __name__ == '__main__':
     # print('get my orders : ', up.get_private_orders('BCH/KRW'))
     # print('get my orders', up.get_private_orders(['BCH/KRW','ZEC/KRW'])) #이렇게 동작하도록 만들어야지..
     
-    #거래 취소 테스트
+    #거래 취소 테스트, 실제 거래를 넣고 취소하는 테스트이므로 주의를 요구함
     order = up.create_order('BTC/KRW', 'limit', 'buy', '1', '10000', '')
     uuid = order.get()['id']
     print('*' * 160)
@@ -329,8 +298,22 @@ if __name__ == '__main__':
     print(uuid)
     o_detail = up.get_private_orders_detail(uuid)
     print(o_detail.get())
-    # up.cancel_private_order(uuid)
+    up.cancel_private_order(uuid)
     o_detail = up.get_private_orders_detail(uuid)
     print(o_detail.get())
+    #거래 취소 테스트 - 끝
     
+    # #트레이딩 뷰 와치 목록 뽑는 코드
+    # # 'BITTREX:ADABTC,BINANCE:ADAUSDT,'
+    # pp = ''
+    # markets = up.exchange.loadMarkets()
+    # # print(markets)
+    # for item in markets:
+    #     market = item.split('/')[1]
+    #     name = item.split('/')[0]
+    #     item = item.replace('/','')
+    #     if(market == 'BTC'):
+    #         pp = pp + 'BITTREX:' + item + ','
+    
+    # print(pp)
     

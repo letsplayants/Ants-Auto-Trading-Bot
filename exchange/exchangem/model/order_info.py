@@ -37,7 +37,21 @@ class OrderInfo():
     def get(self):
         return self.order
         
-        
+    def __repr__(self):
+        return str({
+            'symbol' : self.order['symbol'],
+            'id': self.order['id'],
+            'side': self.order['side'],
+            'price': self.order['price'],
+            'amount': self.order['amount'],
+            'status': self.order['status'],
+            'remaining': self.order['remaining'],
+            'ts_create': self.order['ts_create'],
+            'ts_updated': self.order['ts_updated']
+        })
+       
+    
+    
 if __name__ == '__main__':
     print('test')
     
