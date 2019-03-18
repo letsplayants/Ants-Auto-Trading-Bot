@@ -72,6 +72,14 @@ class EmailAlretStrategy(ants.strategies.strategy.StrategyBase, Observer):
             self.logger.warning('msg format is wrong : {}'.format(msg))
             return
         
+        #오더를 뒤져본다.
+        symbol = msg['market']
+        orders = self.trader.get_private_orders(exchange)
+        for order in orders:
+            if(order.get()['symbol'] == symbol and order.get()['side'] == 'buy'):
+                self.logger.info('\'BUY\' Signal will ignore cause old order is not fill {}, ts:{}'.format(symbol, order.get()['ts_create']))
+                return
+        
         self.logger.info('Try Action {} {}/{} {}'.format(exchange, coin_name, market, action))
         try:
             availabel_size = self.trader.get_balance(exchange, coin_name, market, False)
@@ -198,7 +206,7 @@ if __name__ == '__main__':
     msg = {'market': 'VET/USDT', 'time': '10M', 'action': 'SELL', 'exchange': 'BINANCE'}
     # st.do_action(msg)
     
-    msg = {'market': 'ADA/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
+    msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
     st.do_action(msg)
     
     msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'BITHUMB'}

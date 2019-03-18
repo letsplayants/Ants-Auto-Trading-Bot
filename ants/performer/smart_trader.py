@@ -32,6 +32,10 @@ class SmartTrader:
     
     def add_exchange(self, name, exchange):
         self.exchanges[name] = exchange
+        
+    def get_private_orders(self, exchange):
+        exchange = self.exchanges.get(exchange)
+        return exchange.get_private_orders()
     
     def trading(self, exchange_name, market, action, coin_name, price=None, amount=None):
         """
