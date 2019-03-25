@@ -15,15 +15,14 @@ def readKey(filePath):
     logger.info('read file {}'.format(filePath))
     if not os.path.isfile(filePath):
         logger.error("File path {} does not exist. Exiting...".format(filePath))
-        sys.exit(1)
+        raise Exception('File not found : {}'.format(filePath))
     
     try:
         with open(filePath) as fp:
             result = json.load(fp)
     except Exception as exp:
         logger.error("Can't load json : {}".format(exp))
-        logger.error("Program exit")
-        sys.exit(1)
+        raise Exception('File format was wrong : {}'.format(exp))
 
     return result
 
