@@ -38,6 +38,7 @@ class TelegramRepoter():
             self.use = False
             return
         
+        self.menu_stack = []
         self.logger.info('Telegram is Ready, {}'.format(self.bot.get_me()))
         # self.send_message('Telegram Repoter is ready')
         self.run_listener()
@@ -46,32 +47,10 @@ class TelegramRepoter():
         
         
     def menu_string_set(self):
-        back = em.back + '이전 단계'
-        
         self.menu = MainMenu()
-        self.menu.menu = '메뉴'
-        self.menu.back = back
-        
-        # self.menu.setting = Setting()  #설정
-        # self.menu.setting.setting = '설정'
-        # self.menu.setting.back = back
-        
-        # self.menu.setting.exchange = Exchange()
-        # self.menu.setting.exchange.exchange = '거래소 설정'
-        # self.menu.setting.exchange.api = 'API 등록/조회/테스트'
-        
-        # self.menu.setting.provider = Provider()
-        # self.menu.setting.provider.provider = '소스 설정'
-        # self.menu.setting.provider.email = '이메일 소스 설정'
-        
-        # self.menu.exchange = Exchange()
-        # self.menu.exchange.exchange = '거래소'
-        # self.menu.exchange.select = '거래소 선택'
-        # self.menu.exchange.trade = '거래'
-        # self.menu.exchange.balance = '자산조회'
     
     
-    def make_menu_keyboard(self):
+    def make_menu_keyboard(self, bot = None, chat_id = None):
         keyboard = []
         for item in self.menu:
             keyboard.append(InlineKeyboardButton(item))
@@ -84,56 +63,40 @@ class TelegramRepoter():
         self.welcome_message = '안녕하세요, 현재 버젼은 개발버젼입니다. 저는 다음과 같은 기능을 제공합니다'
         reply_markup = telegram.ReplyKeyboardMarkup(self.build_menu(keyboard, n_cols=2))
         self.bot.send_message(chat_id=self.chat_id, text=self.welcome_message, reply_markup=reply_markup)
+  
+    def message_parser(self, update, context):
+        #받은 메시지를 해당 클래스에 전달함
+        message = context.message
+        text = message.text
+        self.logger.debug(message.text)
         
+        menu_item = None
+        for item in self.menu:
+            item_txt = str(item)
+            if(item_txt == text):
+                self.logger.debug("item : {}\t text: {}\t{}".format(item_txt, text, (item_txt == text)))
+                menu_item = item
+                self.menu_stack.append(item)
+                break;
         
-    def kdb_test(self):
-        # custom_keyboard = [['top-left', 'top-right'], 
-        #           ['bottom-left', 'bottom-right']]
+        self.logger.debug('fined item : {}'.format(menu_item))
+        if(menu_item is None):
+            return
         
-        # custom_keyboard = self.build_menu()
-        # reply_markup = telegram.ReplyKeyboardMarkup(custom_keyboard)
-        # self.bot.send_message(chat_id=self.chat_id, 
-        #                  text="Custom Keyboard Test", 
-        #                  reply_markup=reply_markup)
-        button_list = [
-            InlineKeyboardButton("col1", callback_data="whoami"),
-            InlineKeyboardButton("col2", callback_data="roominfo"),
-            InlineKeyboardButton("row 2", callback_data="setid")
-        ]
+        # 방법1. 동작안함. dp.restart 해야하는데, stop이후 start하면 뻗음.. 설령 stop이 된다고 하더라도 내부적으로 thread라 join되는데 기다리는데 시간이 많이 걸림
+        # 현재 메시지 처리기를 지우고 하위 메뉴의 메시지 처리기를 등록해준다
+        # https://github.com/python-telegram-bot/python-telegram-bot/blob/master/telegram/ext/dispatcher.py
+        dp = self.updater.dispatcher
         
-        emoji = em.back
-        print(emoji)
+        menu_item.set_previous_message_handler(dp, self.message_handler)
+        menu_item.set_previous_keyboard(self.make_menu_keyboard)
+        menu_item.make_menu_keyboard(self.bot, self.chat_id)
+        dp.add_handler(menu_item.message_handler)
+        dp.remove_handler(self.message_handler)
         
-        keyboard = [
-                   telegram.KeyboardButton(emoji + "내 ID 정보", callback_data='whoami',images='U+1F600'),
-                   telegram.KeyboardButton("현재 방 정보", callback_data='roominfo'),
-                   telegram.KeyboardButton("환영 인사", callback_data="setid")
-        ]
-        #ReplyKeyboardMarkup는 callback 기능이 없다.
-        #그러므로 문구가 메뉴 호출에 해당한다
-        #봇이 제공하는 버튼은 사용자가 채팅을 치는 것을 대신할 뿐이다.
-        #봇이 버튼에서 '인사'라는 버튼을 제공한다면 사용자는 버튼을 누르는 것 대신 '인사'라고 쳐도 봇은 동일하게 동작한다
+        # menu_item.parsering(update, text)
         
-        reply_markup = telegram.ReplyKeyboardMarkup(self.build_menu(keyboard, n_cols=3))
-        self.bot.send_message(chat_id=self.chat_id, text='봇 시작합니다', reply_markup=reply_markup)
-        
-    
-    def get_emoji(self, id):
-        # http://www.unicode.org/emoji/charts/full-emoji-list.html#1f600
-        thunderstorm = u'\U0001F4A8'    # Code: 200's, 900, 901, 902, 905
-        drizzle = u'\U0001F4A7'         # Code: 300's
-        rain = u'\U00002614'            # Code: 500's
-        snowflake = u'\U00002744'       # Code: 600's snowflake
-        snowman = u'\U000026C4'         # Code: 600's snowman, 903, 906
-        atmosphere = u'\U0001F301'      # Code: 700's foogy
-        clearSky = u'\U00002600'        # Code: 800 clear sky
-        fewClouds = u'\U000026C5'       # Code: 801 sun behind clouds
-        clouds = u'\U00002601'          # Code: 802-803-804 clouds general
-        hot = u'\U0001F525'             # Code: 904
-        defaultEmoji = u'\U0001F300'    # default emojis
-    
-        return defaultEmoji
-        
+
     def build_menu(self,
                buttons,
                n_cols,
@@ -180,7 +143,8 @@ class TelegramRepoter():
         #inline keyboard를 사용하여 명령어 제어
         
         # on noncommand i.e message - echo the message on Telegram
-        dp.add_handler(MessageHandler(Filters.text, self.message_parser))
+        self.message_handler = MessageHandler(Filters.text, self.message_parser)
+        dp.add_handler(self.message_handler)
         
         # log all errors
         dp.add_error_handler(self.error)
@@ -195,18 +159,6 @@ class TelegramRepoter():
     def stop_listener(self):
         self.logger.info('telegram will be stop')
         self.updater.signal_handler(SIGINT, 0)
-    
-    def message_parser(self, update, context):
-        #받은 메시지를 해당 클래스에 전달함
-        message = context.message
-        
-        self.menu_stack.edge().parser(message)
-        
-        
-        if(message == back):
-            self.menu_stack.pop()
-        
-        
     
     def menu(self, update, context):
         context.message.reply_text('Please choose:', reply_markup=self.menu_keyboard())
@@ -283,7 +235,7 @@ if __name__ == '__main__':
     print('strategy test')
     
     logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     stream_hander = logging.StreamHandler()
     stream_hander.setFormatter(formatter)
@@ -291,6 +243,8 @@ if __name__ == '__main__':
     
     logging.getLogger("ccxt.base.exchange").setLevel(logging.WARNING)
     logging.getLogger("telegram.vendor.ptb_urllib3.urllib3.connectionpool").setLevel(logging.WARNING)
+    logging.getLogger("telegram.ext.updater").setLevel(logging.WARNING)
+    logging.getLogger("telegram.bot").setLevel(logging.WARNING)
     
     tel = TelegramRepoter()
 

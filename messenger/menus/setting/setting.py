@@ -1,18 +1,21 @@
-from menus.m_iter import MIterators
+from menus.menu_item import MenuItem
 
-class Setting(MIterators):
+from menus.setting.exchange.exchange import Exchange
+from menus.back_menu import BackMenu
+import logging
+
+class Setting(MenuItem):
     def __init__(self):
+        super().__init__()
+        self.logger = logging.getLogger(__name__)
+        self.__add__(Exchange())
+        self.__add__(BackMenu())
         pass
     
     def __repr__(self):
         return '설정'
     
     def to_dict(self):
-        """
-        텔레그램 인라인 키보드에서 json으로 변환할 때 to_dict를 호출함
-        이 때 리턴되는 문자열을 인라인 키보드에서 표시함
-        """
         return '설정'
-        
-        
-        
+    
+    
