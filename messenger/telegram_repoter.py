@@ -245,6 +245,7 @@ if __name__ == '__main__':
     logging.getLogger("telegram.vendor.ptb_urllib3.urllib3.connectionpool").setLevel(logging.WARNING)
     logging.getLogger("telegram.ext.updater").setLevel(logging.WARNING)
     logging.getLogger("telegram.bot").setLevel(logging.WARNING)
+    logging.getLogger("telegram.ext.dispatcher").setLevel(logging.WARNING)
     
     tel = TelegramRepoter()
 

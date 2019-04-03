@@ -36,6 +36,10 @@ class ApiAdd(MenuItem):
         self.exchange_name = exchange_name
         self.__add__(BackMenu())
         
+        self.init()
+        pass
+    
+    def init(self):
         #API 입력 차례인지 secret 입력 차례인지 기록한다
         self.secret_input = False
         self.api_key = ''
@@ -58,8 +62,11 @@ class ApiAdd(MenuItem):
         super().make_menu_keyboard(bot, chat_id, msg)
     
     def parsering(self, update, context):
+        self.logger.debug('got message : {}'.format(context))
         if(super().parsering(update, context)):
+            self.logger.debug('got BACK BUTON message : {}'.format(context))
             return
+        
         message = context.message
         text = message.text
         
@@ -72,17 +79,7 @@ class ApiAdd(MenuItem):
             self.secret_input = True
             msg = 'Secret Key를 입력하세요'.format(self.exchange_name)
             super().make_menu_keyboard(self.bot, self.chat_id, msg)
-    
-    # def menu_keyboard(self):
-    #     keyboard = [[InlineKeyboardButton("맞습니다", callback_data='apis_yes'),
-    #                 InlineKeyboardButton("아닙니다", callback_data='apis_no')]]
-    #     return InlineKeyboardMarkup(keyboard)
-    # 
-    # def set_previous_message_handler(self, dispatcher, hnd):
-    #     super().set_previous_message_handler(dispatcher, hnd)
-    #     dispatcher.add_handler(CallbackQueryHandler(self.do_update, pattern='apis_yes'))
-    #     dispatcher.add_handler(CallbackQueryHandler(self.do_not_update, pattern='apis_no'))
-      
+
     def do_update(self, update, context):
         message = '{}거래소 API키를 추가 했습니다. \n대화창에 입력된 API Key는 지워주세요'.format(self.exchange_name)
         self.save_apikey()
@@ -150,21 +147,7 @@ class ApiAdd(MenuItem):
         except Exception as exp:
             msg = "Can't save json : {}".format(exp)
             self.logger.warning(msg)
-            raise Exception(msg)
-    
-    def do_not_update(self, update, context):
-        context.message.reply_text('다시 입력하세요')
-        # query = context.callback_query
-        # self.edit_message(update, query, '다시 입력하세요'.format(query.message.chat.id))
-
-    def edit_message(self, bot, query, msg, reply_markup):
-        # if(reply_markup == None):
-        #     reply_markup = self.menu_keyboard()
-        bot.edit_message_text(chat_id=query.message.chat_id,
-                        message_id=query.message.message_id,
-                        text=msg,
-                        reply_markup=reply_markup)    
-        
+            raise Exception(msg)    
 
 class ApiTest(MenuItem):
     def __init__(self, exchange_name):

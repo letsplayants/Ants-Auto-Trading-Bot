@@ -17,6 +17,9 @@ class MenuItem(MIterators, metaclass=abc.ABCMeta):
         self.dispatcher = None
         pass
     
+    def init(self):
+        pass
+    
     @abc.abstractmethod
     def to_dict(self):
         """
@@ -63,9 +66,10 @@ class MenuItem(MIterators, metaclass=abc.ABCMeta):
             #메시지 핸들러 복구
             self.dispatcher.add_handler(self.previous_msg_hnd)
             self.dispatcher.remove_handler(self.message_handler)
-            return
+            return True
         
         #하위 메시지 핸들러를 등록하고 현재 메시지 핸들러를 제거한다
+        menu_item.init()
         menu_item.set_previous_keyboard(self.make_menu_keyboard)
         menu_item.set_previous_message_handler(self.dispatcher, self.message_handler)
         menu_item.make_menu_keyboard(self.bot, self.chat_id)
