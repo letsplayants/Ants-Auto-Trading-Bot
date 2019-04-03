@@ -1,8 +1,9 @@
-from menus.m_iter import MIterators
+from menus.menu_back import BackMenu
+from menus.menu_item import MenuItem
 from menus.setting.exchange.apis import ExchangeAPIs
-from menus.back_menu import BackMenu
 
-class Exchange(MIterators):
+
+class Exchange(MenuItem):
     def __init__(self):
         super().__init__()
         self.__add__(ExchangeAPIs())

@@ -1,8 +1,8 @@
 import abc
+import logging
 
 from menus.m_iter import MIterators
-from menus.setting.exchange.exchange import Exchange
-from menus.back_menu import BackMenu
+from menus.menu_back import BackMenu
 
 import telegram
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
@@ -11,6 +11,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 class MenuItem(MIterators, metaclass=abc.ABCMeta):
     def __init__(self):
         super().__init__()
+        self.logger = logging.getLogger('{}.{}'.format(self.__class__.__module__, self.__class__.__name__))
         self.message_handler = MessageHandler(Filters.text, self.parsering)
         self.previous_msg_hnd = None
         self.dispatcher = None
@@ -45,17 +46,17 @@ class MenuItem(MIterators, metaclass=abc.ABCMeta):
         menu_item = None
         for item in self.m_list:
             item_txt = str(item)
-            self.logger.debug("item : {}\t text: {}\t{}".format(item_txt, text, (item_txt == text)))
+            # self.logger.debug("item : {}\t text: {}\t{}".format(item_txt, text, (item_txt == text)))
             if(item_txt == text):
                 menu_item = item
                 break;
         
-        self.logger.debug('fined item : {}'.format(menu_item))
+        # self.logger.debug('fined item : {}'.format(menu_item))
         if(menu_item is None):
             return
         
         if(type(menu_item) == BackMenu):
-            self.logger.debug('back item : {}'.format(menu_item))
+            # self.logger.debug('back item : {}'.format(menu_item))
             #키보드 복구
             self.previous_kbd(self.bot, self.chat_id)
             
@@ -70,10 +71,19 @@ class MenuItem(MIterators, metaclass=abc.ABCMeta):
         menu_item.make_menu_keyboard(self.bot, self.chat_id)
         self.dispatcher.add_handler(menu_item.message_handler)
         
-        
         self.dispatcher.remove_handler(self.message_handler)
+     
+    def go_back(self):
+        # self.logger.debug('back item : {}'.format(menu_item))
+        #키보드 복구
+        self.previous_kbd(self.bot, self.chat_id)
         
-    def make_menu_keyboard(self, bot, chat_id):
+        #메시지 핸들러 복구
+        self.dispatcher.add_handler(self.previous_msg_hnd)
+        self.dispatcher.remove_handler(self.message_handler)
+        return
+        
+    def make_menu_keyboard(self, bot, chat_id, rcv_message = None):
         keyboard = []
         for item in self.m_list:
             keyboard.append(InlineKeyboardButton(item))
@@ -81,7 +91,11 @@ class MenuItem(MIterators, metaclass=abc.ABCMeta):
         self.bot = bot
         self.chat_id = chat_id
         
-        message = self.__repr__()
+        if(rcv_message == None):
+            message = self.__repr__()
+        else:
+            message = rcv_message
+            
         reply_markup = telegram.ReplyKeyboardMarkup(self.build_menu(keyboard, n_cols=2))
         bot.send_message(chat_id=chat_id, text=message, reply_markup=reply_markup)  
         

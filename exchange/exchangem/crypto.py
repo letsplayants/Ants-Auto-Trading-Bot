@@ -5,6 +5,10 @@ import json
 import base64
 import binascii
 
+"""
+2019-04-03
+crypto_cli를 참고하여 write부분을 업데이트해야함.
+"""
 class Crypto():
     def __init__(self):
         self.public_key = ''
