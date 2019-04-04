@@ -17,14 +17,14 @@ class Upbit(Base):
    
     def connect(self):
         self.noti_msg( '### 연결 중..')
-        websocket.enableTrace(False)
-        self.ws = websocket.WebSocketApp("wss://api.upbit.com/websocket/v1",
-                                  on_message = lambda ws, msg: self.on_message(ws, msg),
-                                  on_error = lambda ws, msg: self.on_error(ws, msg),
-                                  on_close = lambda ws: self.on_close(ws),
-                                  on_open = lambda ws: self.on_open(ws))
-        self.thread_hnd = threading.Thread(target=self.ws.run_forever)
-        self.thread_hnd.start()
+        # websocket.enableTrace(False)
+        # self.ws = websocket.WebSocketApp("wss://api.upbit.com/websocket/v1",
+        #                           on_message = lambda ws, msg: self.on_message(ws, msg),
+        #                           on_error = lambda ws, msg: self.on_error(ws, msg),
+        #                           on_close = lambda ws: self.on_close(ws),
+        #                           on_open = lambda ws: self.on_open(ws))
+        # self.thread_hnd = threading.Thread(target=self.ws.run_forever)
+        # self.thread_hnd.start()
         
         
     def on_message(self, ws, message):

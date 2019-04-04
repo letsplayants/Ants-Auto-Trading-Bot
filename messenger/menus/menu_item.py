@@ -27,6 +27,13 @@ class MenuItem(MIterators, metaclass=abc.ABCMeta):
         이 때 리턴되는 문자열을 인라인 키보드에서 표시함
         """
         pass
+    
+    def run(self):
+        pass
+    
+    def set_bot_n_chatid(self, bot, chat_id):
+        self.bot = bot
+        self.chat_id = chat_id
         
     def get_message_handler(self):
         return self.message_handler
@@ -70,13 +77,18 @@ class MenuItem(MIterators, metaclass=abc.ABCMeta):
         
         #하위 메시지 핸들러를 등록하고 현재 메시지 핸들러를 제거한다
         menu_item.init()
+        menu_item.set_bot_n_chatid(self.bot, self.chat_id)
         menu_item.set_previous_keyboard(self.make_menu_keyboard)
         menu_item.set_previous_message_handler(self.dispatcher, self.message_handler)
         menu_item.make_menu_keyboard(self.bot, self.chat_id)
+        
         self.dispatcher.add_handler(menu_item.message_handler)
         
         self.dispatcher.remove_handler(self.message_handler)
+        
+        menu_item.run()
      
+    
     def go_back(self):
         # self.logger.debug('back item : {}'.format(menu_item))
         #키보드 복구
@@ -87,13 +99,15 @@ class MenuItem(MIterators, metaclass=abc.ABCMeta):
         self.dispatcher.remove_handler(self.message_handler)
         return
         
-    def make_menu_keyboard(self, bot, chat_id, rcv_message = None):
+    def make_menu_keyboard(self, bot=None, chat_id=None, rcv_message = None):
         keyboard = []
         for item in self.m_list:
             keyboard.append(InlineKeyboardButton(item))
         
-        self.bot = bot
-        self.chat_id = chat_id
+        if(bot is None):
+            bot = self.bot
+        if(chat_id is None):
+            chat_id = self.chat_id
         
         if(rcv_message == None):
             message = self.__repr__()

@@ -1,5 +1,6 @@
 import json
 import base64
+import importlib
 
 from menus.menu_back import BackMenu
 from menus.menu_item import MenuItem
@@ -26,7 +27,7 @@ class ExchangeAPIs(MenuItem):
     def to_dict(self):
         return 'APIs Key 설정'
         
-    def make_menu_keyboard(self, bot, chat_id, rcv_message = None):
+    def make_menu_keyboard(self, bot=None, chat_id=None, rcv_message = None):
         msg = '{} 거래소 API Key 설정 메뉴입니다'.format(self.exchange_name.upper())
         super().make_menu_keyboard(bot, chat_id, msg)
         
@@ -35,7 +36,6 @@ class ApiAdd(MenuItem):
         super().__init__()
         self.exchange_name = exchange_name
         self.__add__(BackMenu())
-        
         self.init()
         pass
     
@@ -71,7 +71,7 @@ class ApiAdd(MenuItem):
         text = message.text
         
         if(self.secret_input):
-            self.secret = text
+            self.api_secret = text
             self.secret_input = False
             self.do_update(update, context)
         else:
@@ -118,7 +118,7 @@ class ApiAdd(MenuItem):
             new_exchange = self.exchange_name.lower()
             exchanges[new_exchange] = key_set
             
-            self.saveConf('configs/exchange.key', exchanges)
+            self.saveConf('configs/exchanges.key', exchanges)
         except Exception as exp:
             self.logger.warning('Crypto except : {}'.format(exp))
             raise Exception('암호화 작업 중 오류가 발생했습니다')
@@ -136,7 +136,7 @@ class ApiAdd(MenuItem):
             msg = "Can't load json : {}".format(exp)
             self.logger.warning(msg)
             raise Exception(msg)
-    
+        
         return result
         
     def saveConf(self, filePath, data):
@@ -156,11 +156,65 @@ class ApiTest(MenuItem):
         self.__add__(BackMenu())
         pass
     
+    def init(self):
+        pass
+    
+    def run(self):
+        message = ''
+        try:
+            message = self.do_test()
+            message = '테스트 성공 : {}'.format(message)
+        except Exception as e:
+            message = str(e)
+            
+        super().make_menu_keyboard(self.bot, self.chat_id, message)
+        self.go_back()
+        
     def __repr__(self):
         return 'API Key 테스트'
         
     def to_dict(self):
         return 'API Key 테스트'
+        
+    def do_test(self, coin_name=None):
+        self.logger.debug('exchange connection test with key')
+        config_file = 'configs/ants.conf'
+        
+        try:
+            # 거래소 클래스를 찾는다
+            exchange_class_path = 'exchangem.exchanges.{}'.format(self.exchange_name)
+            class_name = self.exchange_name
+            class_name = class_name[0].upper() + class_name[1:len(class_name)]
+            exchange_setting_conf = 'configs/{}.conf'.format(self.exchange_name)
+            self.logger.debug('load class {}\tconfig file : {}\tkey file: {}'.format(class_name, exchange_setting_conf, config_file))
+            
+            
+            #사용할 전략을 만든다
+            loaded_module = importlib.import_module(exchange_class_path)
+            klass = getattr(loaded_module, class_name)
+            exchange = klass({'root_config_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':exchange_setting_conf})
+            self.logger.debug('Text exchange : {}'.format(klass))
+            
+            
+            #코인별 잔고를 찍는다.
+            #설정 파일에 설정된 코인의 잔고를 찍는다
+            #해당 거래소에 입력된 코인이 없을 수도 있다.
+            #이를 대비하여 거래소에 존재하는 코인이나 설정 파일에 설정된 내용을 
+            #기반으로 잔고 및 가용 금액을 조회, 테스트 해야한다
+            if(coin_name == None):
+                coin_name = 'KRW'
+                
+            balance = exchange.get_balance(coin_name)
+            if(balance == None):
+                raise Exception('{} is not support {}'.format(exchange, coin_name))
+                
+            self.logger.debug(exchange.get_balance(coin_name).get_all())
+            self.logger.debug('Availabel {} size : {}'.format(coin_name, exchange.get_availabel_size(coin_name)))
+            return '사용 가능한 금액 {} : {}'.format(coin_name, exchange.get_availabel_size(coin_name))
+        except Exception as exp:
+            self.logger.debug('except : {}'.format(exp))
+            raise Exception('except : {}'.format(exp))
+        
 
 class ApiDel(MenuItem):
     def __init__(self, exchange_name):
@@ -177,6 +231,10 @@ class ApiDel(MenuItem):
 
 
 if __name__ == "__main__":
-    add = ApiAdd('upbit1')
-    add.save_apikey()
+    # add = ApiAdd('upbit')
+    # add.save_apikey()
     
+    # print("\ucd5c\uc18c \uad6c\ub9e4\uc218\ub7c9\uc740 10 AE \uc785\ub2c8\ub2e4.")
+    ApiTest('upbit').do_test()
+    
+    pass

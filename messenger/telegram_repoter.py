@@ -88,12 +88,16 @@ class TelegramRepoter():
         # https://github.com/python-telegram-bot/python-telegram-bot/blob/master/telegram/ext/dispatcher.py
         dp = self.updater.dispatcher
         
+        menu_item.init()
+        menu_item.set_bot_n_chatid(self.bot, self.chat_id)
         menu_item.set_previous_message_handler(dp, self.message_handler)
         menu_item.set_previous_keyboard(self.make_menu_keyboard)
         menu_item.make_menu_keyboard(self.bot, self.chat_id)
+        
         dp.add_handler(menu_item.message_handler)
         dp.remove_handler(self.message_handler)
         
+        menu_item.run()
         # menu_item.parsering(update, text)
         
 
