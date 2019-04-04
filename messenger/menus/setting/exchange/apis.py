@@ -1,6 +1,7 @@
 import json
 import base64
 import importlib
+import os
 
 from menus.menu_back import BackMenu
 from menus.menu_item import MenuItem
@@ -96,7 +97,7 @@ class ApiAdd(MenuItem):
         cp = Crypto()
         keyset = cp.readKey('configs/ants.conf')
         try:
-            exchanges = self.readKey('configs/exchange.key')
+            exchanges = self.readKey('configs/exchanges.key')
         except :
             exchanges = {}
             
@@ -221,6 +222,7 @@ class ApiDel(MenuItem):
         super().__init__()
         self.exchange_name = exchange_name
         self.__add__(BackMenu())
+        self.DELETE = '삭제'
         pass
     
     def __repr__(self):
@@ -229,7 +231,65 @@ class ApiDel(MenuItem):
     def to_dict(self):
         return 'API Key 삭제'
 
-
+    def run(self):
+        message = '삭제를 원하시면 ''{}'' 라고 입력하세요'.format(self.DELETE)
+        super().make_menu_keyboard(self.bot, self.chat_id, message)
+        
+    def parsering(self, update, context):
+        self.logger.debug('got message : {}'.format(context))
+        if(super().parsering(update, context)):
+            self.logger.debug('got BACK BUTON message : {}'.format(context))
+            return
+        
+        message = ''
+        text = context.message.text
+        
+        deleted = False
+        try:
+            if(text == self.DELETE):
+                self.do_delete()
+                message = '삭제하였습니다'
+                deleted = True
+        except Exception as e:
+            message = str(e)
+        
+        super().make_menu_keyboard(self.bot, self.chat_id, message)
+        if(deleted):
+            self.go_back()
+        
+    def do_delete(self):
+        exchanges = self.readKey('configs/exchanges.key')
+        exchanges[self.exchange_name] = {}
+        self.saveConf('configs/exchanges.key', exchanges)
+        pass
+        
+        
+    def readKey(self, filePath):
+        if not os.path.isfile(filePath):
+            msg = "File path {} does not exist. Will Create.".format(filePath)
+            self.logger.warning(msg)
+            raise Exception(msg)
+        
+        try:
+            with open(filePath) as fp:
+                result = json.load(fp)
+        except Exception as exp:
+            msg = "Can't load json : {}".format(exp)
+            self.logger.warning(msg)
+            raise Exception(msg)
+        
+        return result
+        
+    def saveConf(self, filePath, data):
+        try:
+            with open(filePath, 'w+') as fp:
+                fp.write(json.dumps(data, sort_keys=True, indent=4))
+                
+        except Exception as exp:
+            msg = "Can't save json : {}".format(exp)
+            self.logger.warning(msg)
+            raise Exception(msg)    
+            
 if __name__ == "__main__":
     # add = ApiAdd('upbit')
     # add.save_apikey()
