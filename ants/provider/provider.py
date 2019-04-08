@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from abc import ABCMeta, abstractmethod
+
 from ants.provider.observers import ObserverNotifier
 from ants.provider.observers import Observer
 
@@ -11,5 +13,11 @@ class Provider(ObserverNotifier):
     def __init__(self):
         ObserverNotifier.__init__(self)
     
+    @abstractmethod
+    def run(self):
+        pass
     
-   
+    @abstractmethod
+    def stop(self):
+        pass
+    
