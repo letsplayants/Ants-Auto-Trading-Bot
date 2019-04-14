@@ -160,6 +160,9 @@ class TelegramRepoter():
     
         # self.updater.idle()
     
+    def stop(self):
+        stop_listener()
+        
     def stop_listener(self):
         self.logger.info('telegram will be stop')
         self.updater.signal_handler(SIGINT, 0)

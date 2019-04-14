@@ -5,6 +5,7 @@ import prj_path
 import signal
 import alogger
 import logging
+from telegram_repoter import TelegramRepoter
 from worker import Worker
 
 if __name__ == "__main__":
@@ -12,12 +13,14 @@ if __name__ == "__main__":
     
     def signal_handler(sig, frame):
         logger.info('Program will exit by user Ctrl + C')
+        tel.stop()
         w.stop()
         logger.info('Program Exit')
 
     signal.signal(signal.SIGINT, signal_handler)
     
-    logger.info('Program Start')
+    logger.info('Program Starting')
     w = Worker()
     w.run()
+    tel = TelegramRepoter()
     pass

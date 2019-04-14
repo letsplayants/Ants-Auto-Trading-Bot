@@ -23,7 +23,7 @@ class EmailAlretStrategy(ants.strategies.strategy.StrategyBase, Observer):
         self.states = {}
         
         self.trader = SmartTrader()
-        self.telegram = TelegramRepoter()
+        self.telegram = None
         self.db = Sqlite()
         
         self.upbit = cUpbit({'root_config_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/upbit.conf', 'telegram': self.telegram, 'db':self.db})
