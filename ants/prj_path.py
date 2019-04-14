@@ -6,9 +6,11 @@ import logging
 
 basePath = os.getcwd()
 exchanges = basePath + '/exchange'
+messenger = basePath + '/messenger'
 
 sys.path.insert(0, basePath)
 sys.path.append(exchanges)
+sys.path.append(messenger)
 
 logger = logging.getLogger(__name__)
 
