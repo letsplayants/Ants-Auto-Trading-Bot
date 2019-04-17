@@ -13,12 +13,20 @@ import logging
 import json
 import m_emoji as em
 from menus.main_menu import MainMenu
+from q_publisher import MQPublisher
+from q_receiver import MQReceiver
 
 class TelegramRepoter():
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         
+        self.exchange_name = 'messenger.telegram.quick_trading'
+        self.subscriber_name = 'messenger.telegram.message'
+        
         self.menu_string_set()
+        self.publisher = MQPublisher(self.exchange_name)
+        self.subscriber = MQReceiver(self.subscriber_name, self.sbuscribe_message)
+        self.subscriber.start()
         
         try:
             mtoken = utils.readConfig('configs/telegram_bot.conf')
@@ -45,7 +53,11 @@ class TelegramRepoter():
         # self.remove_kdb()
         self.make_menu_keyboard()
         
-        
+    
+    def sbuscribe_message(self, ch, method, properties, body):
+        body =  body.decode("utf-8")
+        self.send_message(body)
+      
     def menu_string_set(self):
         self.menu = MainMenu()
     
@@ -64,11 +76,11 @@ class TelegramRepoter():
         reply_markup = telegram.ReplyKeyboardMarkup(self.build_menu(keyboard, n_cols=2))
         self.bot.send_message(chat_id=self.chat_id, text=self.welcome_message, reply_markup=reply_markup)
   
-    def message_parser(self, update, context):
+    def message_parser(self, bot, update):
         #받은 메시지를 해당 클래스에 전달함
-        message = context.message
+        message = update.message
         text = message.text
-        self.logger.debug(message.text)
+        self.logger.debug(text)
         
         menu_item = None
         for item in self.menu:
@@ -81,6 +93,7 @@ class TelegramRepoter():
         
         self.logger.debug('fined item : {}'.format(menu_item))
         if(menu_item is None):
+            self.check_quick_trading(text)
             return
         
         # 방법1. 동작안함. dp.restart 해야하는데, stop이후 start하면 뻗음.. 설령 stop이 된다고 하더라도 내부적으로 thread라 join되는데 기다리는데 시간이 많이 걸림
@@ -100,7 +113,39 @@ class TelegramRepoter():
         menu_item.run()
         # menu_item.parsering(update, text)
         
-
+    def check_quick_trading(self, text):
+        self.logger.debug('text : {}'.format(text))
+        try:
+            text = text.split(' ')
+            action = text[0].strip().lower()
+            
+            if((action in ['buy', 'sell']) == False):
+                return
+        except Exception as exp:
+            self.logger.debug('check_quick_trading header paring Exception : {}'.format(exp))
+            return
+        
+        try:
+            self.logger.debug('check quick trading msg : {}'.format(action))
+            # text = text.split(' ')
+            ret = {}
+            ret['version'] = 2
+            ret['action'] = text[0].strip().upper()
+            ret['exchange'] = text[1].strip().upper()
+            ret['market'] = text[2].strip().upper()
+            ret['coin'] = text[3].strip().upper()
+            ret['price'] = float(text[4].strip())
+            ret['seed'] = float(text[5].strip())
+            
+            self.publisher.send(ret)
+        except Exception as exp:
+            self.logger.debug('check_quick_trading body paring Exception : {}'.format(exp))
+            return
+        
+        
+        self.send_message('오더 작성중입니다')
+        pass
+    
     def build_menu(self,
                buttons,
                n_cols,
@@ -126,6 +171,7 @@ class TelegramRepoter():
             return
         
         self.updater = Updater(self.token)
+        
         dp = self.updater.dispatcher
         
         # on different commands - answer in Telegram
@@ -133,11 +179,11 @@ class TelegramRepoter():
         # dp.add_handler(CommandHandler("help", self.help))
         # dp.add_handler(CommandHandler("whoami", self.whoami))
         # dp.add_handler(CommandHandler("room", self.roominfo))
-        # dp.add_handler(CommandHandler("setid", self.setid))
+        # dp.add_handler(CommandHandler("welcome", self.welcome))
         
         dp.add_handler(CallbackQueryHandler(self.whoami, pattern='whoami'))
         dp.add_handler(CallbackQueryHandler(self.roominfo, pattern='roominfo'))
-        dp.add_handler(CallbackQueryHandler(self.setid, pattern='setid'))
+        dp.add_handler(CallbackQueryHandler(self.welcome, pattern='welcome'))
         #총 수익
         #오늘 수익
         #거래소 잔고
@@ -146,7 +192,6 @@ class TelegramRepoter():
         #거래소 스탑로스 설정 및 동작
         #inline keyboard를 사용하여 명령어 제어
         
-        # on noncommand i.e message - echo the message on Telegram
         self.message_handler = MessageHandler(Filters.text, self.message_parser)
         dp.add_handler(self.message_handler)
         
@@ -156,8 +201,8 @@ class TelegramRepoter():
         # Start the Bot
         # 내부적으로 쓰레드로 처리된다.
         # https://github.com/python-telegram-bot/python-telegram-bot/blob/master/telegram/ext/updater.py
-        self.updater.start_polling()
-    
+        self.updater.start_polling(timeout=10, clean=True)
+        
         # self.updater.idle()
     
     def stop(self):
@@ -173,7 +218,7 @@ class TelegramRepoter():
     def menu_keyboard(self):
         keyboard = [[InlineKeyboardButton("내 ID 정보", callback_data='whoami'),
                     InlineKeyboardButton("현재 방 정보", callback_data='roominfo')],
-                    [InlineKeyboardButton("환영 인사", callback_data='setid')]]
+                    [InlineKeyboardButton("환영 인사", callback_data='welcome')]]
 
         return InlineKeyboardMarkup(keyboard)
         
@@ -208,30 +253,12 @@ class TelegramRepoter():
                         text=msg,
                         reply_markup=self.menu_keyboard())
     
-    def setid(self, update, context):
+    def welcome(self, update, context):
         query = context.callback_query
         
         user = query.from_user
         msg = '환영합니다. {}님'.format(user.first_name)
         self.edit_message(update, query, msg)
-    
-    def help(self, update, context):
-        """Send a message when the command /help is issued."""
-        context.message.reply_text('Help!')
-    
-    def echo(self, update, context):
-        """Echo the user message."""
-        # update is bot
-        # context is <class 'telegram.update.Update'>
-        # context.message is <class 'telegram.message.Message'>
-        # bot.send_message(update.message.chat_id, *args, **kwargs)
-        print(type(context)) 
-        # print(update.get_me())
-        # print(getattr(update))
-        print(type(context.message.reply_text))
-        # print(update.message.replay_text)
-        context.message.reply_text(context.message.text)
-    
     
     def error(self, bot_info, update, message):
         """Log Errors caused by Updates."""
@@ -255,10 +282,12 @@ if __name__ == '__main__':
     logging.getLogger("telegram.ext.dispatcher").setLevel(logging.WARNING)
     
     tel = TelegramRepoter()
+    
+    # tel.check_quick_trading('buy upbit krw strom 10 10000')
 
     # tel.send_message("봇클래스 테스트.")
 
-    # tel.run_listener()
+    tel.run_listener()
     
     import signal
     from time import sleep

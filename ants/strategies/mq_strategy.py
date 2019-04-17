@@ -10,7 +10,8 @@ from exchangem.exchanges.upbit import Upbit as cUpbit
 from exchangem.exchanges.bithumb import Bithumb as cBithumb
 from exchangem.exchanges.binance import Binance as cBinance
 from exchangem.database.sqlite_db import Sqlite
-from exchangem.telegram_repoter import TelegramRepoter
+
+from messenger.q_publisher import MQPublisher
 
 class MQStrategy(ants.strategies.strategy.StrategyBase, Observer):
     """
@@ -19,14 +20,13 @@ class MQStrategy(ants.strategies.strategy.StrategyBase, Observer):
     def __init__(self, args={}):
         self.logger = logging.getLogger(__name__)
         self.data_provider = None
-        self.actionState = 'READY'  #BUY, SELL, READY
-        self.states = {}
+        self.telegram_messenger_exchange_name = 'messenger.telegram.message'
+        self.messenger_q = MQPublisher(self.telegram_messenger_exchange_name)
         
         self.trader = SmartTrader()
-        self.telegram = TelegramRepoter()
-        self.db = Sqlite()
+        self.db = None
         
-        self.upbit = cUpbit({'root_config_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/upbit.conf', 'telegram': self.telegram, 'db':self.db})
+        self.upbit = cUpbit({'root_config_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/upbit.conf', 'telegram': None, 'db':self.db})
         self.trader.add_exchange('UPBIT', self.upbit)
         
         # self.bithumb = cBithumb({'root_config_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/bithumb.conf', 'telegram': self.telegram, 'db':self.db})
@@ -63,23 +63,15 @@ class MQStrategy(ants.strategies.strategy.StrategyBase, Observer):
         self.logger.info('Strategy will stop')
     
     def do_action(self, msg):
-        try:
-            exchange = msg['exchange'].upper()
-            coin_name = msg['market'].split('/')[0]
-            market = msg['market'].split('/')[1]
-            action = msg['action'].upper()
-        except :
-            self.logger.warning('msg format is wrong : {}'.format(msg))
-            return
+        version = msg['version']
+        action = msg['action']
+        exchange = msg['exchange']
+        market = msg['market']
+        coin_name = msg['coin']
+        price = msg['price']
+        amount = msg['seed']
         
-        #오더를 뒤져본다.
-        symbol = msg['market']
-        orders = self.trader.get_private_orders(exchange)
-        for order in orders:
-            if(order.get()['symbol'] == symbol and order.get()['side'] == 'buy'):
-                self.logger.info('\'BUY\' Signal will ignore cause old order is not fill {}, ts:{}'.format(symbol, order.get()['ts_create']))
-                return
-        
+        symbol = coin_name + '/' + market
         self.logger.info('Try Action {} {}/{} {}'.format(exchange, coin_name, market, action))
         try:
             availabel_size = self.trader.get_balance(exchange, coin_name, market, False)
@@ -87,104 +79,15 @@ class MQStrategy(ants.strategies.strategy.StrategyBase, Observer):
             self.logger.warning('Trading was failed : {}'.format(exp))
             return
         
-        if(action.upper() == 'BUY'):
-            if(availabel_size > 0):
-                self.logger.info('\'BUY\' Signal will ignore cause balance is enought {} {}'.format(coin_name, availabel_size))
-                return
-        
-        result = self.trader.trading(exchange, market, action, coin_name)
+        result = self.trader.trading(exchange, market, action, coin_name, price, amount)
         if(result == None):
             #트레이딩 실패
             self.logger.warning('Trading was failed')
             return
         
         self.logger.info('Action Done {}'.format(result))
+        self.messenger_q.send('요청하신 내용을 완료하였습니다.\n{}'.format(result))
         
-        
-    def old_do_action(self, msg):
-        try:
-            exchange = msg['exchange'].upper()
-            coin_name = msg['market'].split('/')[0]
-            market = msg['market'].split('/')[1]
-            action = msg['action'].upper()
-        except :
-            self.logger.warning('msg format is wrong : {}'.format(msg))
-            return
-        
-        self.logger.info('Try Action {} {}/{} {}'.format(exchange, coin_name, market, action))
-        
-        if(self.get_state(exchange, coin_name, market) == action):
-            self.logger.info('Already {} {}/{} {} state'.format(exchange, coin_name, market, action))
-            return
-        
-        result = self.trader.trading(exchange, market, action, coin_name)
-        if(result == None):
-            #트레이딩 실패
-            self.logger.warning('Trading was failed')
-            return
-        
-        self.save_state(exchange, coin_name, market, action)
-        self.logger.info('Done Action {} {}/{} {}'.format(exchange, coin_name, market, action))
-
-    def save_state(self, exchange, coin, market, action):
-        record = {
-            'coin' : coin,
-            'market' : market,
-            'exchange' : exchange,
-            'action' : action
-        }
-        """
-        {
-            'upbit': {
-                'xrp': {
-                    'krw': {
-                        'action' : 'buy'
-                    },
-                    'btc' : {
-                        'action' : 'sell'
-                    },
-                    'usdt' : {
-                        'action' : 'buy
-                    }
-                },
-                'trx': {
-                    'krw': {
-                        'action' : 'buy'
-                    },
-                    'btc' : {
-                        'action' : 'sell'
-                    },
-                    'usdt' : {
-                        'action' : 'buy
-                    }
-                }
-            },
-            'bithumb' : {},
-            'binance' : {}
-        }
-        """
-        ex_rec = self.__get_dict(self.states, exchange)
-        coin_rec = self.__get_dict(ex_rec, coin)
-        market_rec = self.__get_dict(coin_rec, market)
-        market_rec = {'action' : action}
-        
-        coin_rec[market] = market_rec
-        ex_rec[coin] = coin_rec
-        self.states[exchange] = ex_rec
-        
-    def __get_dict(self, p, name):
-        r = p.get(name)
-        if(r == None):
-            p[name] = {}
-        
-        return p[name]
-    
-    def get_state(self, exchange, coin, market):
-        try:
-            return self.states[exchange][coin][market]['action']
-        except Exception as e:
-            self.logger.debug('{} {}/{} has not states : {}'.format(exchange, coin, market, e))
-            return None
     
 if __name__ == '__main__':
     print('strategy test')

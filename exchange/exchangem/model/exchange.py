@@ -113,6 +113,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         prefix_str = ''
         d_amount = self.decimal_to_precision(amount)
         d_price = self.decimal_to_precision(price)
+        order_info = None
         
         if(self.is_debug_mode == True):
             self.logger.info('EXCHANGE IN TEST MODE : {} {} {} {} {}'.format(symbol, type, side, d_amount, d_price))
@@ -121,10 +122,9 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         else:
             try:
                 desc = self.exchange.create_order(symbol, type, side, amount, price, params)
+                order_info = self.parsing_order_info(desc)
             except Exception as exp:
                 raise exp
-        
-        order_info = self.parsing_order_info(desc)
         
         try:
             #DB에 기록
@@ -168,10 +168,11 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             
         except Exception as exp:
             raise exp
-            
-        
-        
-        return order_info
+          
+        if(order_info is None):
+            return record
+        else:
+            return order_info   #TEST MODE일 떈 제대로된 리턴을 돌려주지 않는다
 
     def parsing_order_info(self, msg):
         """
@@ -189,15 +190,15 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         self.logger.debug('parsing msg to orderInfo : {}'.format(msg))
         r = OrderInfo()
         r.add(
-            msg['symbol'],
-            msg['id'],
-            msg['side'],
-            msg['price'],
-            msg['amount'],
-            msg['status'],
-            msg['remaining'],
-            msg['timestamp'],
-            msg['lastTradeTimestamp']
+            msg.get('symbol'),
+            msg.get('id'),
+            msg.get('side'),
+            msg.get('price'),
+            msg.get('amount'),
+            msg.get('status'),
+            msg.get('remaining'),
+            msg.get('timestamp'),
+            msg.get('lastTradeTimestamp')
             )
         return r
     
