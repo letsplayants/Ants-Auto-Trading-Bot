@@ -58,7 +58,7 @@ class SmartTrader:
             ret = self._buy(exchange, market, coin_name, seed_money, price)
         elif(action == 'SELL'):
             ret = self._sell(exchange, market, coin_name, price, amount)
-            
+        
         if(ret is None):
             self.logger.warning('action fail')
             return None
@@ -70,9 +70,30 @@ class SmartTrader:
         _type = 'limit'  # or 'market' or 'limit'
         side = 'buy'  # 'buy' or 'sell'
         amount = 0
+        percent = 1   #100%
         
+        if(price.count('%') != 0):
+            percent = price.split('%')[0]
+            percent = int(percent)
+            # -10, -25, 100, 200
+            #추후 옵션에서 설정 할 수 있도록 한다.
+            #지금은 현재가 2배로 구매하려는 경우 주문을 넣지 않는다
+            if(percent > 100):
+                raise Exception('구매단가가 너무 높습니다.(현재가 2배 초과) 주문을 취소합니다')
+            percent = percent / 100
+        else:
+            price = exchange.decimal_to_precision(float(price))
+            
+        last_price = exchange.decimal_to_precision(exchange.get_last_price(symbol))
         if(price == None):
-            price = exchange.get_last_price(symbol)
+            price = last_price
+        else:
+            if(price >= last_price * 2):
+                raise Exception('구매단가가 너무 높습니다.(현재가 2배 초과) 주문을 취소합니다.\n현재가:{}\n주문가:{}'.format(last_price, price))
+        
+        self.logger.debug('price: {}, last_price: {}'.format(price, last_price))
+        price = price + (price * percent)
+        
         amount, price, fee = exchange.check_amount(symbol, seed_size, price)
         params = {}
         desc = None
@@ -83,6 +104,7 @@ class SmartTrader:
             self.logger.debug('order complete : {}'.format(desc))
         except Exception as exp:
             self.logger.warning('create_order exception : {}'.format(exp))
+            raise Exception('주문 중 오류가 발생하였습니다 : {}'.format(exp))
             
         return desc
     

@@ -77,13 +77,19 @@ class MQStrategy(ants.strategies.strategy.StrategyBase, Observer):
         
         symbol = coin_name + '/' + market
         self.logger.info('Try Action {} {}/{} {}'.format(exchange, coin_name, market, action))
+        # try:
+        #     availabel_size = self.trader.get_balance(exchange, coin_name, market, False)
+        # except Exception as exp:
+        #     self.logger.warning('Trading was failed : {}'.format(exp))
+        #     return
+        
         try:
-            availabel_size = self.trader.get_balance(exchange, coin_name, market, False)
+            result = self.trader.trading(exchange, market, action, coin_name, price, amount)
         except Exception as exp:
+            self.messenger_q.send(str(exp))
             self.logger.warning('Trading was failed : {}'.format(exp))
             return
-        
-        result = self.trader.trading(exchange, market, action, coin_name, price, amount)
+            
         if(result == None):
             #트레이딩 실패
             self.logger.warning('Trading was failed')

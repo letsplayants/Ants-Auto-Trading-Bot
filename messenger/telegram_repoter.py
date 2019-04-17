@@ -134,8 +134,8 @@ class TelegramRepoter():
             ret['exchange'] = text[1].strip().upper()
             ret['market'] = text[2].strip().upper()
             ret['coin'] = text[3].strip().upper()
-            ret['price'] = float(text[4].strip())
-            ret['seed'] = float(text[5].strip())
+            ret['price'] = text[4].strip()
+            ret['seed'] = text[5].strip()
             
             self.publisher.send(ret)
         except Exception as exp:
