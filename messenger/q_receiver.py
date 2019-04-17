@@ -15,11 +15,11 @@ class MQReceiver():
             self.exchange_name = exchange_name
             self.callback = callback
             
-        self.connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+        self.connection = pika.BlockingConnection(pika.ConnectionParameters('localhost', heartbeat=5))
         self.channel = self.connection.channel()
             
         self.channel.exchange_declare(exchange=self.exchange_name, exchange_type='fanout')
-        result = self.channel.queue_declare('', exclusive=True)
+        result = self.channel.queue_declare('', exclusive=True, auto_delete=False)
         queue_name = result.method.queue
         self.channel.queue_bind(exchange=self.exchange_name, queue=queue_name)
         self.channel.basic_consume(
@@ -33,10 +33,10 @@ class MQReceiver():
         self.channel.start_consuming()
         
     def stop(self):
-        self.thread_hnd.join()
         self.close()
         
     def close(self):
+        self.thread_hnd.join()
         self.connection.close()
         
 if __name__ == '__main__':

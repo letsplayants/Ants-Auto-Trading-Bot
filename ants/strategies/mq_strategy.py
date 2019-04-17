@@ -63,13 +63,17 @@ class MQStrategy(ants.strategies.strategy.StrategyBase, Observer):
         self.logger.info('Strategy will stop')
     
     def do_action(self, msg):
-        version = msg['version']
-        action = msg['action']
-        exchange = msg['exchange']
-        market = msg['market']
-        coin_name = msg['coin']
-        price = msg['price']
-        amount = msg['seed']
+        try:
+            version = msg['version']
+            action = msg['action']
+            exchange = msg['exchange']
+            market = msg['market']
+            coin_name = msg['coin']
+            price = msg['price']
+            amount = msg['seed']
+        except Exception as exp:
+            self.logger.warning('msg parsing error : {}'.format(exp))
+            return
         
         symbol = coin_name + '/' + market
         self.logger.info('Try Action {} {}/{} {}'.format(exchange, coin_name, market, action))
