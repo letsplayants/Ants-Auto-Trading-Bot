@@ -14,22 +14,6 @@ class SmartTrader:
         self.exchanges = {}
         pass
     
-    def config(self):
-        self.configs = {
-            'upbit':{
-                'krw_limit': 10000,
-                'btc_limit': 1
-            },
-            'bithumb':{
-                'krw_limit': 10000
-            },
-            'binance':{
-                'btc_limit': 0.5,
-                'usdt_limit': 10
-            }
-        }
-        pass
-    
     def add_exchange(self, name, exchange):
         self.exchanges[name] = exchange
         
@@ -55,6 +39,11 @@ class SmartTrader:
         self.logger.info('Try Action {} {}/{} {}'.format(exchange_name, coin_name, market, action))
         if(action == 'BUY'):
             seed_money = self.availabel_seed_money(exchange, market)
+            if(amount != None):
+                # 여기서 amount는 시드 머니를 의미한다
+                seed_money = self.check_percent(exchange, seed_money, amount)
+                pass
+                
             ret = self._buy(exchange, market, coin_name, seed_money, price)
         elif(action == 'SELL'):
             ret = self._sell(exchange, market, coin_name, price, amount)
@@ -65,13 +54,32 @@ class SmartTrader:
         
         return ret
 
+    def check_percent(self, exchange, seed_money, req_sm):
+        if(req_sm.count('%') != 0):
+            percent = req_sm.split('%')[0]
+            percent = int(percent)
+            if(percent < 0):
+                percent = 0
+            if(percent > 100):
+                percent = 100
+                
+            percent = percent / 100
+            seed_money = seed_money * percent
+            return exchange.decimal_to_precision(seed_money)
+        else:
+            req_sm = float(req_sm)
+            if(seed_money > req_sm):
+               seed_money = req_sm 
+            return exchange.decimal_to_precision(float(seed_money))
+        
+    
     def _buy(self, exchange, market, coin_name, seed_size, price):
         symbol = coin_name + '/' + market #'BTC/KRW'
         _type = 'limit'  # or 'market' or 'limit'
         side = 'buy'  # 'buy' or 'sell'
         amount = 0
-        percent = 1   #100%
         
+        last_price = exchange.decimal_to_precision(exchange.get_last_price(symbol))
         if(price.count('%') != 0):
             percent = price.split('%')[0]
             percent = int(percent)
@@ -81,10 +89,11 @@ class SmartTrader:
             if(percent > 100):
                 raise Exception('구매단가가 너무 높습니다.(현재가 2배 초과) 주문을 취소합니다')
             percent = percent / 100
+            price = last_price + (last_price * percent)
         else:
-            price = exchange.decimal_to_precision(float(price))
-            
-        last_price = exchange.decimal_to_precision(exchange.get_last_price(symbol))
+            price = float(price)
+        
+        price = exchange.decimal_to_precision(price)
         if(price == None):
             price = last_price
         else:
@@ -92,7 +101,7 @@ class SmartTrader:
                 raise Exception('구매단가가 너무 높습니다.(현재가 2배 초과) 주문을 취소합니다.\n현재가:{}\n주문가:{}'.format(last_price, price))
         
         self.logger.debug('price: {}, last_price: {}'.format(price, last_price))
-        price = price + (price * percent)
+        
         
         amount, price, fee = exchange.check_amount(symbol, seed_size, price)
         params = {}
