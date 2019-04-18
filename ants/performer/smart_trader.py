@@ -38,6 +38,7 @@ class SmartTrader:
 
         self.logger.info('Try Action {} {}/{} {}'.format(exchange_name, coin_name, market, action))
         if(action == 'BUY'):
+            #TODO seed_money 체크하는 루틴은 왜 여기있는거지? _buy 함수에 포함되는게 맞지 않나???
             seed_money = self.availabel_seed_money(exchange, market)
             if(amount != None):
                 # 여기서 amount는 시드 머니를 의미한다
@@ -53,7 +54,7 @@ class SmartTrader:
             return None
         
         return ret
-
+    
     def check_percent(self, exchange, seed_money, req_sm):
         if(req_sm.count('%') != 0):
             percent = req_sm.split('%')[0]
@@ -71,34 +72,30 @@ class SmartTrader:
             if(seed_money > req_sm):
                seed_money = req_sm 
             return exchange.decimal_to_precision(float(seed_money))
-        
     
-    def _buy(self, exchange, market, coin_name, seed_size, price):
+    def _buy(self, exchange, market, coin_name, seed_size, price=None):
         symbol = coin_name + '/' + market #'BTC/KRW'
         _type = 'limit'  # or 'market' or 'limit'
         side = 'buy'  # 'buy' or 'sell'
         amount = 0
         
         last_price = exchange.decimal_to_precision(exchange.get_last_price(symbol))
+        
+        if(price == None):
+            price = last_price
+        
         if(price.count('%') != 0):
             percent = price.split('%')[0]
             percent = int(percent)
-            # -10, -25, 100, 200
-            #추후 옵션에서 설정 할 수 있도록 한다.
-            #지금은 현재가 2배로 구매하려는 경우 주문을 넣지 않는다
-            if(percent > 100):
-                raise Exception('구매단가가 너무 높습니다.(현재가 2배 초과) 주문을 취소합니다')
             percent = percent / 100
             price = last_price + (last_price * percent)
         else:
             price = float(price)
         
         price = exchange.decimal_to_precision(price)
-        if(price == None):
-            price = last_price
-        else:
-            if(price >= last_price * 2):
-                raise Exception('구매단가가 너무 높습니다.(현재가 2배 초과) 주문을 취소합니다.\n현재가:{}\n주문가:{}'.format(last_price, price))
+        
+        if(price >= last_price * 1.5):
+            raise Exception('구매단가가 너무 높습니다.(현재가 1.5배 초과) 주문을 취소합니다.\n현재가:{}\n주문가:{}'.format(last_price, price))
         
         self.logger.debug('price: {}, last_price: {}'.format(price, last_price))
         
@@ -117,19 +114,45 @@ class SmartTrader:
             
         return desc
     
-    def _sell(self, exchange, market, coin_name, price, amount):
+    def _sell(self, exchange, market, coin_name, price=None, amount=None):
         symbol = coin_name + '/' + market #'BTC/KRW'
         _type = 'limit'  # or 'market' or 'limit'
         side = 'sell'  # 'buy' or 'sell'
         
+        #판매 단가가 너무 낮은지 체크
+        last_price = exchange.decimal_to_precision(exchange.get_last_price(symbol))
+        if(price == None):
+            price = last_price
+            
+        if(price.count('%') != 0):
+            percent = price.split('%')[0]
+            percent = int(percent)
+            percent = percent / 100
+            price = last_price + (last_price * percent)
+        else:
+            price = float(price)
+        
+        price = exchange.decimal_to_precision(price)
+        
+        if(price <= last_price * 0.5):
+            raise Exception('판매단가가 너무 낮습니다.(현재가의 절반 미만) 주문을 취소합니다.\n현재가:{}\n주문가:{}'.format(last_price, price))
+        
+        self.logger.debug('price: {}, last_price: {}'.format(price, last_price))
+        
+        
         if(price == None):
             price = exchange.get_last_price(symbol)
         
+        free_amount = exchange.get_availabel_size(coin_name, False)
         if(amount == None):
-            amount = exchange.get_availabel_size(coin_name, False)
+            amount = free_amount
+        
+        amount = self.check_percent(exchange, free_amount, amount)
+        self.logger.debug('amount: {}, free_amount: {}'.format(amount, free_amount))
         
         if(amount == 0):
             self.logger.warning('{} is not enought {}'.format(coin_name, amount))
+            raise Exception('{} 여유가 충분하지 않습니다.\n잔고:{}'.format(coin_name, amount))
         
         # amount, price, fee = exchange.check_amount(symbol, amount, price)
         fee_p = exchange.get_fee(market)
@@ -148,7 +171,7 @@ class SmartTrader:
             self.logger.warning('create_order exception : {}'.format(exp))
             
         return desc
-        
+    
     def availabel_seed_money(self, exchange, base):
         """
         사용 가능한 market base seed를 돌려준다
