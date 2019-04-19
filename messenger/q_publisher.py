@@ -49,7 +49,7 @@ if __name__ == '__main__':
     print('exchange publisher test')
     
     queue_name = 'trading_msg'
-    queue_name = 'messenger.telegram.quick_trading'
+    # queue_name = 'messenger.telegram.quick_trading'
     message = '#BTC/KRW #1D #BUY #UPBIT #AUTO'
     
     pub = MQPublisher(queue_name)
