@@ -31,7 +31,7 @@ class MQProvider(Provider):
         except Exception as exp:
             self.logger.warning('Can''t converte {}'.format(body))
             ret = {}
-            
+        
         self.logger.debug('Received {}'.format(body))
         self.notify(ret)
     

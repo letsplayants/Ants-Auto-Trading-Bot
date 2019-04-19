@@ -62,10 +62,10 @@ class MQStrategy(ants.strategies.strategy.StrategyBase, Observer):
         self.data_provider.stop()
         self.logger.info('Strategy will stop')
     
-    def do_action(self, msg):
+    def trading(self, msg):
         try:
             version = msg['version']
-            action = msg['action']
+            command = msg['command']
             exchange = msg['exchange']
             market = msg['market']
             coin_name = msg['coin']
@@ -74,9 +74,9 @@ class MQStrategy(ants.strategies.strategy.StrategyBase, Observer):
         except Exception as exp:
             self.logger.warning('msg parsing error : {}'.format(exp))
             return
-        
+            
         symbol = coin_name + '/' + market
-        self.logger.info('Try Action {} {}/{} {}'.format(exchange, coin_name, market, action))
+        self.logger.info('Try Action {} {}/{} {}'.format(exchange, coin_name, market, command))
         # try:
         #     availabel_size = self.trader.get_balance(exchange, coin_name, market, False)
         # except Exception as exp:
@@ -84,7 +84,7 @@ class MQStrategy(ants.strategies.strategy.StrategyBase, Observer):
         #     return
         
         try:
-            result = self.trader.trading(exchange, market, action, coin_name, price, amount)
+            result = self.trader.trading(exchange, market, command, coin_name, price, amount)
         except Exception as exp:
             self.messenger_q.send(str(exp))
             self.logger.warning('Trading was failed : {}'.format(exp))
@@ -98,6 +98,77 @@ class MQStrategy(ants.strategies.strategy.StrategyBase, Observer):
         self.logger.info('Action Done {}'.format(result))
         self.messenger_q.send('요청하신 내용을 완료하였습니다.\n{}'.format(result))
         
+    def do_action(self, msg):
+        try:
+            version = msg['version']
+            command = msg['command']
+        except Exception as exp:
+            self.logger.warning('msg parsing error : {}'.format(exp))
+            return
+        
+        if(command in ['BUY', 'SELL']):
+            self.trading(msg)
+        elif(command in ['SHOW']):
+            self.show_order(msg)
+    
+    def show_order(self, msg):
+        try:
+            version = msg['version']
+            command = msg['command']
+            exchange = msg['exchange']
+            sub_cmd = msg['sub_cmd']
+            coin_name = msg['coin_name']
+            if(coin_name == ''):
+                coin_name = None
+        except Exception as exp:
+            self.logger.warning('msg parsing error : {}'.format(exp))
+            return
+        
+        try:    
+            orders = self.trader.get_private_orders(exchange)
+            order_str = '오더목록\n'
+            self.messenger_q.send(order_str)
+            for order in orders:
+                if(exchange == 'UPBIT'):
+                    order_str = self.order_paring_upbit(order.get(), coin_name)
+                else:
+                    order_str = str(order.get()) + '\n'
+                
+                if(order_str is not None):
+                    self.messenger_q.send(order_str)
+                
+        except Exception as exp:
+            self.messenger_q.send('요청하신 작업 중 오류가 발생하였습니다.\n{}'.format(exp))
+            
+        self.messenger_q.send('오더 목록 출력 완료')
+    
+    def order_paring_upbit(self, msg, trg_coin_name=None):
+        # {'symbol': 'BTC/KRW', 'id': '23ddd54a-3fa8-4635-aa61-88ad657c1e14', 'side': 'buy', 'price': 0.99, 'amount': 10095.95959596, 'status': 'open', 'remaining': 10095.95959596, 'ts_create': 1555432332000, 'ts_updated': None}
+        coin_name = msg['symbol'].split('/')[0]
+        market = msg['symbol'].split('/')[1]
+        price = float(msg['price'])
+        amount = float(msg['amount'])
+        pp = price * amount
+        side = msg['side']
+        if(side == 'buy'):
+            side = '구매중'
+        elif(side == 'sell'):
+            side = '판매중'
+        
+        if(trg_coin_name is not None and trg_coin_name != coin_name):
+            return None
+        
+        ret = '-' * 60 + '\n'
+        ret = ''
+        ret = ret + 'ID : {}\n'.format(msg['id'])
+        ret = ret + '{}\n'.format(side)
+        ret = ret + '마켓 : {}\n'.format(market)
+        ret = ret + '코인이름 : {}\n'.format(coin_name)
+        ret = ret + '단가 : {}\n'.format(price)
+        ret = ret + '수량 : {}\n'.format(amount)
+        ret = ret + '수량 금액(단가 * 수량) : {}\n'.format(pp)
+        
+        return ret
     
 if __name__ == '__main__':
     print('strategy test')

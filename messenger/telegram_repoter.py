@@ -125,7 +125,7 @@ class TelegramRepoter():
             text = text.split(' ')
             action = text[0].strip().lower()
             
-            if((action in ['buy', 'sell']) == False):
+            if((action in ['buy', 'sell', 'show']) == False):
                 return
         except Exception as exp:
             self.logger.debug('check_quick_trading header paring Exception : {}'.format(exp))
@@ -136,12 +136,22 @@ class TelegramRepoter():
             # text = text.split(' ')
             ret = {}
             ret['version'] = 2
-            ret['action'] = text[0].strip().upper()
-            ret['exchange'] = text[1].strip().upper()
-            ret['market'] = text[2].strip().upper()
-            ret['coin'] = text[3].strip().upper()
-            ret['price'] = text[4].strip()
-            ret['seed'] = text[5].strip()
+            command = ret['command'] = text[0].strip().upper()
+            
+            if(command in ['BUY', 'SELL']):
+                ret['exchange'] = text[1].strip().upper()
+                ret['market'] = text[2].strip().upper()
+                ret['coin'] = text[3].strip().upper()
+                ret['price'] = text[4].strip()
+                ret['seed'] = text[5].strip()
+            else:
+                if(command in ['SHOW']):
+                    ret['sub_cmd'] = text[1].strip().upper()
+                    ret['exchange'] = text[2].strip().upper()
+                    try:
+                        ret['coin_name'] = text[3].strip().upper()
+                    except Exception:
+                        ret['coin_name'] = ''
             
             self.publisher.send(ret)
         except Exception as exp:
@@ -149,7 +159,7 @@ class TelegramRepoter():
             return
         
         
-        self.send_message('오더 작성중입니다')
+        self.send_message('요청 하신 내용을 수행중입니다')
         pass
     
     def build_menu(self,
