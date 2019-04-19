@@ -78,9 +78,15 @@ class TelegramRepoter():
   
     def message_parser(self, bot, update):
         #받은 메시지를 해당 클래스에 전달함
-        message = update.message
-        text = message.text
-        self.logger.debug(text)
+        try:
+            message = update.message
+            text = message.text
+            self.logger.debug(text)
+        except Exception as exp:
+            #그룹 대화방이나 1:1 대화방이 아닌 경우 오류가 발생함
+            self.logger.debug(update)
+            self.logger.debug(update.channel_post.text)
+            text = update.channel_post.text
         
         menu_item = None
         for item in self.menu:
