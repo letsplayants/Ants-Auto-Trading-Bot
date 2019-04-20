@@ -15,6 +15,10 @@ import m_emoji as em
 from menus.main_menu import MainMenu
 from q_publisher import MQPublisher
 from q_receiver import MQReceiver
+from selfupgrade import CheckForUpdate
+from distutils.dir_util import copy_tree
+from sh import git
+import time
 
 class TelegramRepoter():
     def __init__(self):
@@ -200,6 +204,8 @@ class TelegramRepoter():
         dp.add_handler(CallbackQueryHandler(self.whoami, pattern='whoami'))
         dp.add_handler(CallbackQueryHandler(self.roominfo, pattern='roominfo'))
         dp.add_handler(CallbackQueryHandler(self.welcome, pattern='welcome'))
+        
+        dp.add_handler(CommandHandler("upgrade", self.do_upgrade))
         #총 수익
         #오늘 수익
         #거래소 잔고
@@ -280,6 +286,30 @@ class TelegramRepoter():
         """Log Errors caused by Updates."""
         self.logger.warning('Update "%s" caused error "%s"', bot_info, message)
     
+    def do_upgrade(self, update, context):
+        self.send_message('업그레이드를 진행합니다\n 업그레이드하는데 약 3~5분 가량 걸리며 완료되면 텔레그램 봇이 재시작 됩니다')
+        gitDir = "/home/pi/Ants-Auto-Trading-Bot/"
+        backup_path = '/home/pi/config_backup'
+        
+        try:
+            # config 폴더를 다른곳에 백업해둔 뒤 업데이트 후 다시 덮어 쓰도록 한다
+            self.send_message('설정 백업 중입니다')
+            copy_tree(gitDir+'configs', backup_path)
+            
+            if CheckForUpdate(gitDir):
+                self.send_message("업데이트 중입니다")
+                # resetCheck = git("--git-dir=" + gitDir + ".git/", "--work-tree=" + gitDir, "reset", "--hard", "origin/dev")
+                resetCheck = git("--git-dir=" + gitDir + ".git/", "--work-tree=" + gitDir, "reset", "--hard", "origin/dev")
+                self.send_message(str(resetCheck))
+            
+            self.send_message('설정 복구 중입니다')
+            copy_tree(backup_path, gitDir+'configs')
+            
+            self.send_message('시스템을 재시작합니다')
+            time.sleep(2)
+            os.popen('sudo reboot')
+        except Exception as exp:
+            self.send_message('업그레이드 실패 : \n{}'.format(exp))
 
 if __name__ == '__main__':
     print('strategy test')
