@@ -1,1 +1,1 @@
-nohup python3 ants/main.py &
+nohup python ants/main.py &
