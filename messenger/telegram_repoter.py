@@ -19,6 +19,7 @@ from selfupgrade import CheckForUpdate
 from distutils.dir_util import copy_tree
 from sh import git
 import time
+import os, sys
 
 class TelegramRepoter():
     def __init__(self):
