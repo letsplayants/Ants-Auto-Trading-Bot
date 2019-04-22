@@ -110,6 +110,30 @@ class MQStrategy(ants.strategies.strategy.StrategyBase, Observer):
             self.trading(msg)
         elif(command in ['SHOW']):
             self.show_order(msg)
+        elif(command in ['CANCEL']):
+            self.cancel_order(msg)
+    
+    def cancel_order(self, msg):
+        try:
+            version = msg['version']
+            command = msg['command']
+            sub_cmd = msg['sub_cmd']
+            exchange = msg['exchange']
+            order_id = msg['id']
+        except Exception as exp:
+            msg = 'cancel order msg parsing error : {}'.format(exp)
+            self.logger.warning(msg)
+            self.messenger_q.send(msg)
+            return
+        
+        try:
+            orders = self.trader.cancel_order(exchange, order_id)
+        except Exception as exp:
+            self.messenger_q.send('요청하신 작업 중 오류가 발생하였습니다.\n{}'.format(exp))
+            return
+            
+        self.messenger_q.send('주문 취소 성공')
+        
     
     def show_order(self, msg):
         try:
@@ -130,7 +154,7 @@ class MQStrategy(ants.strategies.strategy.StrategyBase, Observer):
             self.messenger_q.send(order_str)
             for order in orders:
                 if(exchange == 'UPBIT'):
-                    order_str = self.order_paring_upbit(order.get(), coin_name)
+                    order_str = self.order_paring(exchange, order.get(), coin_name)
                 else:
                     order_str = str(order.get()) + '\n'
                 
@@ -142,7 +166,7 @@ class MQStrategy(ants.strategies.strategy.StrategyBase, Observer):
             
         self.messenger_q.send('오더 목록 출력 완료')
     
-    def order_paring_upbit(self, msg, trg_coin_name=None):
+    def order_paring(self, exchange, msg, trg_coin_name=None):
         # {'symbol': 'BTC/KRW', 'id': '23ddd54a-3fa8-4635-aa61-88ad657c1e14', 'side': 'buy', 'price': 0.99, 'amount': 10095.95959596, 'status': 'open', 'remaining': 10095.95959596, 'ts_create': 1555432332000, 'ts_updated': None}
         coin_name = msg['symbol'].split('/')[0]
         market = msg['symbol'].split('/')[1]
@@ -158,8 +182,8 @@ class MQStrategy(ants.strategies.strategy.StrategyBase, Observer):
         if(trg_coin_name is not None and trg_coin_name != coin_name):
             return None
         
-        ret = '-' * 60 + '\n'
-        ret = ''
+        ret = 'SHOW ORDER\n'
+        ret = ret + '거래소 : {}\n'.format(exchange)
         ret = ret + 'ID : {}\n'.format(msg['id'])
         ret = ret + '{}\n'.format(side)
         ret = ret + '마켓 : {}\n'.format(market)

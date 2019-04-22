@@ -226,6 +226,11 @@ class SmartTrader:
         
         # Is it small balance?
     
+    def cancel_order(self, exchange_name, id):
+        exchange = self.exchanges.get(exchange_name)
+        exchange.cancel_private_order(id)
+        
+    
 if __name__ == '__main__':
     print('SmartTrader test')
     logger = logging.getLogger()

@@ -61,11 +61,27 @@ class TelegramRepoter():
     
     def sbuscribe_message(self, ch, method, properties, body):
         body =  body.decode("utf-8")
-        self.send_message(body)
+        if(body.find('SHOW ORDER') == 0):
+            self.send_message_order(body)
+        else:
+            self.send_message(body)
       
+    def send_message_order(self, msg):
+        # msg = msg.replace('SHOW ORDER','')
+        msg = msg[msg.find('\n'):]
+        self.logger.debug('send_message : {}'.format(self.use))
+        if(self.use) :
+            self.logger.debug('send_msg : {}-{}'.format(self.chat_id, msg))
+            self.bot.sendMessage(self.chat_id, msg, reply_markup=self.order_keyboard())
+    
+    def order_keyboard(self):
+        keyboard = [[InlineKeyboardButton("주문 취소", callback_data='cancel_order')]]
+
+        return InlineKeyboardMarkup(keyboard)
+    
+       
     def menu_string_set(self):
         self.menu = MainMenu()
-    
     
     def make_menu_keyboard(self, bot = None, chat_id = None):
         keyboard = []
@@ -163,7 +179,6 @@ class TelegramRepoter():
             self.logger.debug('check_quick_trading body paring Exception : {}'.format(exp))
             return
         
-        
         self.send_message('요청 하신 내용을 수행중입니다')
         pass
     
@@ -196,7 +211,8 @@ class TelegramRepoter():
         dp = self.updater.dispatcher
         
         # on different commands - answer in Telegram
-        dp.add_handler(CommandHandler("menu", self.menu))
+        dp.add_handler(CommandHandler("menu", self.menu_func))
+        dp.add_handler(CommandHandler("upgrade", self.do_upgrade))
         # dp.add_handler(CommandHandler("help", self.help))
         # dp.add_handler(CommandHandler("whoami", self.whoami))
         # dp.add_handler(CommandHandler("room", self.roominfo))
@@ -206,7 +222,8 @@ class TelegramRepoter():
         dp.add_handler(CallbackQueryHandler(self.roominfo, pattern='roominfo'))
         dp.add_handler(CallbackQueryHandler(self.welcome, pattern='welcome'))
         
-        dp.add_handler(CommandHandler("upgrade", self.do_upgrade))
+        dp.add_handler(CallbackQueryHandler(self.cancel_order, pattern='cancel_order'))
+        
         #총 수익
         #오늘 수익
         #거래소 잔고
@@ -235,7 +252,7 @@ class TelegramRepoter():
         self.logger.info('telegram will be stop')
         self.updater.signal_handler(SIGINT, 0)
     
-    def menu(self, update, context):
+    def menu_func(self, update, context):
         context.message.reply_text('Please choose:', reply_markup=self.menu_keyboard())
         
     def menu_keyboard(self):
@@ -269,6 +286,36 @@ class TelegramRepoter():
             self.edit_message(update, query, '1:1방에서만 설정 가능합니다')
             return
         self.edit_message(update, query, '당신의 ID : {}'.format(query.message.chat.id))
+
+    def cancel_order(self, update, context):
+        message = context.callback_query.message.text
+        
+        self.logger.debug('cancel order msg : {}'.format(context))
+        self.logger.debug('cancel order msg : {}'.format(context.callback_query.message.text))
+        
+        txt_list = message.splitlines()
+        self.logger.debug('cancel order msg : {}'.format(txt_list[0]))
+        
+        
+        exchange = txt_list[0].replace('거래소 : ','')
+        order_id = txt_list[1].replace('ID : ', '')
+        
+        
+        ret = {}
+        ret['version'] = 2
+        command = ret['command'] = 'CANCEL'
+        
+        ret['sub_cmd'] = 'ORDER'
+        ret['exchange'] = exchange
+        ret['id'] = order_id
+        
+        self.publisher.send(ret)
+        
+        # query = context.callback_query
+        # if(query.message.chat.type != 'private'):
+        #     self.edit_message(update, query, '1:1방에서만 설정 가능합니다')
+        #     return
+        # self.edit_message(update, query, '당신의 ID : {}'.format(query.message.chat.id))
 
     def edit_message(self, bot, query, msg):
         bot.edit_message_text(chat_id=query.message.chat_id,
@@ -345,4 +392,3 @@ if __name__ == '__main__':
         logger.info('Program Exit')
 
     signal.signal(signal.SIGINT, signal_handler)
-    

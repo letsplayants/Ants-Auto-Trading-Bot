@@ -2,7 +2,6 @@ import sh
 from sh import git
 import time
 import os, sys
-import shutil
 from distutils.dir_util import copy_tree
 
 aggregated = ""
