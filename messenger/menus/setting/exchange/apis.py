@@ -82,8 +82,12 @@ class ApiAdd(MenuItem):
             super().make_menu_keyboard(self.bot, self.chat_id, msg)
 
     def do_update(self, update, context):
-        message = '{}거래소 API키를 추가 했습니다. \n대화창에 입력된 API Key는 지워주세요'.format(self.exchange_name)
-        self.save_apikey()
+        try:
+            self.save_apikey()
+            message = '{}거래소 API키를 추가 했습니다. \n대화창에 입력된 API Key는 지워주세요'.format(self.exchange_name)
+        except Exception as exp:
+            message = '오류 : api키 추가중 오류가 발생하였습니다\n{}'.format(exp)
+        
         super().make_menu_keyboard(self.bot, self.chat_id, message)
         self.go_back()
     
@@ -98,8 +102,9 @@ class ApiAdd(MenuItem):
         keyset = cp.readKey('configs/ants.conf')
         try:
             exchanges = self.readKey('configs/exchanges.key')
-        except :
-            exchanges = {}
+        except Exception as e:
+            self.logger.warning('Crypto except : {}'.format(exp))
+            raise Exception(e)
             
         try:
             encrypt_key = cp.encrypt(self.api_key)
@@ -122,7 +127,7 @@ class ApiAdd(MenuItem):
             self.saveConf('configs/exchanges.key', exchanges)
         except Exception as exp:
             self.logger.warning('Crypto except : {}'.format(exp))
-            raise Exception('암호화 작업 중 오류가 발생했습니다')
+            raise Exception('암호화 작업 중 오류가 발생했습니다\n{}'.format(exp))
     
     def readKey(self, filePath):
         if not os.path.isfile(filePath):
