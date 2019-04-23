@@ -134,8 +134,8 @@ class ApiAdd(MenuItem):
     def readKey(self, filePath):
         if not os.path.isfile(filePath):
             msg = "File path {} does not exist. Will Create.".format(filePath)
-            self.logger.warning(msg)
-            raise Exception(msg)
+            self.logger.info(msg)
+            return {}
         
         try:
             with open(filePath) as fp:
