@@ -106,7 +106,7 @@ class ApiAdd(MenuItem):
             exchanges = self.readKey('configs/exchanges.key')
         except Exception as e:
             self.logger.warning('Crypto except : {}'.format(e))
-            raise Exception(e)
+            exchanges = {}
             
         try:
             encrypt_key = cp.encrypt(self.api_key)
