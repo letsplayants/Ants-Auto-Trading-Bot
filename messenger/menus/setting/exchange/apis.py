@@ -99,9 +99,10 @@ class ApiAdd(MenuItem):
         # ssh 키를 사용하여 암호화 한 후 원래 설정대로 저장한다
         
         #파일을 열어서 기존 설정을 읽어온다
-        try:
-            cp = Crypto()
-            keyset = cp.readKey('configs/ants.conf')
+        cp = Crypto()
+        keyset = cp.readKey('configs/ants.conf')
+        
+        try:    
             exchanges = self.readKey('configs/exchanges.key')
         except Exception as e:
             self.logger.warning('Crypto except : {}'.format(e))
