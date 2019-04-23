@@ -10,8 +10,8 @@ def CheckForUpdate(workingDir):
     print("Fetching most recent code from source..." + workingDir)
 
     # Fetch most up to date version of code.
-    p = git("--git-dir=" + workingDir + ".git/", "--work-tree=" + workingDir, "fetch", "origin", "master", _out=None, _out_bufsize=0, _tty_in=True)               
-    
+    p = git("--git-dir=" + workingDir + ".git/", "--work-tree=" + workingDir, "fetch", _out=None, _out_bufsize=0, _tty_in=True)
+
     print("Fetch complete.")
     time.sleep(2)
     print("Checking status for " + workingDir + "...")
@@ -26,6 +26,7 @@ def CheckForUpdate(workingDir):
         return True
 
 if __name__ == "__main__":
+    #TODO 프로그램이 실행된 경로를 찾아서 .. 프로젝트 시작 경로를 찾아서 업데이트하도록 한다
     gitDir = "/home/pi/Ants-Auto-Trading-Bot/"
     backup_path = '/home/pi/config_backup'
     

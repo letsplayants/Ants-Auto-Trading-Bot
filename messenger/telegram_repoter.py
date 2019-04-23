@@ -336,6 +336,7 @@ class TelegramRepoter():
     
     def do_upgrade(self, update, context):
         self.send_message('업그레이드를 진행합니다\n 업그레이드하는데 약 3~5분 가량 걸리며 완료되면 텔레그램 봇이 재시작 됩니다')
+        #TODO 프로그램이 실행된 경로를 찾아서 .. 프로젝트 시작 경로를 찾아서 업데이트하도록 한다
         gitDir = "/home/pi/Ants-Auto-Trading-Bot/"
         backup_path = '/home/pi/config_backup'
         
