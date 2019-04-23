@@ -14,10 +14,11 @@ import threading
 from ants.provider.provider import Provider
 
 class EmailProvider(Provider):
-    def __init__(self):
+    def __init__(self, request_raw_data=False):
         Provider.__init__(self)
         self.logger = logging.getLogger(__name__)
         self.isRun = True
+        self.request_raw_data = request_raw_data
         self.load_setting('configs/mail.key')
         pass
     
@@ -57,11 +58,14 @@ class EmailProvider(Provider):
                 msgList = self.getMailList(mailConn, mthList)
                 
                 for msg in msgList:
-                    ret = self.parsingMsg(msg[0][1])
-                    if ret != {}:
-                        self.logger.info('doActoin :{}'.format(ret))
-                        self.notify(ret)
-                        self.logger.info('actoin done')
+                    if(self.request_raw_data == False):
+                        ret = self.parsingMsg(msg[0][1])
+                        if ret != {}:
+                            self.logger.info('doActoin :{}'.format(ret))
+                            self.notify(ret)
+                            self.logger.info('actoin done')
+                    else:
+                        self.notify(self.get_header(msg[0][1]))
                         
                 self.closeFolder(mailConn)
             except Exception as exp:
@@ -117,14 +121,19 @@ class EmailProvider(Provider):
         except :
             self.delete_mail = False
     
-    def parsingMsg(self, data):
-        # 샘플 확보용 코드
-        # utils.saveBinFile('/tmp/email.sample',data)
-        
+    def get_header(self, data):
         msg = email.message_from_bytes(data)
         hdr = email.header.make_header(email.header.decode_header(msg['Subject']))
         
         subject = str(hdr)
+        
+        return subject
+    
+    def parsingMsg(self, data):
+        # 샘플 확보용 코드
+        # utils.saveBinFile('/tmp/email.sample',data)
+        
+        subject = self.get_header(data)
         
         self.logger.debug('subject : {}'.format(subject))
         #subject ex) TradingView Alert: #BTCKRW #1M #SELL #BITHUMB
