@@ -274,6 +274,7 @@ class ApiDel(MenuItem):
     def readKey(self, filePath):
         if not os.path.isfile(filePath):
             msg = "File path {} does not exist. Will Create.".format(filePath)
+            self.saveConf(filePath,{})
             self.logger.warning(msg)
             raise Exception(msg)
         
