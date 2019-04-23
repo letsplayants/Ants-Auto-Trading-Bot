@@ -87,7 +87,8 @@ class ApiAdd(MenuItem):
             message = '{}거래소 API키를 추가 했습니다. \n대화창에 입력된 API Key는 지워주세요'.format(self.exchange_name)
         except Exception as exp:
             message = '오류 : api키 추가중 오류가 발생하였습니다\n{}'.format(exp)
-        
+            self.logger.warning(message)
+            
         super().make_menu_keyboard(self.bot, self.chat_id, message)
         self.go_back()
     
@@ -98,12 +99,12 @@ class ApiAdd(MenuItem):
         # ssh 키를 사용하여 암호화 한 후 원래 설정대로 저장한다
         
         #파일을 열어서 기존 설정을 읽어온다
-        cp = Crypto()
-        keyset = cp.readKey('configs/ants.conf')
         try:
+            cp = Crypto()
+            keyset = cp.readKey('configs/ants.conf')
             exchanges = self.readKey('configs/exchanges.key')
         except Exception as e:
-            self.logger.warning('Crypto except : {}'.format(exp))
+            self.logger.warning('Crypto except : {}'.format(e))
             raise Exception(e)
             
         try:

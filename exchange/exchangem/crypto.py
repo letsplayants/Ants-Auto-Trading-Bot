@@ -28,15 +28,17 @@ class Crypto():
         
     def __read_json_file(self, filePath):
         if not os.path.isfile(filePath):
-            print("File path {} does not exist. Exiting...".format(filePath))
-            return None
+            msg = "File path {} does not exist. Exiting...".format(filePath)
+            print(msg)
+            raise Exception(msg)
         
         try:
             with open(filePath, 'r') as fp:
                 result = json.load(fp)
         except Exception as exp:
-            print("Can't load json : {}".format(exp))
-            return None
+            msg = "Can't load json : {}".format(exp)
+            print(msg)
+            raise Exception(msg)
     
         return result
         
