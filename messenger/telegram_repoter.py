@@ -45,6 +45,11 @@ class TelegramRepoter():
             
             self.token = mtoken['bot_token']
             self.chat_id = mtoken['chat_id']
+            ck = mtoken.get('custom_keyboard')
+            if(ck is None):
+                self.custom_keyboard = True
+            else:
+                self.custom_keyboard = False
             self.bot = telegram.Bot(token=mtoken["bot_token"])
         except Exception as exp:
             self.logger.warning('Can''t load Telegram Config : {}'.format(exp))
@@ -77,9 +82,11 @@ class TelegramRepoter():
     def order_keyboard(self):
         keyboard = [[InlineKeyboardButton("주문 취소", callback_data='cancel_order')]]
 
-        return InlineKeyboardMarkup(keyboard)
+        if(self.custom_keyboard):
+            return InlineKeyboardMarkup(keyboard)
+        else:
+            return telegram.ReplyKeyboardRemove()
     
-       
     def menu_string_set(self):
         self.menu = MainMenu()
     
@@ -94,7 +101,11 @@ class TelegramRepoter():
         #봇이 버튼에서 '인사'라는 버튼을 제공한다면 사용자는 버튼을 누르는 것 대신 '인사'라고 쳐도 봇은 동일하게 동작한다
         
         self.welcome_message = '안녕하세요, 현재 버젼은 개발버젼입니다. 저는 다음과 같은 기능을 제공합니다'
-        reply_markup = telegram.ReplyKeyboardMarkup(self.build_menu(keyboard, n_cols=2))
+        if(self.custom_keyboard):
+            reply_markup = telegram.ReplyKeyboardMarkup(self.build_menu(keyboard, n_cols=2))
+        else:
+            reply_markup = None
+            
         self.bot.send_message(chat_id=self.chat_id, text=self.welcome_message, reply_markup=reply_markup)
   
     def message_parser(self, bot, update):
@@ -259,8 +270,10 @@ class TelegramRepoter():
         keyboard = [[InlineKeyboardButton("내 ID 정보", callback_data='whoami'),
                     InlineKeyboardButton("현재 방 정보", callback_data='roominfo')],
                     [InlineKeyboardButton("환영 인사", callback_data='welcome')]]
-
-        return InlineKeyboardMarkup(keyboard)
+        if(self.custom_keyboard):
+            return InlineKeyboardMarkup(keyboard)
+        else:
+            return telegram.ReplyKeyboardRemove()
         
     def button(self, update, context):
         query = context.callback_query
