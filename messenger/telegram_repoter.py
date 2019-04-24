@@ -273,7 +273,7 @@ class TelegramRepoter():
         if(self.custom_keyboard):
             return InlineKeyboardMarkup(keyboard)
         else:
-            return telegram.ReplyKeyboardRemove()
+            return None
         
     def button(self, update, context):
         query = context.callback_query
