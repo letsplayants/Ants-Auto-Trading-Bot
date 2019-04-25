@@ -14,6 +14,7 @@ import ccxt
 import base64
 import requests
 import time
+import json
 from datetime import datetime, timezone
 
 from ccxt.base.decimal_to_precision import decimal_to_precision  # noqa F401
@@ -124,7 +125,19 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
                 desc = self.exchange.create_order(symbol, type, side, amount, price, params)
                 order_info = self.parsing_order_info(desc)
             except Exception as exp:
-                raise exp
+                self.logger.warning('create_oder exception :\n{}'.format(exp))
+                _str = str(exp)
+                _str = _str[_str.index(' '):]
+                _dict = json.loads(_str)
+                order = {}
+                order['symbol'] = symbol
+                order['type'] = type
+                order['side'] = side
+                order['amount'] = d_amount
+                order['price'] = d_price
+                
+                _dict['request_order'] = order
+                raise Exception(_dict)
         
         try:
             #DB에 기록

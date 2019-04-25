@@ -290,17 +290,22 @@ if __name__ == '__main__':
     # print('get my orders : ', up.get_private_orders('BCH/KRW'))
     # print('get my orders', up.get_private_orders(['BCH/KRW','ZEC/KRW'])) #이렇게 동작하도록 만들어야지..
     
+    try:
+        order = up.create_order('BTC/KRW', 'limit', 'buy', '1', '1', '')
+    except Exception as exp:
+        print(exp)
+        
     #거래 취소 테스트, 실제 거래를 넣고 취소하는 테스트이므로 주의를 요구함
-    order = up.create_order('BTC/KRW', 'limit', 'buy', '1', '10000', '')
-    uuid = order.get()['id']
-    print('*' * 160)
-    print(order.get())
-    print(uuid)
-    o_detail = up.get_private_orders_detail(uuid)
-    print(o_detail.get())
-    up.cancel_private_order(uuid)
-    o_detail = up.get_private_orders_detail(uuid)
-    print(o_detail.get())
+    # order = up.create_order('BTC/KRW', 'limit', 'buy', '1', '1', '')
+    # uuid = order.get()['id']
+    # print('*' * 160)
+    # print(order.get())
+    # print(uuid)
+    # o_detail = up.get_private_orders_detail(uuid)
+    # print(o_detail.get())
+    # up.cancel_private_order(uuid)
+    # o_detail = up.get_private_orders_detail(uuid)
+    # print(o_detail.get())
     #거래 취소 테스트 - 끝
     
     # #트레이딩 뷰 와치 목록 뽑는 코드
