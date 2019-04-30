@@ -8,6 +8,7 @@ ants-env/
 logs/
 *.conf
 configs/
+*.tmp
 
 #config files
 *.key
