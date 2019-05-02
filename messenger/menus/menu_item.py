@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import abc
 import logging
 
@@ -31,6 +32,9 @@ class MenuItem(MIterators, metaclass=abc.ABCMeta):
     def run(self):
         pass
     
+    def back(self):
+        pass
+    
     def set_bot_n_chatid(self, bot, chat_id):
         self.bot = bot
         self.chat_id = chat_id
@@ -48,7 +52,7 @@ class MenuItem(MIterators, metaclass=abc.ABCMeta):
     def parsering(self, update, context):
         # 이 메뉴에서 사용하는 키보드를 만든다.
         # back이 눌리면 이전 키보드를 돌려준다.
-        # 그 외 핸들러들을 등록해준다.
+        # 그 외 핸들러들을 등록���준다.
         message = context.message
         text = message.text
         self.logger.debug(message.text)
@@ -90,7 +94,9 @@ class MenuItem(MIterators, metaclass=abc.ABCMeta):
      
     
     def go_back(self):
-        # self.logger.debug('back item : {}'.format(menu_item))
+        self.logger.debug('back item : {}')
+        
+        self.back()
         #키보드 복구
         self.previous_kbd(self.bot, self.chat_id)
         
@@ -99,7 +105,7 @@ class MenuItem(MIterators, metaclass=abc.ABCMeta):
         self.dispatcher.remove_handler(self.message_handler)
         return
         
-    def make_menu_keyboard(self, bot=None, chat_id=None, rcv_message = None):
+    def make_menu_keyboard(self, bot=None, chat_id=None, rcv_message = None, reply_markup = None):
         keyboard = []
         for item in self.m_list:
             keyboard.append(InlineKeyboardButton(item))
@@ -114,7 +120,8 @@ class MenuItem(MIterators, metaclass=abc.ABCMeta):
         else:
             message = rcv_message
             
-        reply_markup = telegram.ReplyKeyboardMarkup(self.build_menu(keyboard, n_cols=2))
+        if(reply_markup is None):
+            reply_markup = telegram.ReplyKeyboardMarkup(self.build_menu(keyboard, n_cols=2))
         bot.send_message(chat_id=chat_id, text=message, reply_markup=reply_markup)  
         
     def build_menu(self,

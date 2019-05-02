@@ -6,11 +6,15 @@ import signal
 import alogger
 import logging
 from telegram_repoter import TelegramRepoter
+from env_server import Enviroments
 from worker import Worker
 
 if __name__ == "__main__":
     logger = logging.getLogger('ANT_MAIN')
+    env = Enviroments()
+    env.load_config()
     
+    env.save_config()
     def signal_handler(sig, frame):
         logger.info('Program will exit by user Ctrl + C')
         tel.stop()
@@ -23,4 +27,5 @@ if __name__ == "__main__":
     w = Worker()
     w.run()
     tel = TelegramRepoter()
+    
     pass

@@ -20,6 +20,7 @@ from distutils.dir_util import copy_tree
 from sh import git
 import time
 import os, sys
+from env_server import Enviroments
 
 class TelegramRepoter():
     def __init__(self):
@@ -34,23 +35,26 @@ class TelegramRepoter():
         self.subscriber.start()
         
         try:
-            mtoken = utils.readConfig('configs/telegram_bot.conf')
+            self.conf = Enviroments().messenger
+            if(self.conf.get('bot_token') == None):
+                self.conf = utils.readConfig('configs/telegram_bot.conf')
+                self.save_config()
             
-            if(mtoken['use'].upper() == 'TRUE'):
+            if(self.conf['use'].upper() == 'TRUE'):
                 self.use = True
             else:
                 self.use = False
                 self.logger.info('Telegram disable')
                 return
             
-            self.token = mtoken['bot_token']
-            self.chat_id = mtoken['chat_id']
-            ck = mtoken.get('custom_keyboard')
+            self.conf['bot_token']
+            self.conf['chat_id']
+            ck = self.conf.get('custom_keyboard')
             if(ck is None):
                 self.custom_keyboard = True
             else:
                 self.custom_keyboard = False
-            self.bot = telegram.Bot(token=mtoken["bot_token"])
+            self.bot = telegram.Bot(token=self.conf["bot_token"])
         except Exception as exp:
             self.logger.warning('Can''t load Telegram Config : {}'.format(exp))
             self.use = False
@@ -63,6 +67,9 @@ class TelegramRepoter():
         # self.remove_kdb()
         self.make_menu_keyboard()
         
+    def save_config(self):
+        Enviroments().messenger = self.conf
+        Enviroments().save_config()
     
     def sbuscribe_message(self, ch, method, properties, body):
         body =  body.decode("utf-8")
@@ -76,8 +83,8 @@ class TelegramRepoter():
         msg = msg[msg.find('\n'):]
         self.logger.debug('send_message : {}'.format(self.use))
         if(self.use) :
-            self.logger.debug('send_msg : {}-{}'.format(self.chat_id, msg))
-            self.bot.sendMessage(self.chat_id, msg, reply_markup=self.order_keyboard())
+            self.logger.debug('send_msg : {}-{}'.format(self.conf['chat_id'], msg))
+            self.bot.sendMessage(self.conf['chat_id'], msg, reply_markup=self.order_keyboard())
     
     def order_keyboard(self):
         keyboard = [[InlineKeyboardButton("주문 취소", callback_data='cancel_order')]]
@@ -100,13 +107,26 @@ class TelegramRepoter():
         #봇이 제공하는 버튼은 사용자가 채팅을 치는 것을 대신할 뿐이다.
         #봇이 버튼에서 '인사'라는 버튼을 제공한다면 사용자는 버튼을 누르는 것 대신 '인사'라고 쳐도 봇은 동일하게 동작한다
         
-        self.welcome_message = '안녕하세요, 현재 버젼은 개발버젼입니다. 저는 다음과 같은 기능을 제공합니다'
+        if(Enviroments().etc.get('test_mode').upper() == 'TRUE'):
+            mode_str = '테스트 모드'
+        else:
+            mode_str = '실전 모드'
+            
+        support_exchange_list = 'upbit'
+        
+        self.welcome_message = """
+        안녕하세요,\n\n버전 : {}\n동작 모드 : {}\n지원 거래소 : {}
+        """.format(
+            '개발 버전(git commit id표시)',
+            mode_str,
+            support_exchange_list)
+        
         if(self.custom_keyboard):
             reply_markup = telegram.ReplyKeyboardMarkup(self.build_menu(keyboard, n_cols=2))
         else:
             reply_markup = None
             
-        self.bot.send_message(chat_id=self.chat_id, text=self.welcome_message, reply_markup=reply_markup)
+        self.bot.send_message(chat_id=self.conf['chat_id'], text=self.welcome_message, reply_markup=reply_markup)
   
     def message_parser(self, bot, update):
         #받은 메시지를 해당 클래스에 전달함
@@ -140,10 +160,10 @@ class TelegramRepoter():
         dp = self.updater.dispatcher
         
         menu_item.init()
-        menu_item.set_bot_n_chatid(self.bot, self.chat_id)
+        menu_item.set_bot_n_chatid(self.bot, self.conf['chat_id'])
         menu_item.set_previous_message_handler(dp, self.message_handler)
         menu_item.set_previous_keyboard(self.make_menu_keyboard)
-        menu_item.make_menu_keyboard(self.bot, self.chat_id)
+        menu_item.make_menu_keyboard(self.bot, self.conf['chat_id'])
         
         dp.add_handler(menu_item.message_handler)
         dp.remove_handler(self.message_handler)
@@ -210,38 +230,24 @@ class TelegramRepoter():
         사용할 일 없을듯.
         """
         reply_markup = telegram.ReplyKeyboardRemove()
-        self.bot.send_message(chat_id=self.chat_id, text="I'm back.", reply_markup=reply_markup)
+        self.bot.send_message(chat_id=self.conf['chat_id'], text="I'm back.", reply_markup=reply_markup)
     
     
     def run_listener(self):
         if(self.use == False):
             return
         
-        self.updater = Updater(self.token)
+        self.updater = Updater(self.conf['bot_token'])
         
         dp = self.updater.dispatcher
         
         # on different commands - answer in Telegram
         dp.add_handler(CommandHandler("menu", self.menu_func))
         dp.add_handler(CommandHandler("upgrade", self.do_upgrade))
-        # dp.add_handler(CommandHandler("help", self.help))
-        # dp.add_handler(CommandHandler("whoami", self.whoami))
-        # dp.add_handler(CommandHandler("room", self.roominfo))
-        # dp.add_handler(CommandHandler("welcome", self.welcome))
-        
         dp.add_handler(CallbackQueryHandler(self.whoami, pattern='whoami'))
         dp.add_handler(CallbackQueryHandler(self.roominfo, pattern='roominfo'))
         dp.add_handler(CallbackQueryHandler(self.welcome, pattern='welcome'))
-        
         dp.add_handler(CallbackQueryHandler(self.cancel_order, pattern='cancel_order'))
-        
-        #총 수익
-        #오늘 수익
-        #거래소 잔고
-        #거래소 오더 상황(미체결)
-        #거래소 동작(빤스런, 올매수)
-        #거래소 스탑로스 설정 및 동작
-        #inline keyboard를 사용하여 명령어 제어
         
         self.message_handler = MessageHandler(Filters.text, self.message_parser)
         dp.add_handler(self.message_handler)
@@ -283,8 +289,8 @@ class TelegramRepoter():
     def send_message(self, msg):
         self.logger.debug('send_message : {}'.format(self.use))
         if(self.use) :
-            self.logger.debug('send_msg : {}-{}'.format(self.chat_id, msg))
-            self.bot.sendMessage(self.chat_id, msg)
+            self.logger.debug('send_msg : {}-{}'.format(self.conf['chat_id'], msg))
+            self.bot.sendMessage(self.conf['chat_id'], msg)
     
     def roominfo(self, update, context):
         query = context.callback_query
@@ -375,6 +381,7 @@ class TelegramRepoter():
 
 if __name__ == '__main__':
     print('strategy test')
+    Enviroments().load_config()
     
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
@@ -388,15 +395,15 @@ if __name__ == '__main__':
     logging.getLogger("telegram.ext.updater").setLevel(logging.WARNING)
     logging.getLogger("telegram.bot").setLevel(logging.WARNING)
     logging.getLogger("telegram.ext.dispatcher").setLevel(logging.WARNING)
+    logging.getLogger("pika").setLevel(logging.WARNING)
+    logging.getLogger("JobQueue").setLevel(logging.WARNING)
     
     tel = TelegramRepoter()
     
     # tel.check_quick_trading('buy upbit krw strom 10 10000')
 
-    # tel.send_message("봇클래스 테스트.")
+    tel.send_message("봇클래스 테스트.")
 
-    tel.run_listener()
-    
     import signal
     from time import sleep
     def signal_handler(sig, frame):

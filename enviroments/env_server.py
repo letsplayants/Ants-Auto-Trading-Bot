@@ -54,6 +54,7 @@ class Enviroments(BaseClass, metaclass=Singleton):
         
         for a, b in src.items():
             setattr(self, a, b)
+            print('a:{}\tb:{}'.format(a,b))
         
     def __iter__(self):
         klass = self.__class__    
@@ -77,11 +78,22 @@ class Enviroments(BaseClass, metaclass=Singleton):
         if(file_name is None):  
             file_name = self.AUTO_CONF
             
+        self.logger.debug('file_name : {}'.format(file_name))
         try:
             with open(file_name, 'r') as file:
-                self.from_dict(json.loads(file.read()))
+                rdict = json.loads(file.read())
+                self.from_dict(rdict)
+                self.logger.debug('rdict : {}'.format(type(rdict)))
         except Exception as e:
             self.load_config(self.DEFAULT_CONF)
+        
+        self.set_default()
+        
+    def set_default(self):
+        #초기값이 반드시 있어야하는 변수들을 여기서 선언한다
+        if(Enviroments().etc.get('test_mode') is None):
+            Enviroments().etc['test_mode'] = 'True'
+        
     
 if __name__ == '__main__':
     print('Enviroments test')
@@ -104,6 +116,8 @@ if __name__ == '__main__':
     en1.save_config(f_name)
     
     en1.load_config(f_name)
+    
+    en1.from_dict
     
     print(dict(en1))
     

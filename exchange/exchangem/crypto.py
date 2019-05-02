@@ -4,6 +4,7 @@ import os
 import json
 import base64
 import binascii
+from env_server import Enviroments
 
 """
 2019-04-03
@@ -11,15 +12,15 @@ crypto_cli를 참고하여 write부분을 업데이트해야함.
 """
 class Crypto():
     def __init__(self):
-        self.public_key = ''
+        self.public_key_file = ''
         self.private_key = ''
         pass
     
     def readKey(self, filePath):
-        result = self.__read_json_file(filePath)
+        result = Enviroments().common['key_file']
     
-        self.public_key = result['key_file']['rsa_pub_file']
-        self.private_key = result['key_file']['rsa_key_file']
+        self.public_key = result['rsa_pub_file']
+        self.private_key = result['rsa_key_file']
         
         return result
     

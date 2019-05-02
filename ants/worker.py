@@ -3,15 +3,15 @@ import logging
 import alogger
 import importlib
 import ants.utils as utils
-from ants.strategies.mq_strategy import MQStrategy 
+from env_server import Enviroments
 
 class Worker:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         self.strategy = []
         #설정파일을 읽어들인다.
-        config = utils.readConfig('configs/ants.conf')
-    
+        config = Enviroments().common
+        
         try:
             for strategy_item in config['strategy']['strategy']:
                 strategy_path = 'ants.strategies.' + strategy_item
@@ -62,6 +62,7 @@ class Worker:
     
 if __name__ == '__main__':
     print('worker test')
+    Enviroments().load_config()
     from telegram_repoter import TelegramRepoter
     tel = TelegramRepoter()
     

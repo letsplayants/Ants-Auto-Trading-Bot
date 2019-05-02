@@ -2,11 +2,13 @@ from menus.menu_item import MenuItem
 from menus.menu_back import BackMenu
 
 from menus.setting.exchange.exchange import Exchange
+from menus.setting.etc.etc import Etc
 
 class Setting(MenuItem):
     def __init__(self):
         super().__init__()
         self.__add__(Exchange())
+        self.__add__(Etc())
         self.__add__(BackMenu())
         pass
     

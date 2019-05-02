@@ -10,6 +10,7 @@ import ccxt
 from exchangem.model.exchange import Base
 from exchangem.model.balance import Balance
 from exchangem.model.order_info import OrderInfo
+from env_server import Enviroments
 
 class Upbit(Base):
     def __init__(self, args={}):
@@ -215,26 +216,10 @@ if __name__ == '__main__':
     logging.getLogger("ccxt").setLevel(logging.DEBUG)
     logging.getLogger("exchangem.model.exchange").setLevel(logging.DEBUG)
     # logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
-    
+    Enviroments().load_config()
     
     up = Upbit({'root_config_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/upbit.conf'})
-    
-    coins = ['KRW-ETH', 'KRW-DASH', 'ETH-DASH', 'KRW-LTC', 'ETH-LTC', 'KRW-STRAT', 'ETH-STRAT', 'KRW-XRP', 'ETH-XRP', 'KRW-ETC', 'ETH-ETC', 'KRW-OMG', 'ETH-OMG', 'KRW-SNT', 'ETH-SNT', 'KRW-WAVES', 'ETH-WAVES', 'KRW-XEM', 'ETH-XEM', 'KRW-ZEC', 'ETH-ZEC', 'KRW-XMR', 'ETH-XMR', 'KRW-QTUM', 'ETH-QTUM', 'KRW-GNT', 'ETH-GNT', 'KRW-XLM', 'ETH-XLM', 'KRW-REP', 'ETH-REP', 'KRW-ADA', 'ETH-ADA', 'KRW-POWR', 'ETH-POWR', 'KRW-STORM', 'ETH-STORM', 'KRW-TRX', 'ETH-TRX', 'KRW-MCO', 'ETH-MCO', 'KRW-SC', 'ETH-SC', 'KRW-POLY', 'ETH-POLY', 'KRW-ZRX', 'ETH-ZRX', 'KRW-SRN', 'ETH-SRN', 'KRW-BCH', 'ETH-BCH', 'KRW-ADX', 'ETH-ADX', 'KRW-BAT', 'ETH-BAT', 'KRW-DMT', 'ETH-DMT', 'KRW-CVC', 'ETH-CVC', 'KRW-WAX', 'ETH-WAX']
 
-    from exchangem.model.observers import Observer
-    class Update(Observer):
-        def update(self, args):
-            print('got msg in udt')
-            up.close()
-            pass
-    
-    udt = Update()
-    
-    print(Update.mro())
-    up.target_coins(coins)
-    up.attach(udt)
-    up.async_get_order_book()
-    
     bal = up.get_balance('없는코인')
     if(bal is not None):
         print(bal.get_all())

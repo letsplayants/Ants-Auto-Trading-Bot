@@ -31,6 +31,7 @@ from exchangem.utils import Util as util
 from exchangem.model.trading import Trading
 from exchangem.model.order_info import OrderInfo
 
+from env_server import Enviroments
 
 class Base(ObserverNotifier, metaclass=abc.ABCMeta):
     def __init__(self, args={}):
@@ -39,8 +40,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         self.exchange = None
         self.config = {}
         self.telegram = args.get('telegram')
-        self.is_debug_mode = False
-        
+
         #exchange가 생성될 때 마다 sqlite가 생성된다.
         #session이 race condition에 걸릴 수 있다. 
         #구조를 고쳐야함
@@ -68,18 +68,6 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         if(args.get('config_file')):
             self.logger.info('config file file : {}'.format(args.get('config_file')))
             self.config = self.load_config(args.get('config_file'))
-            
-        if(args.get('root_config_file')):
-            try:
-                self.is_debug_mode = self.load_config(args.get('root_config_file')).get('test_mode')
-                if(self.is_debug_mode.upper() == 'TRUE'):
-                    self.logger.info('EXCHANGE RUN IN TEST MODE. WILL NOT DO BUY/SELL')
-                    self.is_debug_mode = True
-                else:
-                    self.is_debug_mode = False
-            except:
-                self.is_debug_mode = False
-            
     pass
 
     def load_key(self, private_key_file, encrypted_file, exchange_name):
@@ -116,7 +104,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         d_price = self.decimal_to_precision(price)
         order_info = None
         
-        if(self.is_debug_mode == True):
+        if(Enviroments().etc['test_mode'].upper() == 'TRUE'):
             self.logger.info('EXCHANGE IN TEST MODE : {} {} {} {} {}'.format(symbol, type, side, d_amount, d_price))
             desc = {'TEST_MODE':'True'}
             prefix_str = '가상 '
