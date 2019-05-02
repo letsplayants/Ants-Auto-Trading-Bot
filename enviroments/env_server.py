@@ -2,6 +2,7 @@
 import logging
 import consts
 import json
+import sys
 
 from messenger.q_publisher import MQPublisher
 
@@ -28,7 +29,7 @@ class Enviroments(BaseClass, metaclass=Singleton):
     - 거래소 데이터
     - 각종 큐 경로
     """
-    DEFAULT_CONF='configs/ant.conf'
+    DEFAULT_CONF='configs/ants.conf'
     AUTO_CONF='configs/ant_auto.conf'
     
     #구동 시스템에 관한 정보
@@ -87,9 +88,9 @@ class Enviroments(BaseClass, metaclass=Singleton):
                 self.logger.debug('rdict : {}'.format(type(rdict)))
         except Exception as e:
             if(self.first_exception):
+                self.first_exception = False
                 self.logger.info('Can''t load auto config. Will load default config : {}'.format(e))
                 self.load_config(self.DEFAULT_CONF)
-                self.first_exception = False
             else:
                 self.logger.error('Can''t load default config. : {}'.format(e))
                 sys.exit(1)
@@ -111,6 +112,8 @@ if __name__ == '__main__':
     stream_hander = logging.StreamHandler()
     stream_hander.setFormatter(formatter)
     logger.addHandler(stream_hander)
+    
+    Enviroments().load_config()
     
     en1 = Enviroments()
     en2 = Enviroments()
