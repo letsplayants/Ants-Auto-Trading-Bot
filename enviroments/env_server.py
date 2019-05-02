@@ -44,6 +44,7 @@ class Enviroments(BaseClass, metaclass=Singleton):
     
     def __init__(self, args={}):
         self.logger = logging.getLogger(__name__)
+        self.first_exception = True
 
     def __repr__(self):
         return str(dict(self))
@@ -88,6 +89,7 @@ class Enviroments(BaseClass, metaclass=Singleton):
             if(self.first_exception):
                 self.logger.info('Can''t load auto config. Will load default config : {}'.format(e))
                 self.load_config(self.DEFAULT_CONF)
+                self.first_exception = False
             else:
                 self.logger.error('Can''t load default config. : {}'.format(e))
                 sys.exit(1)
