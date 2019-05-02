@@ -85,7 +85,12 @@ class Enviroments(BaseClass, metaclass=Singleton):
                 self.from_dict(rdict)
                 self.logger.debug('rdict : {}'.format(type(rdict)))
         except Exception as e:
-            self.load_config(self.DEFAULT_CONF)
+            if(self.first_exception):
+                self.logger.info('Can''t load auto config. Will load default config : {}'.format(e))
+                self.load_config(self.DEFAULT_CONF)
+            else:
+                self.logger.error('Can''t load default config. : {}'.format(e))
+                sys.exit(1)
         
         self.set_default()
         
