@@ -64,7 +64,7 @@ class Enviroments(BaseClass, metaclass=Singleton):
 
         iters.update(self.__dict__)
 
-        exclucive=['AUTO_CONF', 'DEFAULT_CONF', 'logger', 'init_load']
+        exclucive=['AUTO_CONF', 'DEFAULT_CONF', 'logger', 'init_load', 'first_exception']
         for x,y in iters.items():
             if(x not in exclucive):
                 yield x,y
@@ -90,7 +90,13 @@ class Enviroments(BaseClass, metaclass=Singleton):
             if(self.first_exception):
                 self.first_exception = False
                 self.logger.info('Can''t load auto config. Will load default config : {}'.format(e))
-                self.load_config(self.DEFAULT_CONF)
+                
+                if(self.load_config_ver1(self.DEFAULT_CONF)):
+                    self.set_default()
+                    self.save_config()
+                    return
+                else:
+                    self.load_config(self.DEFAULT_CONF)
             else:
                 self.logger.error('Can''t load default config. : {}'.format(e))
                 sys.exit(1)
@@ -102,6 +108,26 @@ class Enviroments(BaseClass, metaclass=Singleton):
         if(Enviroments().etc.get('test_mode') is None):
             Enviroments().etc['test_mode'] = 'True'
         
+    def load_config_ver1(self, file_name):
+        """
+        구버젼 config 포멧을 읽어들인다
+        구버젼이면 True, 아니면 False를 리턴한다
+        """
+        try:
+            with open(file_name, 'r') as file:
+                rdict = json.loads(file.read())
+                self.logger.debug(rdict['key_file']['rsa_key_file'])
+                item = {
+                    'common':rdict
+                }
+                self.from_dict(item)
+                self.logger.debug('load config version 1 : {}'.format(item))
+        except Exception as e:
+            self.logger.debug('exception : {}'.format(e))
+            return False
+        
+        return True
+    
     
 if __name__ == '__main__':
     print('Enviroments test')
