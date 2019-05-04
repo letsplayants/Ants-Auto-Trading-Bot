@@ -3,17 +3,18 @@ import base64
 import importlib
 import os
 
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
+
 from menus.menu_back import BackMenu
 from menus.menu_item import MenuItem
 
 from exchangem.crypto import Crypto
-
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
+from env_server import Enviroments
 
 class ExchangeAPIs(MenuItem):
     #API 등록 및 설정
-    def __init__(self, exchange_name='upbit'):
+    def __init__(self, exchange_name):
         super().__init__()
         self.exchange_name = exchange_name
         self.__add__(ApiAdd(exchange_name))
@@ -98,16 +99,13 @@ class ApiAdd(MenuItem):
         # 현재는 ssh키는 설정되어 있다고 가정한다
         # ssh 키를 사용하여 암호화 한 후 원래 설정대로 저장한다
         
-        #파일을 열어서 기존 설정을 읽어온다
         cp = Crypto()
-        keyset = cp.readKey('configs/ants.conf')
+        keyset = cp.readKey(Enviroments().common['key_file'])
+        exchange_name = self.exchange_name.lower()
         
-        try:    
-            exchanges = self.readKey('configs/exchanges.key')
-        except Exception as e:
-            self.logger.warning('Crypto except : {}'.format(e))
-            exchanges = {}
-            
+        if(Enviroments().exchanges.get(exchange_name) == None) :
+            Enviroments().exchanges[exchange_name] = dict(Enviroments().exchanges['default'])
+        
         try:
             encrypt_key = cp.encrypt(self.api_key)
             encrypt_secret = cp.encrypt(self.api_secret)
@@ -122,11 +120,9 @@ class ApiAdd(MenuItem):
                 'apiKey': en_apiKey,
                 'secret': en_secret
             }
+            Enviroments().exchanges[exchange_name]['keys'] = key_set
             
-            new_exchange = self.exchange_name.lower()
-            exchanges[new_exchange] = key_set
-            
-            self.saveConf('configs/exchanges.key', exchanges)
+            Enviroments().save_config()
         except Exception as exp:
             self.logger.warning('Crypto except : {}'.format(exp))
             raise Exception('암호화 작업 중 오류가 발생했습니다\n{}'.format(exp))
@@ -146,16 +142,6 @@ class ApiAdd(MenuItem):
             raise Exception(msg)
         
         return result
-        
-    def saveConf(self, filePath, data):
-        try:
-            with open(filePath, 'w+') as fp:
-                fp.write(json.dumps(data, sort_keys=True, indent=4))
-                
-        except Exception as exp:
-            msg = "Can't save json : {}".format(exp)
-            self.logger.warning(msg)
-            raise Exception(msg)    
 
 class ApiTest(MenuItem):
     def __init__(self, exchange_name):
@@ -186,7 +172,7 @@ class ApiTest(MenuItem):
         
     def do_test(self, coin_name=None):
         self.logger.debug('exchange connection test with key')
-        config_file = 'configs/ants.conf'
+        config_file = Enviroments().common
         
         try:
             # 거래소 클래스를 찾는다
@@ -265,9 +251,8 @@ class ApiDel(MenuItem):
             self.go_back()
         
     def do_delete(self):
-        exchanges = self.readKey('configs/exchanges.key')
-        exchanges[self.exchange_name] = {}
-        self.saveConf('configs/exchanges.key', exchanges)
+        Enviroments().exchanges[self.exchange_name]['keys'] = {}
+        Enviroments().save_config()
         pass
         
         
@@ -299,10 +284,21 @@ class ApiDel(MenuItem):
             raise Exception(msg)    
             
 if __name__ == "__main__":
+    print('APIs test')
+    
+    import logging
+    
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    stream_hander = logging.StreamHandler()
+    stream_hander.setFormatter(formatter)
+    logger.addHandler(stream_hander)
     # add = ApiAdd('upbit')
     # add.save_apikey()
     
     # print("\ucd5c\uc18c \uad6c\ub9e4\uc218\ub7c9\uc740 10 AE \uc785\ub2c8\ub2e4.")
+    Enviroments().load_config()
     ApiTest('upbit').do_test()
     
     pass

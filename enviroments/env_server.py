@@ -5,6 +5,7 @@ import json
 import sys
 
 from messenger.q_publisher import MQPublisher
+from exchangem.model.coin_model import CoinModel
 
 class BaseClass():
 	pass
@@ -35,10 +36,12 @@ class Enviroments(BaseClass, metaclass=Singleton):
     #구동 시스템에 관한 정보
     sys = {}
     common = {}
-    exchange = {}
-    strategy = {}
+    exchanges = {}
+    strategies = {}
     messenger = {}
-    qname = {}
+    qsystem = {}
+    #사용자가 지정한 트레이딩 대상 코인을 지정함
+    trading = {}
     etc = {}
     
     init_load = True
@@ -108,6 +111,27 @@ class Enviroments(BaseClass, metaclass=Singleton):
         if(Enviroments().etc.get('test_mode') is None):
             Enviroments().etc['test_mode'] = 'True'
         
+        if(Enviroments().exchanges.get('default') is None):
+            coin = CoinModel()
+            coin.amount.available = 1000
+            coin.amount.keep = 0
+            
+            keys = {
+                'apiKey':'',
+                'secret':''
+            }
+            trading_list = {
+                'all' : True,
+                'list' : []
+            }
+            default_setting = {
+                'coin' : dict(coin),
+                'keys' : keys,
+                'traing_list' : trading_list
+            }
+            
+            Enviroments().exchanges['default'] = default_setting
+        
     def load_config_ver1(self, file_name):
         """
         구버젼 config 포멧을 읽어들인다
@@ -127,7 +151,6 @@ class Enviroments(BaseClass, metaclass=Singleton):
             return False
         
         return True
-    
     
 if __name__ == '__main__':
     print('Enviroments test')

@@ -30,6 +30,7 @@ from exchangem.crypto import Crypto
 from exchangem.utils import Util as util
 from exchangem.model.trading import Trading
 from exchangem.model.order_info import OrderInfo
+from exchangem.model.coin_model import CoinModel
 
 from env_server import Enviroments
 
@@ -37,12 +38,15 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
     def __init__(self, args={}):
         ObserverNotifier.__init__(self)
         orderes = []
+        env = Enviroments()
+        
+        self.logger.debug('exchange init with args : {}'.format(args))
         self.exchange = None
-        self.config = {}
+        self.config = env.exchanges.get('default')
         self.telegram = args.get('telegram')
-
+        
         #exchange가 생성될 때 마다 sqlite가 생성된다.
-        #session이 race condition에 걸릴 수 있다. 
+        #session이 race condition에 걸릴 수 있다.
         #구조를 고쳐야함
         self.db = args.get('db')
         
@@ -53,29 +57,25 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             if(id == self.__class__.__name__.lower()):
                 exchange_obj = getattr(ccxt, id)
                 break
-            
+        
         try:
-            self.logger.debug(args)
-            key_set = self.load_key(args['root_config_file'], args['key_file'], self.__class__.__name__)
+            key_set = self.load_key(self.__class__.__name__.lower())
             self.exchange = exchange_obj(key_set)
-        except :
+        except Exception as exp:
             self.exchange = exchange_obj()
-            self.logger.warning('Key file loading failed.')
+            self.logger.warning('Key file loading failed. : {}'.format(exp))
         
         self.markets = self.exchange.loadMarkets()
         self.save_key_market_price()
         
-        if(args.get('config_file')):
-            self.logger.info('config file file : {}'.format(args.get('config_file')))
-            self.config = self.load_config(args.get('config_file'))
-    pass
 
-    def load_key(self, private_key_file, encrypted_file, exchange_name):
+    def load_key(self, exchange_name):
+        private_key_file = Enviroments().common['key_file']
+        
         crypto = Crypto()
         crypto.readKey(private_key_file)
-        exchanges = crypto.read_encrytion_file(encrypted_file)
         
-        en_key_set = exchanges[exchange_name.lower()]
+        en_key_set = Enviroments().exchanges[exchange_name]['keys']
         
         data = en_key_set['apiKey']
         borg = binascii.a2b_base64(data)
