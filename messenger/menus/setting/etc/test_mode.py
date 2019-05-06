@@ -32,7 +32,7 @@ class TestMode(MenuItem):
         Enviroments().save_config()
         query = context.callback_query
         user = query.from_user
-        msg = '테스트 모드로 바뀌였습니다'.format(user.first_name)
+        msg = '현재 모드 : {}'.format('테스트 모드')
         self.edit_message(update, query, msg)
     
     def fight_mode(self, update, context):
@@ -40,7 +40,7 @@ class TestMode(MenuItem):
         Enviroments().save_config()
         query = context.callback_query
         user = query.from_user
-        msg = '실전 모드로 바뀌였습니다'.format(user.first_name)
+        msg = '현재 모드 : {}'.format('실전 모드')
         self.edit_message(update, query, msg)
         
     def edit_message(self, bot, query, msg):
@@ -53,7 +53,10 @@ class TestMode(MenuItem):
         self.dispatcher.add_handler(self.test_mode_handler)
         self.dispatcher.add_handler(self.fight_mode_handler)
         
-        message = '현재 모드 : {}'.format(Enviroments().etc.get('test_mode'))
+        if(Enviroments().etc['test_mode'] == 'True'):
+            message = '현재 모드 : {}'.format('테스트 모드')
+        else:
+            message = '현재 모드 : {}'.format('실전 모드')
         #1번 테스트 모드
         #2번 실전 모드
         super().make_menu_keyboard(self.bot, self.chat_id, message, reply_markup = self.menu_keyboard())
