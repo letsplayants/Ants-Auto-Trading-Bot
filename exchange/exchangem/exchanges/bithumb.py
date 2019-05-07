@@ -10,6 +10,7 @@ import decimal
 
 from exchangem.model.exchange import Base
 from exchangem.model.balance import Balance
+from env_server import Enviroments
 
 class Bithumb(Base):
     def __init__(self, args={}):
@@ -155,9 +156,14 @@ class Bithumb(Base):
         print(ex.privatePostInfoOrders) #이 함수를 사용하여 자체적으로 private order를 가지고 와야함
         return self.exchange.fetch_open_orders()
         
+    def get_private_orders_detail(self, id):
+        msg = self.exchange.fetch_order(id)
+        return self.parsing_order_info(msg)
         
 if __name__ == '__main__':
     print('test')
+    Enviroments().load_config()
+     
     logger = logging.getLogger()
     logger.setLevel(logging.WARNING)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')

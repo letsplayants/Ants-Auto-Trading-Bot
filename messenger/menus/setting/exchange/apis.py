@@ -299,6 +299,6 @@ if __name__ == "__main__":
     
     # print("\ucd5c\uc18c \uad6c\ub9e4\uc218\ub7c9\uc740 10 AE \uc785\ub2c8\ub2e4.")
     Enviroments().load_config()
-    ApiTest('upbit').do_test()
+    ApiTest('bithumb').do_test()
     
     pass

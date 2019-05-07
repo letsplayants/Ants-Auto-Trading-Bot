@@ -39,10 +39,15 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         ObserverNotifier.__init__(self)
         orderes = []
         env = Enviroments()
-        
-        self.logger.debug('exchange init with args : {}'.format(args))
+        self.exchange_name = self.__class__.__name__.lower()
+        self.logger.debug('exchange init with args : {}'.format(self.exchange_name, args))
         self.exchange = None
-        self.config = env.exchanges.get('default')
+        
+        
+        self.config = env.exchanges.get(self.exchange_name)
+        if(self.config == {}):
+            self.config = env.exchanges.get('default')
+        
         self.telegram = args.get('telegram')
         
         #exchange가 생성될 때 마다 sqlite가 생성된다.
@@ -54,12 +59,12 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         
         exchange_obj = None
         for id in ccxt.exchanges:
-            if(id == self.__class__.__name__.lower()):
+            if(id == self.exchange_name):
                 exchange_obj = getattr(ccxt, id)
                 break
         
         try:
-            key_set = self.load_key(self.__class__.__name__.lower())
+            key_set = self.load_key(self.exchange_name)
             self.exchange = exchange_obj(key_set)
         except Exception as exp:
             self.exchange = exchange_obj()
@@ -235,8 +240,8 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         availabel_size : 사용할 자산의 크기
         """
         coin_name = coin_name.upper()
-
-        freeze_conf = self.config.get('freeze_size')
+        
+        freeze_conf = self.config.get('coin').get('amount').get('keep')
         if(freeze_conf == None):
             freeze_size = 0
         else:
@@ -244,9 +249,9 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             if(freeze_size == None):
                 freeze_size = 0
 
-        availabel_conf = self.config.get('availabel_size')
-        if(availabel_conf != None):
-            availabel_size = availabel_conf.get(coin_name)
+        availabel_size = self.config.get('available')
+        if(availabel_size != None):
+            availabel_size = availabel_size.get(coin_name)
             
         self.logger.debug('get_availabel_size name : {}, freeze_size: {}, availabel_size: {}'.format(coin_name, freeze_size, availabel_size))
 
