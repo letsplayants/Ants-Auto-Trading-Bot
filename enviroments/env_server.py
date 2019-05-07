@@ -116,6 +116,10 @@ class Enviroments(BaseClass, metaclass=Singleton):
             coin.amount.available = 1000
             coin.amount.keep = 0
             
+            coins = {
+                'default' : dict(coin)
+            }
+            
             keys = {
                 'apiKey':'',
                 'secret':''
@@ -125,12 +129,13 @@ class Enviroments(BaseClass, metaclass=Singleton):
                 'list' : []
             }
             default_setting = {
-                'coin' : dict(coin),
+                'coin' : coins,
                 'keys' : keys,
                 'traing_list' : trading_list
             }
             
             Enviroments().exchanges['default'] = default_setting
+            
         
     def load_config_ver1(self, file_name):
         """

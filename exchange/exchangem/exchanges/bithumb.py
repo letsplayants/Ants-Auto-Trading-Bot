@@ -152,28 +152,37 @@ class Bithumb(Base):
         return super().create_order(symbol, type, side, amount, price, params)
         
     def get_private_order(self):
-        ex = self.exchange
-        print(ex.privatePostInfoOrders) #이 함수를 사용하여 자체적으로 private order를 가지고 와야함
-        return self.exchange.fetch_open_orders()
+        try:
+            ex = self.exchange
+            print(ex.privatePostInfoOrders) #이 함수를 사용하여 자체적으로 private order를 가지고 와야함
+            return self.exchange.fetch_open_orders()
+        except Exception as exp:
+            raise Exception(exp)
         
     def get_private_orders_detail(self, id):
-        msg = self.exchange.fetch_order(id)
-        return self.parsing_order_info(msg)
+        try:
+            msg = self.exchange.fetch_order(id)
+            return self.parsing_order_info(msg)
+        except Exception as exp:
+            raise Exception(exp)
         
 if __name__ == '__main__':
     print('test')
-    Enviroments().load_config()
-     
+
+    import os
+    path = os.path.dirname(__file__) + '/../../../configs/ant_auto.conf'
+    Enviroments().load_config(path)
+    
     logger = logging.getLogger()
-    logger.setLevel(logging.WARNING)
+    logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     stream_hander = logging.StreamHandler()
     stream_hander.setFormatter(formatter)
     logger.addHandler(stream_hander)
     
     logging.getLogger("__main__").setLevel(logging.DEBUG)
-    # logging.getLogger("ccxt").setLevel(logging.WARNING)
-    # logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
+    logging.getLogger("ccxt").setLevel(logging.WARNING)
+    logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
     
     ex = Bithumb({'root_config_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/bithumb.conf'})
 
@@ -219,4 +228,4 @@ if __name__ == '__main__':
     #bithumb엔 오더북스가 없음.
     # print('get order books', ex.get_order_books(['NPXS/KRW', 'XRP/KRW', 'ETH/KRW']))
     
-    print('get private orders', ex.get_private_order())
+    # print('get private orders', ex.get_private_order())

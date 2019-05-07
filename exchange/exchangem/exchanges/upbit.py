@@ -205,6 +205,11 @@ class Upbit(Base):
     
 if __name__ == '__main__':
     print('test')
+    
+    import os
+    path = os.path.dirname(__file__) + '/../../../configs/ant_auto.conf'
+    Enviroments().load_config(path)
+    
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -216,7 +221,7 @@ if __name__ == '__main__':
     logging.getLogger("ccxt").setLevel(logging.DEBUG)
     logging.getLogger("exchangem.model.exchange").setLevel(logging.DEBUG)
     # logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
-    Enviroments().load_config()
+    
     
     up = Upbit({'root_config_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/upbit.conf'})
 

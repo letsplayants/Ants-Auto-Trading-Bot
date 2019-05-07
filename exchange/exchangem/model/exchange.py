@@ -43,7 +43,6 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         self.logger.debug('exchange init with args : {}'.format(self.exchange_name, args))
         self.exchange = None
         
-        
         self.config = env.exchanges.get(self.exchange_name)
         if(self.config == {}):
             self.config = env.exchanges.get('default')
@@ -72,6 +71,11 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         
         self.markets = self.exchange.loadMarkets()
         self.save_key_market_price()
+        
+        #설정파일에 있어야하는데 없는 설정들을 초기화 한다
+        if(env.exchanges.get(self.exchange_name).get('coin') is None):
+            env.exchanges[self.exchange_name]['coin'] = env.exchanges['default']['coin']
+            env.save_config()
         
 
     def load_key(self, exchange_name):
@@ -232,6 +236,10 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
     def get_fee(self, market):
         pass
     
+    
+    # def __coin_availabel_size(self, coin_name):
+    #     ddddd
+    
     def get_availabel_size(self, coin_name, is_buy=True):
         """
         coin_name의 사용 제한 값을 돌려준다
@@ -240,18 +248,29 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         availabel_size : 사용할 자산의 크기
         """
         coin_name = coin_name.upper()
+        try:
+            coin_info = self.config.get('coin').get(coin_name.lower())
+            if(coin_info.get('amount') is None):
+                raise Exception()
+        except Exception as exp:
+            coin_info = self.config.get('coin').get('default')
+                
+        # if(coin_info == None):
+        #     coin_info = self.config.get('coin').get('default')
+        #     if(coin_info == None):
+        #         Enviroments().exchanges[self.exchange_name]['coin'] = Enviroments().exchanges['default']['coin']
+        #         Enviroments().save_config()
+        #         coin_info = self.config.get('coin').get('default')
+            
+        coin_info = coin_info.get('amount')
         
-        freeze_conf = self.config.get('coin').get('amount').get('keep')
-        if(freeze_conf == None):
+        freeze_size = coin_info.get('keep')
+        if(freeze_size == None):
             freeze_size = 0
-        else:
-            freeze_size = freeze_conf.get(coin_name)
-            if(freeze_size == None):
-                freeze_size = 0
 
-        availabel_size = self.config.get('available')
-        if(availabel_size != None):
-            availabel_size = availabel_size.get(coin_name)
+        availabel_size = coin_info.get('available')
+        if(availabel_size == None):
+            availabel_size = 0
             
         self.logger.debug('get_availabel_size name : {}, freeze_size: {}, availabel_size: {}'.format(coin_name, freeze_size, availabel_size))
 
