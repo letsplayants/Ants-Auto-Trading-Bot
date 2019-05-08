@@ -74,6 +74,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         
         #설정파일에 있어야하는데 없는 설정들을 초기화 한다
         if(env.exchanges.get(self.exchange_name) is None or env.exchanges.get(self.exchange_name).get('coin') is None):
+            env.exchanges[self.exchange_name] = {}
             env.exchanges[self.exchange_name]['coin'] = env.exchanges['default']['coin']
             env.save_config()
         
