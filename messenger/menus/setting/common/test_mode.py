@@ -28,7 +28,7 @@ class TestMode(MenuItem):
         self.dispatcher.remove_handler(self.fight_mode_handler)
         
     def test_mode(self, update, context):
-        Enviroments().etc['test_mode'] = 'True'
+        Enviroments().etc['test_mode'] = True
         Enviroments().save_config()
         query = context.callback_query
         user = query.from_user
@@ -36,7 +36,7 @@ class TestMode(MenuItem):
         self.edit_message(update, query, msg)
     
     def fight_mode(self, update, context):
-        Enviroments().etc['test_mode'] = 'False'
+        Enviroments().etc['test_mode'] = False
         Enviroments().save_config()
         query = context.callback_query
         user = query.from_user
@@ -53,7 +53,7 @@ class TestMode(MenuItem):
         self.dispatcher.add_handler(self.test_mode_handler)
         self.dispatcher.add_handler(self.fight_mode_handler)
         
-        if(Enviroments().etc['test_mode'] == 'True'):
+        if(Enviroments().etc['test_mode'] == True):
             message = '현재 모드 : {}'.format('테스트 모드')
         else:
             message = '현재 모드 : {}'.format('실전 모드')

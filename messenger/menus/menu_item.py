@@ -46,6 +46,11 @@ class MenuItem(MIterators, metaclass=abc.ABCMeta):
         self.dispatcher = dispatcher
         self.previous_msg_hnd = hnd
     
+    def set_previous_item(self, item):
+        self.dispatcher = item.dispatcher
+        self.previous_msg_hnd = item.message_handler
+        self.previous_item = item
+    
     def set_previous_keyboard(self, kbd):
         self.previous_kbd = kbd
     
@@ -70,20 +75,25 @@ class MenuItem(MIterators, metaclass=abc.ABCMeta):
             return
         
         if(type(menu_item) == BackMenu):
-            # self.logger.debug('back item : {}'.format(menu_item))
+            self.logger.debug('back item : {}'.format(menu_item))
             #키보드 복구
             self.previous_kbd(self.bot, self.chat_id)
             
             #메시지 핸들러 복구
             self.dispatcher.add_handler(self.previous_msg_hnd)
             self.dispatcher.remove_handler(self.message_handler)
+            
+            #run 호출해줌
+            if(self.previous_item is not None):
+                self.previous_item.run()
             return True
         
         #하위 메시지 핸들러를 등록하고 현재 메시지 핸들러를 제거한다
         menu_item.init()
         menu_item.set_bot_n_chatid(self.bot, self.chat_id)
         menu_item.set_previous_keyboard(self.make_menu_keyboard)
-        menu_item.set_previous_message_handler(self.dispatcher, self.message_handler)
+        # menu_item.set_previous_message_handler(self.dispatcher, self.message_handler)
+        menu_item.set_previous_item(self)
         menu_item.make_menu_keyboard(self.bot, self.chat_id)
         
         self.dispatcher.add_handler(menu_item.message_handler)

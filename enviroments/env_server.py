@@ -59,17 +59,17 @@ class Enviroments(BaseClass, metaclass=Singleton):
         
         for a, b in src.items():
             setattr(self, a, b)
-            print('a:{}\tb:{}'.format(a,b))
+            self.logger.debug('a:{}\tb:{}'.format(a,b))
         
     def __iter__(self):
-        klass = self.__class__    
+        klass = self.__class__
         iters = dict((x,y) for x,y in klass.__dict__.items() if x[:2] != '__' and not callable(y))
 
         iters.update(self.__dict__)
 
-        exclucive=['AUTO_CONF', 'DEFAULT_CONF', 'logger', 'init_load', 'first_exception']
+        include=['sys', 'common', 'exchanges', 'messenger', 'etc', 'strategies']
         for x,y in iters.items():
-            if(x not in exclucive):
+            if(x in include):
                 yield x,y
 
     def save_config(self, file_name=None):
@@ -77,10 +77,10 @@ class Enviroments(BaseClass, metaclass=Singleton):
             file_name = self.AUTO_CONF
 
         with open(file_name, 'w') as file:
-            file.write(json.dumps(dict(self), indent=4, sort_keys=True)) # use `json.loads` to do the reverse
+            file.write(json.dumps(dict(self), indent=4, sort_keys=True))
 
     def load_config(self, file_name=None):
-        if(file_name is None):  
+        if(file_name is None):
             file_name = self.AUTO_CONF
             
         self.logger.debug('file_name : {}'.format(file_name))
@@ -104,38 +104,21 @@ class Enviroments(BaseClass, metaclass=Singleton):
                 self.logger.error('Can''t load default config. : {}'.format(e))
                 sys.exit(1)
         
-        self.set_default()
-        
-    def set_default(self):
+        for k, v in self.exchanges.items():
+            self.logger.debug('key : {}\tv:{}'.format(k, v))
+            
+        self.check_default()
+    
+    def check_default(self):
         #초기값이 반드시 있어야하는 변수들을 여기서 선언한다
-        if(Enviroments().etc.get('test_mode') is None):
-            Enviroments().etc['test_mode'] = 'True'
+        if(self.etc.get('test_mode') is None):
+            self.etc['test_mode'] = 'True'
         
-        if(Enviroments().exchanges.get('default') is None):
-            coin = CoinModel()
-            coin.amount.available = 1000
-            coin.amount.keep = 0
-            
-            coins = {
-                'default' : dict(coin)
-            }
-            
-            keys = {
-                'apiKey':'',
-                'secret':''
-            }
-            trading_list = {
-                'all' : True,
-                'list' : []
-            }
-            default_setting = {
-                'coin' : coins,
-                'keys' : keys,
-                'traing_list' : trading_list
-            }
-            
-            Enviroments().exchanges['default'] = default_setting
-            
+        ExchangesEnv().check_default()
+        
+        for k, v in self.exchanges.items():
+            self.logger.debug('key : {}\tv:{}'.format(k, v))
+        
         
     def load_config_ver1(self, file_name):
         """
@@ -157,6 +140,81 @@ class Enviroments(BaseClass, metaclass=Singleton):
         
         return True
     
+    
+class ExchangesEnv(BaseClass, metaclass=Singleton):
+    """
+    거래소 관련 환경 값을 가지고 있는다
+    Enviroments의 exchanges를 레퍼런스 참조하는 방식으로 설계 및 구현한다
+    exchanges에 관련된 값을 조회/조작하는 기능을 제공한다
+    """
+    def __init__(self, args={}):
+        self.logger = logging.getLogger(__name__)
+        self.exchanges = Enviroments().exchanges
+        
+    def __repr__(self):
+        return str(dict(self))
+    
+    def check_default(self):
+        exc = Enviroments().exchanges
+        if(len(exc) is 0):
+            self.set_default()
+            return
+        
+        for k, v in exc.items():
+            if(v.get('trading_list') is None):
+                self.logger.debug('{}:{} is None'.format(k, v))
+                v['traing_list'] = {'all' : True, 'list' : []}
+            if(v.get('coin') is None):
+                coin = CoinModel()
+                coin.amount.available = 1000
+                coin.amount.keep = 0
+                v['coin'] = {'default' : dict(coin)}
+        
+        
+    def set_default(self):
+        #있어야하는 값들이 다 있는지 확인 후 없으면 초기화 한다
+        Enviroments().exchanges = {}
+        self.exchanges = Enviroments().exchanges
+        self.exchanges['default'] = self.get_default_setting()
+    
+    def get_default_setting(self):
+        coin = CoinModel()
+        coin.amount.available = 1000
+        coin.amount.keep = 0
+        
+        coins = {
+            'default' : dict(coin)
+        }
+        
+        keys = {
+            'apiKey':'',
+            'secret':''
+        }
+        
+        trading_list = {
+            'all' : True,
+            'list' : []
+        }
+        
+        default_setting = {
+            'coin' : coins,
+            'keys' : keys,
+            'trading_list' : trading_list
+        }
+        
+        return default_setting
+    
+    def getExchange(self, name):
+        if(self.exhcnages.get(name) is None):
+            self.exhcnages[name] = self.default_setting()
+        return self.exchanges[name]
+    
+    def get_trading_list(self, name):
+        if(self.exchanges.get(name).get('trading_list') is None):
+            self.exchanges[name]['trading_list'] = {'all' : True, 'list' : []}
+        return self.exchanges[name]['trading_list']
+
+
 if __name__ == '__main__':
     print('Enviroments test')
     
@@ -167,23 +225,26 @@ if __name__ == '__main__':
     stream_hander.setFormatter(formatter)
     logger.addHandler(stream_hander)
     
-    Enviroments().load_config()
     
-    en1 = Enviroments()
-    en2 = Enviroments()
+    import os
+    path = os.path.dirname(__file__) + '/../configs/ant_auto.conf'
+    Enviroments().load_config(path)
     
-    en1.common['ssh_pub'] = '~\pi\.ssh\id_rsa.pub'
+    # en1 = Enviroments()
+    # en2 = Enviroments()
     
-    print(dict(en1))
+    # en1.common['ssh_pub'] = '~\pi\.ssh\id_rsa.pub'
     
-    f_name = 'test_conf.tmp'
-    en1.save_config(f_name)
+    # print(dict(en1))
     
-    en1.load_config(f_name)
+    # f_name = 'test_conf.tmp'
+    # en1.save_config(f_name)
     
-    en1.from_dict
+    # en1.load_config(f_name)
     
-    print(dict(en1))
+    # en1.from_dict
+    
+    # print(dict(en1))
     
     # print(consts.ENV)
     # print(en1)
