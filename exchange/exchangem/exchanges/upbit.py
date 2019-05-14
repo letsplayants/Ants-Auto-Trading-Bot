@@ -218,12 +218,13 @@ if __name__ == '__main__':
     logger.addHandler(stream_hander)
     
     logging.getLogger("__main__").setLevel(logging.DEBUG)
-    logging.getLogger("ccxt").setLevel(logging.DEBUG)
-    logging.getLogger("exchangem.model.exchange").setLevel(logging.DEBUG)
-    # logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
+    logging.getLogger("upbit").setLevel(logging.WARNING)
+    logging.getLogger("ccxt").setLevel(logging.WARNING)
+    logging.getLogger("exchangem.model.exchange").setLevel(logging.WARNING)
+    logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
     
     
-    up = Upbit({'root_config_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/upbit.conf'})
+    up = Upbit()
 
     bal = up.get_balance('없는코인')
     if(bal is not None):

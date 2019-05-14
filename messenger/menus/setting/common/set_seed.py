@@ -100,6 +100,7 @@ class AvailableSeed(MenuItem):
             new_seed = float(text)
             msg = '새로 설정된 금액 : {}'.format(new_seed)
             Enviroments().exchanges[self.exchange_name]['coin']['krw']['amount']['available'] = new_seed
+            Enviroments().save_config()
         except Exception as exp:
             self.logger.debug('exception : {}'.format(exp))
             msg = '올바른 숫자를 넣어주세요'
@@ -160,6 +161,7 @@ class KeepSeed(MenuItem):
             new_seed = float(text)
             msg = '새로 설정된 금액 : {}'.format(new_seed)
             Enviroments().exchanges[self.exchange_name]['coin']['krw']['amount']['keep'] = new_seed
+            Enviroments().save_config()
         except Exception as exp:
             self.logger.debug('exception : {}'.format(exp))
             msg = '올바른 숫자를 넣어주세요'

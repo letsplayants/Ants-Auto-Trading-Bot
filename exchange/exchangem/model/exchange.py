@@ -39,8 +39,9 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         ObserverNotifier.__init__(self)
         orderes = []
         env = Enviroments()
+        self.env = env
         self.exchange_name = self.__class__.__name__.lower()
-        self.logger.debug('exchange init with args : {}'.format(self.exchange_name, args))
+        self.logger.debug('{} exchange init with args : {}'.format(self.exchange_name, args))
         self.exchange = None
         
         self.config = env.exchanges.get(self.exchange_name)
@@ -54,7 +55,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         #구조를 고쳐야함
         self.db = args.get('db')
         
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger('exchange.' + self.__class__.__name__.lower())
         
         exchange_obj = None
         for id in ccxt.exchanges:
@@ -250,11 +251,12 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         """
         coin_name = coin_name.upper()
         try:
-            coin_info = self.config.get('coin').get(coin_name.lower())
+            coin_info = self.env.exchanges['default']['coin'][coin_name.lower()]
+            # coin_info = self.config.get('coin').get(coin_name.lower())
             if(coin_info.get('amount') is None):
                 raise Exception()
         except Exception as exp:
-            coin_info = self.config.get('coin').get('default')
+            coin_info = self.env.exchanges['default']['coin']['krw']
                 
         # if(coin_info == None):
         #     coin_info = self.config.get('coin').get('default')
