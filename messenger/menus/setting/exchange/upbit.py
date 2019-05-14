@@ -7,8 +7,8 @@ from menus.setting.common.set_seed import SetSeed
 class Upbit(MenuItem):
     def __init__(self):
         super().__init__()
-        self.__add__(SetCoinList('upbit'))
-        self.__add__(SetSeed('upbit'))
+        # self.__add__(SetCoinList('upbit'))
+        # self.__add__(SetSeed('upbit'))
         self.__add__(ExchangeAPIs('upbit'))
         self.__add__(BackMenu())
         pass

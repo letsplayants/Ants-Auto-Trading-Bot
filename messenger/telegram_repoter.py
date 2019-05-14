@@ -115,7 +115,7 @@ class TelegramRepoter():
         support_exchange_list = 'upbit'
         
         self.welcome_message = """
-        안녕하세요,\n\n버전 : {}\n동작 모드 : {}\n지원 거래소 : {}
+        안녕하세요,\n\n버전 : {}\n동작 모드 : {}\n지원 거래소 : {}\n이 화면에서만 퀵매매가 동작합니다.
         """.format(
             '개발 버전(git commit id표시)',
             mode_str,
