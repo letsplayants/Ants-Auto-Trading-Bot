@@ -107,7 +107,7 @@ class TelegramRepoter():
         #봇이 제공하는 버튼은 사용자가 채팅을 치는 것을 대신할 뿐이다.
         #봇이 버튼에서 '인사'라는 버튼을 제공한다면 사용자는 버튼을 누르는 것 대신 '인사'라고 쳐도 봇은 동일하게 동작한다
         
-        if(Enviroments().etc.get('test_mode').upper() == 'TRUE'):
+        if(Enviroments().etc.get('test_mode') == True):
             mode_str = '테스트 모드'
         else:
             mode_str = '실전 모드'
@@ -161,8 +161,9 @@ class TelegramRepoter():
         
         menu_item.init()
         menu_item.set_bot_n_chatid(self.bot, self.conf['chat_id'])
-        menu_item.set_previous_message_handler(dp, self.message_handler)
+        # menu_item.set_previous_message_handler(dp, self.message_handler)
         menu_item.set_previous_keyboard(self.make_menu_keyboard)
+        menu_item.set_previous_item(None, dp, self.message_handler)
         menu_item.make_menu_keyboard(self.bot, self.conf['chat_id'])
         
         dp.add_handler(menu_item.message_handler)

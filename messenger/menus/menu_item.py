@@ -46,10 +46,15 @@ class MenuItem(MIterators, metaclass=abc.ABCMeta):
         self.dispatcher = dispatcher
         self.previous_msg_hnd = hnd
     
-    def set_previous_item(self, item):
-        self.dispatcher = item.dispatcher
-        self.previous_msg_hnd = item.message_handler
-        self.previous_item = item
+    def set_previous_item(self, item, dispatcher=None, message_handler=None):
+        if(item is None):
+            self.dispatcher = dispatcher
+            self.previous_msg_hnd = message_handler
+            self.previous_item = item
+        else:
+            self.dispatcher = item.dispatcher
+            self.previous_msg_hnd = item.message_handler
+            self.previous_item = item
     
     def set_previous_keyboard(self, kbd):
         self.previous_kbd = kbd
