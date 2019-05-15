@@ -115,7 +115,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         d_price = self.decimal_to_precision(price)
         order_info = None
         
-        if(Enviroments().etc['test_mode'].upper() == 'TRUE'):
+        if(Enviroments().etc['test_mode'] == True):
             self.logger.info('EXCHANGE IN TEST MODE : {} {} {} {} {}'.format(symbol, type, side, d_amount, d_price))
             desc = {'TEST_MODE':'True'}
             prefix_str = '가상 '
