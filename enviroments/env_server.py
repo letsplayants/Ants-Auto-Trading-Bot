@@ -161,7 +161,7 @@ class ExchangesEnv(BaseClass, metaclass=Singleton):
             return
         
         if(exc.get('default') is None):
-            self.set_default()
+            exc['default'] = self.get_default_setting()
         
         for k, v in exc.items():
             if(v.get('trading_list') is None):
