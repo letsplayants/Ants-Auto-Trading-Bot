@@ -160,6 +160,9 @@ class ExchangesEnv(BaseClass, metaclass=Singleton):
             self.set_default()
             return
         
+        if(exc.get('default') is None):
+            self.set_default()
+        
         for k, v in exc.items():
             if(v.get('trading_list') is None):
                 self.logger.debug('{}:{} is None'.format(k, v))
@@ -168,7 +171,7 @@ class ExchangesEnv(BaseClass, metaclass=Singleton):
                 coin = CoinModel()
                 coin.amount.available = 1000
                 coin.amount.keep = 0
-                v['coin'] = {'default' : dict(coin)}
+                v['coin'] = {'krw' : dict(coin)}
         
         
     def set_default(self):

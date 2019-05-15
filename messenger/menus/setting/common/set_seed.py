@@ -10,7 +10,7 @@ from menus.menu_back import BackMenu
 from menus.menu_item import MenuItem
 
 from exchangem.crypto import Crypto
-from env_server import Enviroments
+from env_server import Enviroments, ExchangesEnv
 
 STR_AVAL_SEED = '1회 최대 매매 금액'
 STR_KEEP_SEED = '남겨둘 최소 금액'
@@ -40,6 +40,8 @@ class SetSeed(MenuItem):
             keep_seed = Enviroments().exchanges.get(self.exchange_name).get('coin').get('krw').get('amount').get('keep')
         except Exception as exp:
             raise Exception('거래 금액 설정 중 {} 거래소의 {} 설정이 없습니다.'.format(self.exchange_name, exp))
+            if(self.exchange_name == 'default'):
+                ExchangesEnv().check_default()
         
         msg = '{} : {}\n{} : {}'.format(STR_AVAL_SEED, available_seed, STR_KEEP_SEED, keep_seed)
         
