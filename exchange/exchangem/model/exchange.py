@@ -32,7 +32,7 @@ from exchangem.model.trading import Trading
 from exchangem.model.order_info import OrderInfo
 from exchangem.model.coin_model import CoinModel
 
-from env_server import Enviroments
+from env_server import Enviroments, ExchangesEnv
 
 class Base(ObserverNotifier, metaclass=abc.ABCMeta):
     def __init__(self, args={}):
@@ -114,6 +114,12 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         d_amount = self.decimal_to_precision(amount)
         d_price = self.decimal_to_precision(price)
         order_info = None
+        coin_name = symbol.split('/')[0].lower()
+        
+        if(ExchangesEnv().get_trading_list('default').get('all') != True):
+            if(coin_name not in ExchangesEnv().get_trading_list('default').get('list')):
+                self.logger.debug('{} is not in trading list'.format(coin_name))
+                raise Exception('완료 : {} is not in trading list'.format(coin_name))
         
         if(Enviroments().etc['test_mode'] == True):
             self.logger.info('EXCHANGE IN TEST MODE : {} {} {} {} {}'.format(symbol, type, side, d_amount, d_price))

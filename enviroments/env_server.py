@@ -233,6 +233,17 @@ if __name__ == '__main__':
     path = os.path.dirname(__file__) + '/../configs/ant_auto.conf'
     Enviroments().load_config(path)
     
+    print(type(ExchangesEnv().get_trading_list('default')))
+    print(type(ExchangesEnv().get_trading_list('default').get('list')))
+    print(ExchangesEnv().get_trading_list('default').get('list'))
+    print('btc' in ExchangesEnv().get_trading_list('default').get('list'))
+    
+    coin_name = 'btcx'
+    if(ExchangesEnv().get_trading_list('default').get('all') != True):
+        if(coin_name not in ExchangesEnv().get_trading_list('default').get('list')):
+            print('{} is not in trading list'.format(coin_name))
+            
+    
     # en1 = Enviroments()
     # en2 = Enviroments()
     
