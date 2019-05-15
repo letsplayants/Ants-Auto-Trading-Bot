@@ -39,7 +39,7 @@ class SetSeed(MenuItem):
             available_seed = Enviroments().exchanges.get(self.exchange_name).get('coin').get('krw').get('amount').get('available')
             keep_seed = Enviroments().exchanges.get(self.exchange_name).get('coin').get('krw').get('amount').get('keep')
         except Exception as exp:
-            raise Exception(exp)
+            raise Exception('거래 금액 설정 중 {} 거래소의 {} 설정이 없습니다.'.format(self.exchange_name, exp))
         
         msg = '{} : {}\n{} : {}'.format(STR_AVAL_SEED, available_seed, STR_KEEP_SEED, keep_seed)
         

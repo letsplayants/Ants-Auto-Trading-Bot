@@ -183,7 +183,7 @@ class ExchangesEnv(BaseClass, metaclass=Singleton):
         coin.amount.keep = 0
         
         coins = {
-            'default' : dict(coin)
+            'krw' : dict(coin)
         }
         
         keys = {
