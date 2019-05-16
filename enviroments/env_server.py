@@ -95,7 +95,7 @@ class Enviroments(BaseClass, metaclass=Singleton):
                 self.logger.info('Can''t load auto config. Will load default config : {}'.format(e))
                 
                 if(self.load_config_ver1(self.DEFAULT_CONF)):
-                    self.set_default()
+                    self.check_default()
                     self.save_config()
                     return
                 else:
