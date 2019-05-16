@@ -157,7 +157,7 @@ class ExchangesEnv(BaseClass, metaclass=Singleton):
     def check_default(self):
         exc = Enviroments().exchanges
         if(len(exc) is 0):
-            self.set_default()
+            self.__set_default__()
             return
         
         if(exc.get('default') is None):
@@ -174,7 +174,7 @@ class ExchangesEnv(BaseClass, metaclass=Singleton):
                 v['coin'] = {'krw' : dict(coin)}
         
         
-    def set_default(self):
+    def __set_default__(self):
         #있어야하는 값들이 다 있는지 확인 후 없으면 초기화 한다
         Enviroments().exchanges = {}
         self.exchanges = Enviroments().exchanges
