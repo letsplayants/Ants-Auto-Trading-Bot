@@ -49,8 +49,8 @@ class TelegramRepoter():
             return
         
         bot_id = self.conf['bot_id']
-        if(bot_id is None):
-            self.conf['bot_id'] = bot.get_me()['username']
+        if(bot_id is None or bot_id is ''):
+            self.conf['bot_id'] = self.bot.get_me()['username']
             bot_id = self.conf['bot_id']
             Enviroments().save_config()
         
