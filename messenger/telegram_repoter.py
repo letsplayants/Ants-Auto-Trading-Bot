@@ -26,6 +26,7 @@ class TelegramRepoter():
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         
+        Enviroments().qsystem
         self.exchange_name = 'messenger.telegram.quick_trading'
         self.subscriber_name = 'messenger.telegram.message'
         
@@ -36,29 +37,28 @@ class TelegramRepoter():
         
         try:
             self.conf = Enviroments().messenger
-            if(self.conf.get('bot_token') == None):
-                self.conf = utils.readConfig('configs/telegram_bot.conf')
-                self.save_config()
+            bot_token = self.conf['bot_token']
+            if(bot_token is None or bot_token == ''):
+                self.conf.load_config_ver1()
+                bot_token = self.conf['bot_token']
             
-            if(self.conf['use'].upper() == 'TRUE'):
-                self.use = True
-            else:
-                self.use = False
-                self.logger.info('Telegram disable')
-                return
-            
-            self.conf['bot_token']
-            self.conf['chat_id']
-            ck = self.conf.get('custom_keyboard')
-            if(ck is None):
-                self.custom_keyboard = True
-            else:
-                self.custom_keyboard = False
             self.bot = telegram.Bot(token=self.conf["bot_token"])
         except Exception as exp:
-            self.logger.warning('Can''t load Telegram Config : {}'.format(exp))
-            self.use = False
+            self.logger.error('Can''t init telegram bot : {}'.format(exp))
+            sys.exit(1)
             return
+        
+        bot_id = self.conf['bot_id']
+        if(bot_id is None):
+            self.conf['bot_id'] = bot.get_me()['username']
+            bot_id = self.conf['bot_id']
+            Enviroments().save_config()
+        
+        ck = self.conf.get('use_custom_keyboard')
+        if(ck is None):
+            self.custom_keyboard = True
+        else:
+            self.custom_keyboard = False
         
         self.menu_stack = []
         self.logger.info('Telegram is Ready, {}'.format(self.bot.get_me()))
@@ -81,10 +81,9 @@ class TelegramRepoter():
     def send_message_order(self, msg):
         # msg = msg.replace('SHOW ORDER','')
         msg = msg[msg.find('\n'):]
-        self.logger.debug('send_message : {}'.format(self.use))
-        if(self.use) :
-            self.logger.debug('send_msg : {}-{}'.format(self.conf['chat_id'], msg))
-            self.bot.sendMessage(self.conf['chat_id'], msg, reply_markup=self.order_keyboard())
+        
+        self.logger.debug('send_msg : {}-{}'.format(self.conf['chat_id'], msg))
+        self.bot.sendMessage(self.conf['chat_id'], msg, reply_markup=self.order_keyboard())
     
     def order_keyboard(self):
         keyboard = [[InlineKeyboardButton("주문 취소", callback_data='cancel_order')]]
@@ -235,9 +234,6 @@ class TelegramRepoter():
     
     
     def run_listener(self):
-        if(self.use == False):
-            return
-        
         self.updater = Updater(self.conf['bot_token'])
         
         dp = self.updater.dispatcher
@@ -288,10 +284,8 @@ class TelegramRepoter():
     
         
     def send_message(self, msg):
-        self.logger.debug('send_message : {}'.format(self.use))
-        if(self.use) :
-            self.logger.debug('send_msg : {}-{}'.format(self.conf['chat_id'], msg))
-            self.bot.sendMessage(self.conf['chat_id'], msg)
+        self.logger.debug('send_msg : {}-{}'.format(self.conf['chat_id'], msg))
+        self.bot.sendMessage(self.conf['chat_id'], msg)
     
     def roominfo(self, update, context):
         query = context.callback_query

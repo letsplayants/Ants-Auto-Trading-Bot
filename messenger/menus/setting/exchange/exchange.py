@@ -8,7 +8,7 @@ class Exchange(MenuItem):
     def __init__(self):
         super().__init__()
         self.__add__(Upbit())
-        self.__add__(Bithumb())
+        # self.__add__(Bithumb())
         # self.__add__(Binance())
         self.__add__(BackMenu())
         pass

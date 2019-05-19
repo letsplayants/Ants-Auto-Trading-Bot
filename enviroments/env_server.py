@@ -7,6 +7,9 @@ import sys
 from messenger.q_publisher import MQPublisher
 from exchangem.model.coin_model import CoinModel
 
+from qsystem_env import QsystemEnv
+from messenger_env import MessengerEnv
+
 class BaseClass():
 	pass
 
@@ -17,7 +20,7 @@ class Singleton(type):
 		if cls not in cls._instances:
 			cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
 		return cls._instances[cls]
-		
+
 class Enviroments(BaseClass, metaclass=Singleton):
     """
     모든 설정을 여기서 메모리에 들고 있으면서 관리한다
@@ -38,16 +41,18 @@ class Enviroments(BaseClass, metaclass=Singleton):
     common = {}
     exchanges = {}
     strategies = {}
-    messenger = {}
-    qsystem = {}
+    
+    
     #사용자가 지정한 트레이딩 대상 코인을 지정함
     trading = {}
     etc = {}
     
     init_load = True
-    
+
     def __init__(self, args={}):
         self.logger = logging.getLogger(__name__)
+        self.qsystem = QsystemEnv(self)
+        self.messenger = MessengerEnv(self)
         self.first_exception = True
 
     def __repr__(self):
@@ -57,9 +62,14 @@ class Enviroments(BaseClass, metaclass=Singleton):
         if(type(src) is not type({})):
             return
         
-        for a, b in src.items():
-            setattr(self, a, b)
-            self.logger.debug('a:{}\tb:{}'.format(a,b))
+        for a, value in src.items():
+            if(a == 'messenger'):
+                self.messenger.set_value(value)
+                print(self.messenger)
+            else:
+                setattr(self, a, value)
+                
+            self.logger.debug('a:{}\tb:{}'.format(a,value))
         
     def __iter__(self):
         klass = self.__class__
@@ -67,9 +77,11 @@ class Enviroments(BaseClass, metaclass=Singleton):
 
         iters.update(self.__dict__)
 
-        include=['sys', 'common', 'exchanges', 'messenger', 'etc', 'strategies']
+        include=['sys', 'common', 'exchanges', 'messenger', 'etc', 'strategies', 'qsystem']
         for x,y in iters.items():
             if(x in include):
+                if(x is not type({})):
+                    y = dict(y)
                 yield x,y
 
     def save_config(self, file_name=None):
@@ -217,6 +229,7 @@ class ExchangesEnv(BaseClass, metaclass=Singleton):
             self.exchanges[name]['trading_list'] = {'all' : True, 'list' : []}
         return self.exchanges[name]['trading_list']
 
+    
 
 if __name__ == '__main__':
     print('Enviroments test')
@@ -242,33 +255,4 @@ if __name__ == '__main__':
     if(ExchangesEnv().get_trading_list('default').get('all') != True):
         if(coin_name not in ExchangesEnv().get_trading_list('default').get('list')):
             print('{} is not in trading list'.format(coin_name))
-            
     
-    # en1 = Enviroments()
-    # en2 = Enviroments()
-    
-    # en1.common['ssh_pub'] = '~\pi\.ssh\id_rsa.pub'
-    
-    # print(dict(en1))
-    
-    # f_name = 'test_conf.tmp'
-    # en1.save_config(f_name)
-    
-    # en1.load_config(f_name)
-    
-    # en1.from_dict
-    
-    # print(dict(en1))
-    
-    # print(consts.ENV)
-    # print(en1)
-    # print(en1.common)
-    # print(en2.common)
-
-    # dt = vars(en1)
-    # print(dt)
-
-    # j = en1.to_json()
-    # print(j)
-    
-    # en1.from_json(j)
