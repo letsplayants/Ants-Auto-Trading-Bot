@@ -13,12 +13,14 @@ import threading
 from ants.provider.provider import Provider
 from messenger.q_receiver import MQReceiver
 
+from env_server import Enviroments
+
 class MQProvider(Provider):
     def __init__(self):
         Provider.__init__(self)
         self.logger = logging.getLogger(__name__)
         
-        self.exchange_name = 'messenger.telegram.quick_trading'
+        self.exchange_name = Enviroments().qsystem.get_quicktrading_q()
         self.mq_receiver = MQReceiver(self.exchange_name, self.callback)
         
         self.isRun = False

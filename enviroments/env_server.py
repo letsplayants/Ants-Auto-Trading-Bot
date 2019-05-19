@@ -42,7 +42,6 @@ class Enviroments(BaseClass, metaclass=Singleton):
     exchanges = {}
     strategies = {}
     
-    
     #사용자가 지정한 트레이딩 대상 코인을 지정함
     trading = {}
     etc = {}
@@ -65,7 +64,8 @@ class Enviroments(BaseClass, metaclass=Singleton):
         for a, value in src.items():
             if(a == 'messenger'):
                 self.messenger.set_value(value)
-                print(self.messenger)
+            elif(a == 'qsystem'):
+                self.qsystem.set_value(value)
             else:
                 setattr(self, a, value)
                 

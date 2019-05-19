@@ -26,14 +26,8 @@ class TelegramRepoter():
     def __init__(self):
         self.logger = logging.getLogger(__name__)
         
-        Enviroments().qsystem
-        self.exchange_name = 'messenger.telegram.quick_trading'
-        self.subscriber_name = 'messenger.telegram.message'
-        
         self.menu_string_set()
-        self.publisher = MQPublisher(self.exchange_name)
-        self.subscriber = MQReceiver(self.subscriber_name, self.sbuscribe_message)
-        self.subscriber.start()
+        
         
         try:
             self.conf = Enviroments().messenger
@@ -59,6 +53,13 @@ class TelegramRepoter():
             self.custom_keyboard = True
         else:
             self.custom_keyboard = False
+        
+        
+        self.exchange_name = Enviroments().qsystem.get_quicktrading_q()
+        self.subscriber_name = Enviroments().qsystem.get_telegram_messenge_q()
+        self.publisher = MQPublisher(self.exchange_name)
+        self.subscriber = MQReceiver(self.subscriber_name, self.sbuscribe_message)
+        self.subscriber.start()
         
         self.menu_stack = []
         self.logger.info('Telegram is Ready, {}'.format(self.bot.get_me()))

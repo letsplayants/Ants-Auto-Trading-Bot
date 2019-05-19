@@ -14,6 +14,8 @@ from exchangem.exchanges.binance import Binance as cBinance
 from exchangem.database.sqlite_db import Sqlite
 from exchangem.telegram_repoter import TelegramRepoter
 
+from env_server import Enviroments
+
 class HanGunStrategy(ants.strategies.strategy.StrategyBase, Observer):
     """
     한군 전용 전략
@@ -24,17 +26,17 @@ class HanGunStrategy(ants.strategies.strategy.StrategyBase, Observer):
         self.data_provider = None
         self.states = {}
         self.trader = SmartTrader()
-        self.telegram = TelegramRepoter()
-        self.db = Sqlite()
+        # self.telegram = TelegramRepoter()
+        # self.db = Sqlite()
         
-        self.upbit = cUpbit({'root_config_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/upbit.conf', 'telegram': self.telegram, 'db':self.db})
+        self.upbit = cUpbit()
         self.trader.add_exchange('UPBIT', self.upbit)
         
-        self.bithumb = cBithumb({'root_config_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/bithumb.conf', 'telegram': self.telegram, 'db':self.db})
-        self.trader.add_exchange('BITHUMB', self.bithumb)
+        # self.bithumb = cBithumb({'root_config_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/bithumb.conf', 'telegram': self.telegram, 'db':self.db})
+        # self.trader.add_exchange('BITHUMB', self.bithumb)
         
-        self.binance = cBinance({'root_config_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/binance.conf', 'telegram': self.telegram, 'db':self.db})
-        self.trader.add_exchange('BINANCE', self.binance)
+        # self.binance = cBinance({'root_config_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/binance.conf', 'telegram': self.telegram, 'db':self.db})
+        # self.trader.add_exchange('BINANCE', self.binance)
     
     def run(self):
         #전략에서 사용할 데이터 제공자를 등록 후 실행
@@ -184,6 +186,13 @@ if __name__ == '__main__':
     logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
     logging.getLogger("telegram").setLevel(logging.WARNING)
     
+    
+    import os
+    path = os.path.dirname(__file__) + '/../../configs/ant_auto.conf'
+    Enviroments().load_config(path)
+    
+    
+    
     st = HanGunStrategy()
     # st.run()
     
@@ -193,47 +202,47 @@ if __name__ == '__main__':
     
     msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
     st.update(msg)
-    msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
-    st.update(msg)
-    msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
-    st.update(msg)
+    # msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
+    # st.update(msg)
+    # msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
+    # st.update(msg)
     
-    msg = {'market': 'ETH/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
-    st.update(msg)
-    msg = {'market': 'ETH/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
-    st.update(msg)
-    msg = {'market': 'ETH/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
-    st.update(msg)
+    # msg = {'market': 'ETH/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
+    # st.update(msg)
+    # msg = {'market': 'ETH/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
+    # st.update(msg)
+    # msg = {'market': 'ETH/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
+    # st.update(msg)
     
-    msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
-    st.update(msg)
-    msg = {'market': 'ETH/KRW', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
-    st.update(msg)
+    # msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
+    # st.update(msg)
+    # msg = {'market': 'ETH/KRW', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
+    # st.update(msg)
     
-    msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
-    st.update(msg)
-    msg = {'market': 'ETH/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
-    st.update(msg)
+    # msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
+    # st.update(msg)
+    # msg = {'market': 'ETH/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
+    # st.update(msg)
     
-    msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
-    st.update(msg)
-    msg = {'market': 'ETH/KRW', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
-    st.update(msg)
+    # msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
+    # st.update(msg)
+    # msg = {'market': 'ETH/KRW', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
+    # st.update(msg)
     
-    msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
-    st.update(msg)
-    msg = {'market': 'ETH/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
-    st.update(msg)
+    # msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
+    # st.update(msg)
+    # msg = {'market': 'ETH/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
+    # st.update(msg)
     
-    msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
-    st.update(msg)
-    msg = {'market': 'ETH/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
-    st.update(msg)
+    # msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
+    # st.update(msg)
+    # msg = {'market': 'ETH/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}
+    # st.update(msg)
     
-    msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
-    st.update(msg)
-    msg = {'market': 'ETH/KRW', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
-    st.update(msg)
+    # msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
+    # st.update(msg)
+    # msg = {'market': 'ETH/KRW', 'time': '10M', 'action': 'SELL', 'exchange': 'UPBIT'}
+    # st.update(msg)
     
     # print('BUY BUY BUY SELL-------------------------------------------------------------------')
     # msg = {'market': 'BTC/KRW', 'time': '10M', 'action': 'BUY', 'exchange': 'UPBIT'}

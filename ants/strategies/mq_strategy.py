@@ -12,6 +12,7 @@ from exchangem.exchanges.binance import Binance as cBinance
 from exchangem.database.sqlite_db import Sqlite
 
 from messenger.q_publisher import MQPublisher
+from env_server import Enviroments
 
 class MQStrategy(ants.strategies.strategy.StrategyBase, Observer):
     """
@@ -20,7 +21,7 @@ class MQStrategy(ants.strategies.strategy.StrategyBase, Observer):
     def __init__(self, args={}):
         self.logger = logging.getLogger(__name__)
         self.data_provider = None
-        self.telegram_messenger_exchange_name = 'messenger.telegram.message'
+        self.telegram_messenger_exchange_name = Enviroments().qsystem.get_telegram_messenge_q()
         self.messenger_q = MQPublisher(self.telegram_messenger_exchange_name)
         
         self.trader = SmartTrader()

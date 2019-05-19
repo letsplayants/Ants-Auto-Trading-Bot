@@ -50,7 +50,14 @@ class QsystemEnv():
         pass
     
     def get_quicktrading_q(self):
-        pass
+        return 'messenger.telegram.{}.quick_trading'.format(self.enviroments.messenger['bot_id'])
+    
+    def get_telegram_messenge_q(self):
+        return 'messenger.telegram.{}.message'.format(self.enviroments.messenger['bot_id'])
+    
+    
+    def set_value(self, v):
+        self.qlist = v['qsystem']
 
 if __name__ == '__main__':
     print('Enviroments test')
@@ -92,5 +99,5 @@ if __name__ == '__main__':
     # for i in Qsystem():
     #     print(i)
         
-        
-    Enviroments().save_config()
+    print(Enviroments().qsystem.get_quicktrading_q())    
+    # Enviroments().save_config()
