@@ -55,9 +55,11 @@ class QsystemEnv():
     def get_telegram_messenge_q(self):
         return 'messenger.telegram.{}.message'.format(self.enviroments.messenger['bot_id'])
     
-    
     def set_value(self, v):
-        self.qlist = v['qsystem']
+        if(v.get('qlist') is None):
+            nq = {}
+            
+        self.qlist = v.get('qlist')
 
 if __name__ == '__main__':
     print('Enviroments test')
