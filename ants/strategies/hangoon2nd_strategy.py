@@ -20,6 +20,7 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         self.data_provider = None
         self.telegram_messenger_exchange_name = Enviroments().qsystem.get_telegram_messenge_q()
         self.messenger_q = MQPublisher(self.telegram_messenger_exchange_name)
+        self.logger.debug('telegram message q name : {}'.format(self.telegram_messenger_exchange_name))
     
     def run(self):
         #전략에서 사용할 데이터 제공자를 등록 후 실행

@@ -25,15 +25,13 @@ from env_server import Enviroments
 class TelegramRepoter():
     def __init__(self):
         self.logger = logging.getLogger(__name__)
-        
         self.menu_string_set()
-        
         
         try:
             self.conf = Enviroments().messenger
             bot_token = self.conf['bot_token']
             if(bot_token is None or bot_token == ''):
-                self.conf.load_config_ver1()
+                self.conf.load_v1_config()
                 bot_token = self.conf['bot_token']
             
             self.bot = telegram.Bot(token=self.conf["bot_token"])
@@ -63,6 +61,8 @@ class TelegramRepoter():
         
         self.menu_stack = []
         self.logger.info('Telegram is Ready, {}'.format(self.bot.get_me()))
+        self.logger.debug('telegram message q name : {}'.format(self.subscriber_name))
+        self.logger.debug('telegram quick trading q name : {}'.format(self.subscriber_name))
         # self.send_message('Telegram Repoter is ready')
         self.run_listener()
         # self.remove_kdb()
