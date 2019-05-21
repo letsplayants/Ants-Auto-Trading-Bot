@@ -18,7 +18,7 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
     def __init__(self, args={}):
         self.logger = logging.getLogger(__name__)
         self.data_provider = None
-        self.telegram_messenger_exchange_name = 'messenger.telegram.message'
+        self.telegram_messenger_exchange_name = Enviroments().qsystem.get_telegram_messenge_q()
         self.messenger_q = MQPublisher(self.telegram_messenger_exchange_name)
     
     def run(self):
