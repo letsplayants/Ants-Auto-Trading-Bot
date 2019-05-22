@@ -66,8 +66,13 @@ class Upbit(Base):
         #업비트는 전체 계좌 조회만 제공한다
         balance = Balance()
         ret = self.exchange.fetch_balance()
+        print('rettttt')
+        print(ret)
         if(not ret.get(target)):
             #보유한 것이 없어서 None일 수도 있고 미지원 코인일 때도 None가 뜬다
+            #2019-05-23 신생 계좌일 경우 0원이 있는 경우도 있다. 이때를 위해 디펜스 코드를 작성해야함
+            #target가 KRW이고 잔고가 아래와 같을때 오류 발생한다
+            #{'info': [{'currency': 'BTC', 'balance': '0.15', 'locked': '0.0', 'avg_buy_price': '9512000', 'avg_buy_price_modified': False, 'unit_currency': 'KRW', 'avg_krw_buy_price': '9512000', 'modified': False}], 'BTC': {'free': 0.15, 'used': 0.0, 'total': 0.15}, 'free': {'BTC': 0.15}, 'used': {'BTC': 0.0}, 'total': {'BTC': 0.15}}
             return None
             
         #업빗에서는 total = used + free
@@ -108,6 +113,48 @@ class Upbit(Base):
                         ret[name]['free'])
 
         return balance
+    
+    def get_investment_history(self, currency=None):
+        all_history = self.exchange.fetch_balance()
+        info = all_history['info']
+        ret = {}
+        for item in info:
+            if item['currency']==currency :
+                ret['currency'] = item['currency']
+                ret['balance'] = item['balance'] + item['locked'] # 보유수량
+                ret['avg_buy_price'] = item['avg_buy_price'] # 매수 평균가
+                ret['purchase_price'] = (int)((float)(item['balance']) * (float)(item['avg_buy_price']) + 0.5) # 매수 금액
+                str = item['currency']+'/'+item['unit_currency'] # ex) btc/krw
+                df = self.exchange.fetchTicker(item['currency']+'/'+item['unit_currency']) # current currency price
+                ret['evaluation_price'] = (int)((float)(item['balance']) * (float)(df['last']) + 0.5) # 평가 금액
+                ret['profit_and_loss'] = (int)(ret['evaluation_price']) - (int)(ret['purchase_price']) # 평가 손익
+                ret['rate_of_return'] = round((float)(1-((int)(ret['purchase_price']) / (int)(ret['evaluation_price'])))*100, 3) # 수익률
+        return ret
+    
+    def get_investment_state(self):
+        all_history = self.exchange.fetch_balance()
+        info = all_history['info']
+        ret = {}
+        ret['coins'] = []
+        ret['total_krw'] = 0
+        total_krw_profit = 0
+        for item in info:
+            d_item = {}
+            total_balance = float(item['balance']) + float(item['locked'])
+            avg_krw_buy_price = (float)(item['avg_krw_buy_price'])
+            if(item['currency'] == 'KRW'):
+                d_item['name'] = item['currency']
+                d_item['krw'] = total_balance
+            else:
+                d_item['name'] = item['currency']
+                d_item['krw'] = total_balance * avg_krw_buy_price
+                
+            ret['coins'].append(d_item)
+            total_krw_profit = total_krw_profit + d_item['krw']
+            
+        ret['total_krw'] = total_krw_profit
+        return ret
+    
     
     def check_amount(self, symbol, seed, price):
         """
@@ -225,6 +272,12 @@ if __name__ == '__main__':
     
     
     up = Upbit()
+
+    item = up.get_investment_state()
+    print(item )
+    print('보유한 총 원화 가치 : {}'.format(item['total_krw']))
+    import sys
+    sys.exit(0)
 
     bal = up.get_balance('없는코인')
     if(bal is not None):
