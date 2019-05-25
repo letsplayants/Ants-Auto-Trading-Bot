@@ -122,6 +122,8 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
             
             if(buy_cnt == 0):
                 buy_price = price #구매한적 없음
+                return False, '구매한 적 없음'
+                
             elif(buy_cnt == 1):
                 buy_price = float(buy_info['1'])
             elif(buy_cnt == 2):
@@ -136,7 +138,7 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
             
             sell_price = price
             profit_price = ((sell_price - buy_price)  * 100) / buy_price
-            accumulate_profit = (accumulate_profit + profit_price) / 2
+            accumulate_profit = accumulate_profit + profit_price
             
             price_msg = '매매 수익률 : {}%\n'.format(profit_price)
             price_msg += '매수 단가 : {}\n'.format(buy_price)
