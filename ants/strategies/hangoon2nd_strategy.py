@@ -100,15 +100,15 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
             if(buy_cnt >= 2):
                 b0 = float(buy_info['1'])
                 b1 = float(buy_info['2'])
-                return False, '{}\n평균 구매 단가: {}\n현재 2회 구매 중입니다\n추가 매입하지 않음\n'.format(coin_name, ((b0 + b1) / 2))
+                return False, '{}\n평균 구매 단가: {:,.2f}\n현재 2회 구매 중입니다\n추가 매입하지 않음\n'.format(coin_name, ((b0 + b1) / 2))
             
             if(buy_cnt == 0):
-                price_msg = '1회차 구매 단가: {}'.format(price)
+                price_msg = '1회차 구매 단가: {:,.2f}'.format(price)
             elif(buy_cnt == 1):
                 b0 = float(buy_info['1'])
-                price_msg = '1회차 구매 단가: {}\n'.format(b0)
-                price_msg += '2회차 구매 단가: {}\n'.format(price)
-                price_msg += '평균 구매 단가: {}\n'.format((b0 + price) / 2)
+                price_msg = '1회차 구매 단가: {:,.2f}\n'.format(b0)
+                price_msg += '2회차 구매 단가: {:,.2f}\n'.format(price)
+                price_msg += '평균 구매 단가: {:,.2f}\n'.format((b0 + price) / 2)
             
             buy_cnt += 1
             accumulate_profit = None
@@ -140,10 +140,10 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
             profit_price = ((sell_price - buy_price)  * 100) / buy_price
             accumulate_profit = accumulate_profit + profit_price
             
-            price_msg = '매매 수익률 : {}%\n'.format(profit_price)
-            price_msg += '매수 단가 : {}\n'.format(buy_price)
-            price_msg += '매도 단가 : {}\n'.format(sell_price)
-            price_msg += '누적 수익률 : {}%\n'.format(profit_price)
+            price_msg = '매매 수익률 : {:.2f}%\n'.format(profit_price)
+            price_msg += '매수 단가 : {:,.2f}\n'.format(buy_price)
+            price_msg += '매도 단가 : {:,.2f}\n'.format(sell_price)
+            price_msg += '누적 수익률 : {:.2f}%\n'.format(profit_price)
             
             buy_cnt = 0
             
@@ -241,7 +241,6 @@ if __name__ == '__main__':
     # do, add_msg = test.check_signal(msg)
     # if(do):
     #     print('1 do buy : {}'.format(add_msg))
-    
     # msg ='sell upbit krw btc 0% 100%'
     # do, add_msg = test.check_signal(msg)
     # if(do):
@@ -263,25 +262,25 @@ if __name__ == '__main__':
     # if(do):
     #     print('1 do sell : {}'.format(add_msg))
     
-    # print('세번 구매 테스트')
-    # msg ='buy upbit krw btc 0% 100%'
-    # do, add_msg = test.check_signal(msg)
-    # if(do):
-    #     print('1 do buy : {}\n\n'.format(add_msg))
+    print('세번 구매 테스트')
+    msg ='buy upbit krw btc 0% 100%'
+    do, add_msg = test.check_signal(msg)
+    if(do):
+        print('1 do buy : {}\n\n'.format(add_msg))
     
-    # msg ='buy upbit krw btc 0% 100%'
-    # do, add_msg = test.check_signal(msg)
-    # if(do):
-    #     print('2 do buy : {}\n\n'.format(add_msg))
-    # msg ='buy upbit krw btc 0% 100%'
-    # do, add_msg = test.check_signal(msg)
-    # if(not do):
-    #     print('3 do not buy : {}\n\n'.format(add_msg))
+    msg ='buy upbit krw btc 0% 100%'
+    do, add_msg = test.check_signal(msg)
+    if(do):
+        print('2 do buy : {}\n\n'.format(add_msg))
+    msg ='buy upbit krw btc 0% 100%'
+    do, add_msg = test.check_signal(msg)
+    if(not do):
+        print('3 do not buy : {}\n\n'.format(add_msg))
     
-    # msg ='sell upbit krw btc 0% 100%'
-    # do, add_msg = test.check_signal(msg)
-    # if(do):
-    #     print('1 do sell : {}'.format(add_msg))
+    msg ='sell upbit krw btc 0% 100%'
+    do, add_msg = test.check_signal(msg)
+    if(do):
+        print('1 do sell : {}'.format(add_msg))
     
     
     # #------------------------------------------
