@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+import sched, time
+
+import threading
 import logging
 from datetime import datetime
 from datetime import timedelta
@@ -49,11 +52,13 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         
         msg=msg[msg.find(':')+2:]
         
-        do, add_msg = self.check_signal(msg)
-        if(do):
-            msg = msg + '\n' + add_msg
-            self.messenger_q.send('{}'.format(msg))
-        
+        try:
+            do, add_msg = self.check_signal(msg)
+            if(do):
+                msg = msg + '\n' + add_msg
+                self.messenger_q.send('{}'.format(msg))
+        except Exception as exp:
+            self.logger.debug(f'upate got error : {exp}')
         pass
     
     def stop(self):
@@ -84,28 +89,35 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         symbol = '{}/{}'.format(coin_name, market)
         exchange = self.get_exchange(exchange_name)
         if(exchange is None):
-            return False, '{} 이름이 유효하지 않습니다.'.format(exchange_name)
-        
+            msg = '{} 이름이 유효하지 않습니다.'.format(exchange_name)
+            self.logger.debug(msg)
+            return False, msg
+            
         #항목 아래 함수가 자주 호출되면 block 걸린다
         price = exchange.get_last_price(symbol)
+        
+        
+        buy_info = self.get_state(exchange_name, coin_name, market)
+        if(buy_info == None):
+            buy_cnt = 0
+            b0 = price
+            b1 = price
+        else:
+            buy_cnt = int(buy_info.get('buy_cnt')) if buy_info.get('buy_cnt') is not None else 0
+            b0 = float(buy_info.get('1')) if buy_info.get('1') is not None else price
+            b1 = float(buy_info.get('2')) if buy_info.get('2') is not None else price
+            
         
         if(command == 'BUY'):
             buy_info = self.get_state(exchange_name, coin_name, market)
             print('buy info : {}'.format(buy_info))
-            try:
-                buy_cnt = int(buy_info['buy_cnt'])
-            except :
-                buy_cnt = 0
             
             if(buy_cnt >= 2):
-                b0 = float(buy_info['1'])
-                b1 = float(buy_info['2'])
                 return False, '{}\n평균 구매 단가: {:,.2f}\n현재 2회 구매 중입니다\n추가 매입하지 않음\n'.format(coin_name, ((b0 + b1) / 2))
             
             if(buy_cnt == 0):
                 price_msg = '1회차 구매 단가: {:,.2f}'.format(price)
             elif(buy_cnt == 1):
-                b0 = float(buy_info['1'])
                 price_msg = '1회차 구매 단가: {:,.2f}\n'.format(b0)
                 price_msg += '2회차 구매 단가: {:,.2f}\n'.format(price)
                 price_msg += '평균 구매 단가: {:,.2f}\n'.format((b0 + price) / 2)
@@ -115,20 +127,14 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
                 
         elif(command == 'SELL'):
             buy_info = self.get_state(exchange_name, coin_name, market)
-            try:
-                buy_cnt = int(buy_info['buy_cnt'])
-            except :
-                buy_cnt = 0
             
+            buy_price = price #구매한적 없음
             if(buy_cnt == 0):
-                buy_price = price #구매한적 없음
                 return False, '구매한 적 없음'
                 
             elif(buy_cnt == 1):
-                buy_price = float(buy_info['1'])
+                buy_price = b0
             elif(buy_cnt == 2):
-                b0 = float(buy_info['1'])
-                b1 = float(buy_info['2'])
                 buy_price = (b0 + b1) / 2
             
             try:
@@ -195,6 +201,27 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         except Exception as e:
             self.logger.debug('{} {}/{} has not states : {}'.format(exchange, coin, market, e))
             return None
+   
+
+    def get_bought_coin_list(self):
+        return '보유한 코인 목록 : '
+   
+    def __run__(self):
+        s = sched.scheduler(time.time, time.sleep)
+        def run_every_sec(cnt):
+            self.logger.debug('report time ')
+            four_hour = 60 * 60 * 4
+            s.enter(four_hour, 1, run_every_sec, (cnt,))
+            
+        four_hour = 60 * 60 * 4
+        s.enter(four_hour, 1, run_every_sec, kwargs={'cnt': 0})
+        s.run()
+        
+    def show_coin_has_show(self):
+        self.thread_hnd = threading.Thread(target=self.__run__, args=())
+        self.thread_hnd.start()
+        pass
+   
     
 if __name__ == '__main__':
     print('strategy test')
@@ -262,25 +289,63 @@ if __name__ == '__main__':
     # if(do):
     #     print('1 do sell : {}'.format(add_msg))
     
-    print('세번 구매 테스트')
-    msg ='buy upbit krw btc 0% 100%'
-    do, add_msg = test.check_signal(msg)
-    if(do):
-        print('1 do buy : {}\n\n'.format(add_msg))
+    # print('세번 구매 테스트')
+    # msg ='buy upbit krw btc 0% 100%'
+    # do, add_msg = test.check_signal(msg)
+    # if(do):
+    #     print('1 do buy : {}\n\n'.format(add_msg))
     
-    msg ='buy upbit krw btc 0% 100%'
-    do, add_msg = test.check_signal(msg)
-    if(do):
-        print('2 do buy : {}\n\n'.format(add_msg))
-    msg ='buy upbit krw btc 0% 100%'
-    do, add_msg = test.check_signal(msg)
-    if(not do):
-        print('3 do not buy : {}\n\n'.format(add_msg))
+    # msg ='buy upbit krw btc 0% 100%'
+    # do, add_msg = test.check_signal(msg)
+    # if(do):
+    #     print('2 do buy : {}\n\n'.format(add_msg))
+    # msg ='buy upbit krw btc 0% 100%'
+    # do, add_msg = test.check_signal(msg)
+    # if(not do):
+    #     print('3 do not buy : {}\n\n'.format(add_msg))
     
-    msg ='sell upbit krw btc 0% 100%'
-    do, add_msg = test.check_signal(msg)
-    if(do):
-        print('1 do sell : {}'.format(add_msg))
+    # msg ='sell upbit krw btc 0% 100%'
+    # do, add_msg = test.check_signal(msg)
+    # if(do):
+    #     print('1 do sell : {}'.format(add_msg))
+    
+    # s = sched.scheduler(time.time, time.sleep)
+    # def do_something(sc): 
+    #     print("Doing stuff...")
+    #     # do your stuff
+    #     s.enter(60, 1, do_something, (sc,))
+    
+    # s.enter(60, 1, do_something, (s,))
+    # s.run()
+    
+    # ------------------------------------------------------------
+    # def print_time(a='default'):
+    #     print("From print_time", time.time(), a)
+        
+    # def print_some_times():
+    #      print(time.time())
+    #      s.enter(10, 1, print_time)
+    #      s.enter(5, 2, print_time, argument=('positional',))
+    #      s.enter(5, 1, print_time, kwargs={'a': 'keyword'})
+    #      s.run()
+    #      print(time.time())
+    # print_some_times()
+    
+    # ------------------------------------------------------------
+    # s = sched.scheduler(time.time, time.sleep)
+    # def run_every_sec(cnt):
+    #     print(time.time())
+    #     cnt += 1
+    #     if(cnt == 10):
+    #         print('done')
+    #         return
+        
+    #     s.enter(1, 1, run_every_sec, (cnt,))
+        
+    # s.enter(1, 1, run_every_sec, kwargs={'cnt': 0})
+    # s.run()
+        
+    test.show_coin_has_show()
     
     
     # #------------------------------------------
