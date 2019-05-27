@@ -40,7 +40,7 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         self.data_provider = EmailProvider(True)
         self.data_provider.attach(self)
         self.data_provider.run()
-        
+        self.show_coin_has_show()
         self.logger.info('strategy run')
 
     def update(self, msg):
@@ -98,6 +98,7 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         
         
         buy_info = self.get_state(exchange_name, coin_name, market)
+        print('buy info : {}'.format(buy_info))
         if(buy_info == None):
             buy_cnt = 0
             b0 = price
@@ -109,9 +110,6 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
             
         
         if(command == 'BUY'):
-            buy_info = self.get_state(exchange_name, coin_name, market)
-            print('buy info : {}'.format(buy_info))
-            
             if(buy_cnt >= 2):
                 return False, '{}\n평균 구매 단가: {:,.2f}\n현재 2회 구매 중입니다\n추가 매입하지 않음\n'.format(coin_name, ((b0 + b1) / 2))
             
@@ -124,10 +122,8 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
             
             buy_cnt += 1
             accumulate_profit = None
-                
-        elif(command == 'SELL'):
-            buy_info = self.get_state(exchange_name, coin_name, market)
             
+        elif(command == 'SELL'):
             buy_price = price #구매한적 없음
             if(buy_cnt == 0):
                 return False, '구매한 적 없음'
@@ -202,19 +198,53 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
             self.logger.debug('{} {}/{} has not states : {}'.format(exchange, coin, market, e))
             return None
    
-
     def get_bought_coin_list(self):
-        return '보유한 코인 목록 : '
-   
+        exchange = 'upbit' #현재는 upbit만 있으므로~
+        class_name = self.__class__.__name__.lower()
+        coin_list = Enviroments().strategies[class_name][exchange]
+        
+        total_acc = 0
+        buy_total_acc = 0
+        buy_msg = '보유한 코인 목록 \n'
+        for coin in coin_list:
+            buy_info = coin_list.get(coin).get('krw')
+            if(buy_info is not None):
+                buy_cnt = int(buy_info.get('buy_cnt')) if buy_info.get('buy_cnt') is not None else None
+                b0 = float(buy_info.get('1')) if buy_info.get('1') is not None else 0
+                b1 = float(buy_info.get('2')) if buy_info.get('2') is not None else 0
+                acc = float(buy_info.get('accumulate')) if buy_info.get('accumulate') is not None else 0
+            if(buy_cnt == 1):
+                buy_price = b0
+            elif(buy_cnt == 2):
+                #예외 상황 - b0이 0이거나 b1이 0일때가 있음
+                buy_price = (b0 + b1) / 2
+                
+            if(buy_cnt != 0):
+                buy_msg += '{:5}\n구매단가: {:12,.2f}\n누적 수익률:{:6.2f}%\n'.format(coin.upper(), buy_price, acc)
+                buy_total_acc += acc
+            total_acc += acc
+            
+        buy_msg += '보유 중 코인들 수익률 : {:.2f}%\n'.format(buy_total_acc)
+        buy_msg += '거래한 누적 수익률 : {:.2f}%'.format(total_acc)
+        return buy_msg
+        
     def __run__(self):
         s = sched.scheduler(time.time, time.sleep)
-        def run_every_sec(cnt):
-            self.logger.debug('report time ')
-            four_hour = 60 * 60 * 4
-            s.enter(four_hour, 1, run_every_sec, (cnt,))
+        def run_every_time():
+            self.logger.debug('report time')
+            msg = self.get_bought_coin_list()
+            self.messenger_q.send('{}'.format(msg))
             
+            four_hour = 60 * 60 * 4
+            one_hour = 60 * 60 * 1
+            one_sec = 1 #for test
+            s.enter(one_hour, 1, run_every_time, ())
+            
+        run_every_time()
         four_hour = 60 * 60 * 4
-        s.enter(four_hour, 1, run_every_sec, kwargs={'cnt': 0})
+        one_hour = 60 * 60 * 1
+        one_sec = 1 #for test
+        s.enter(one_hour, 1, run_every_time, kwargs={'cnt': 0})
         s.run()
         
     def show_coin_has_show(self):
@@ -222,7 +252,6 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         self.thread_hnd.start()
         pass
    
-    
 if __name__ == '__main__':
     print('strategy test')
     
@@ -250,7 +279,10 @@ if __name__ == '__main__':
     _list = s.split()
     print()
     
+    
     test = Mail2QuickTradingStrategy()
+    # test.run()
+    
     # test.save_state('upbit','btc','krw','buy',0)
     # test.save_state('upbit','eth','krw','buy',1)
     # test.save_state('binance','eth','btc','buy',1)
@@ -333,19 +365,19 @@ if __name__ == '__main__':
     
     # ------------------------------------------------------------
     # s = sched.scheduler(time.time, time.sleep)
-    # def run_every_sec(cnt):
+    # def run_every_time(cnt):
     #     print(time.time())
     #     cnt += 1
     #     if(cnt == 10):
     #         print('done')
     #         return
         
-    #     s.enter(1, 1, run_every_sec, (cnt,))
+    #     s.enter(1, 1, run_every_time, (cnt,))
         
-    # s.enter(1, 1, run_every_sec, kwargs={'cnt': 0})
+    # s.enter(1, 1, run_every_time, kwargs={'cnt': 0})
     # s.run()
         
-    test.show_coin_has_show()
+    # test.show_coin_has_show()
     
     
     # #------------------------------------------
@@ -382,5 +414,7 @@ if __name__ == '__main__':
     # if(test.check_signal(msg)):
     #     print('eth 1 do sell')
     
+    # test.show_coin_has_show()
+    print(test.get_bought_coin_list())
     
     
