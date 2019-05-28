@@ -6,7 +6,7 @@ import logging
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
-import exchangem.model.trading
+import exchangem.model.order_record
 import exchangem.model.tbl_balance
 
 from sqlalchemy.ext.declarative import declarative_base

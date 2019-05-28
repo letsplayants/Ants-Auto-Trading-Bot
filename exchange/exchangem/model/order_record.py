@@ -12,7 +12,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
-class Trading(Base):
+class OrderRecord(Base):
     """
     coin_name, 코인 이름(BTC, ETH, XRP)
     market, 마켓 종류(WON, USDT, BTC, ETH, BNB)
@@ -24,11 +24,15 @@ class Trading(Base):
     request_id 거래소에 요청 후 돌아오는 구분자, uuid형식도 있고 int형식도 있고 다양함, 이 형식에 포함되지 못하면 테이블을 따로 만들어서 연결하도록 한다
     exchange_name 거래소 이름
     time 매매 요청시간
+    raw 거래소 응답 raw를 포함하여 돌려준다
     
     서칭 가능한 기능
     - 거래소별 매매 기록
     - 코인별 매매 기록
     - 날짜별 매매 기록
+    
+    업빗 응답 포멧 
+    # {'symbol': 'MCO/KRW', 'id': 'd4910a41-385d-4ba9-8317-a8e9ffbc544f', 'side': 'sell', 'price': 8215.0, 'amount': 3.84565168, 'status': 'open', 'remaining': 3.84565168, 'ts_create': 1559005222000, 'ts_updated': None}
     
     """
     __tablename__ = 'trading'
@@ -44,8 +48,9 @@ class Trading(Base):
     time = Column(DateTime, default=datetime.utcnow)
     request_id = Column(String(50))
     exchange_name = Column(String(10))
+    raw = Column(String(255))
     
-    def __init__(self, coin_name, market, type, side, amount, price, params, time, request_id, exchange_name):
+    def __init__(self, coin_name, market, type, side, amount, price, params, time, request_id, exchange_name, raw):
         self.coin_name = coin_name
         self.market = market
         self.type = type
@@ -56,11 +61,11 @@ class Trading(Base):
         self.time = time
         self.request_id = request_id
         self.exchange_name = exchange_name
+        self.raw = raw
         
         self.logger = logging.getLogger(__name__)
-        self.logger.info('{},{},{},{},{},{},{},{},{},{}'.format(coin_name, market, type, side, amount, price, params, time, request_id, exchange_name))
+        self.logger.info('{},{},{},{},{},{},{},{},{},{},{}'.format(coin_name, market, type, side, amount, price, params, time, request_id, exchange_name, raw))
         pass
-
 
 
 

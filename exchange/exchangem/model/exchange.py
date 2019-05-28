@@ -28,7 +28,7 @@ from ccxt.base.decimal_to_precision import NO_PADDING            # noqa F401
 from exchangem.model.observers import ObserverNotifier
 from exchangem.crypto import Crypto
 from exchangem.utils import Util as util
-from exchangem.model.trading import Trading
+from exchangem.model.order_record import OrderRecord
 from exchangem.model.order_info import OrderInfo
 from exchangem.model.coin_model import CoinModel
 
@@ -130,6 +130,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
                 desc = self.exchange.create_order(symbol, type, side, amount, price, params)
                 order_info = self.parsing_order_info(desc)
             except Exception as exp:
+                #주문 오류도 exception으로 처리 된다.
                 self.logger.warning('create_oder exception :\n{}'.format(exp))
                 _str = str(exp)
                 _str = _str[_str.index(' '):]
@@ -157,7 +158,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             request_id = str(desc)
             exchange_name = self.__class__.__name__.lower()
             
-            record = Trading(
+            record = OrderRecord(
                          coin_name,
                          market,
                          type,
@@ -171,26 +172,26 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             
             total = self.decimal_to_precision(float(amount) * float(price))
             
-            if(self.telegram != None):
-                self.telegram.send_message('{}오더를 냄 : {}, {}, {}/{}, 주문 개수:{}, 주문단가:{}, 총 주문금액:{}'.format(
-                                            prefix_str,
-                                            exchange_name.upper(), 
-                                            side.upper(),
-                                            coin_name.upper(), 
-                                            market.upper(), 
-                                            d_amount, 
-                                            d_price, 
-                                            total) )
+            # {'symbol': 'MCO/KRW', 'id': 'd4910a41-385d-4ba9-8317-a8e9ffbc544f', 'side': 'sell', 'price': 8215.0, 'amount': 3.84565168, 'status': 'open', 'remaining': 3.84565168, 'ts_create': 1559005222000, 'ts_updated': None}
+            
+            msg = '{}오더를 냄 : {}, {}, {}/{}, 주문 개수:{}, 주문단가:{}, 총 주문금액:{}'.format(
+                                        prefix_str,
+                                        exchange_name.upper(), 
+                                        side.upper(),
+                                        coin_name.upper(), 
+                                        market.upper(), 
+                                        d_amount, 
+                                        d_price, 
+                                        total)
             if(self.db != None):
                 self.db.add(record)
             
         except Exception as exp:
             raise exp
-          
-        if(order_info is None):
-            return record
-        else:
-            return order_info   #TEST MODE일 떈 제대로된 리턴을 돌려주지 않는다
+        
+        
+        return msg
+        
 
     def parsing_order_info(self, msg):
         """
