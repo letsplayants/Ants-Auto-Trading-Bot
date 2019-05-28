@@ -375,7 +375,7 @@ class TelegramRepoter():
             time.sleep(2)
             
             su = ''
-            if(current_pwd.find('/home/pi/') == 0):
+            if(gitDir.find('/home/pi/') == 0):
                 #라즈베리파이로 인식한다
                 su = 'sudo '
                 
