@@ -124,7 +124,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         if(Enviroments().etc['test_mode'] == True):
             self.logger.info('EXCHANGE IN TEST MODE : {} {} {} {} {}'.format(symbol, type, side, d_amount, d_price))
             desc = {'TEST_MODE':'True'}
-            prefix_str = '가상 '
+            prefix_str = '가상'
         else:
             try:
                 desc = self.exchange.create_order(symbol, type, side, amount, price, params)
@@ -173,16 +173,29 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             total = self.decimal_to_precision(float(amount) * float(price))
             
             # {'symbol': 'MCO/KRW', 'id': 'd4910a41-385d-4ba9-8317-a8e9ffbc544f', 'side': 'sell', 'price': 8215.0, 'amount': 3.84565168, 'status': 'open', 'remaining': 3.84565168, 'ts_create': 1559005222000, 'ts_updated': None}
+            """
+            요청하신 내용을 완료하였습니다.
+            오더 : UPBIT, BUY, BTC/KRW
+            주문수량 : 0.00966634
+            주문단가 : 1034000.0
+            주문총액 : 9994.99556
+            """
             
-            msg = '{}오더를 냄 : {}, {}, {}/{}, 주문 개수:{}, 주문단가:{}, 총 주문금액:{}'.format(
-                                        prefix_str,
-                                        exchange_name.upper(), 
-                                        side.upper(),
-                                        coin_name.upper(), 
-                                        market.upper(), 
-                                        d_amount, 
-                                        d_price, 
-                                        total)
+            # msg = F'{num1:.2f} is not {n2:,}'
+            msg = (f'{prefix_str}오더 : {exchange_name.upper()}, {side.upper()}, {coin_name.upper()}/{market.upper()}\n'
+            f'주문수량 : {d_amount:,.8f}\n'
+            f'주문단가 : {d_price:,.8f}\n'
+            f'주문총액 : {total:,.8f}')
+            
+            # msg = '{}오더 : {}, {}, {}/{}, 주문 개수:{}, 주문단가:{}, 총 주문금액:{}'.format(
+            #                             prefix_str,
+            #                             exchange_name.upper(), 
+            #                             side.upper(),
+            #                             coin_name.upper(), 
+            #                             market.upper(), 
+            #                             d_amount, 
+            #                             d_price, 
+            #                             total)
             if(self.db != None):
                 self.db.add(record)
             
