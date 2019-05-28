@@ -237,12 +237,13 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
             
             four_hour = 60 * 60 * 4
             one_hour = 60 * 60 * 1
+            one_minitue =  60 * 1
             one_sec = 1 #for test
             s.enter(one_hour, 1, run_every_time)
-            
-        run_every_time()
+        
         four_hour = 60 * 60 * 4
         one_hour = 60 * 60 * 1
+        one_minitue =  60 * 1
         one_sec = 1 #for test
         s.enter(one_hour, 1, run_every_time)
         s.run()
@@ -251,6 +252,8 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         self.thread_hnd = threading.Thread(target=self.__run__, args=())
         self.thread_hnd.start()
         pass
+   
+    
    
 if __name__ == '__main__':
     print('strategy test')
