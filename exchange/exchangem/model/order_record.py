@@ -50,7 +50,7 @@ class OrderRecord(Base):
     exchange_name = Column(String(10))
     raw = Column(String(255))
     
-    def __init__(self, coin_name, market, type, side, amount, price, params, time, request_id, exchange_name, raw):
+    def __init__(self, coin_name, market, type, side, amount, price, params, time, request_id, exchange_name, raw=None):
         self.coin_name = coin_name
         self.market = market
         self.type = type
