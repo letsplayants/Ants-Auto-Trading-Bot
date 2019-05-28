@@ -371,7 +371,7 @@ class TelegramRepoter():
             
             self.send_message('시스템을 재시작합니다')
             self.send_message('보통 1분안에 완료가 됩니다. 최대 3분까지 기다려보시고 응답이 없으면 업그레이드 실패로 판단하시면 됩니다.')
-            self.send_message('업그레이드 실패시 텔레그램이 아닌 엔지니어가 와서 수정해야하니 담당자에게 문의해주세요')
+            self.send_message('업그레이드 실패시 텔레그램에서 복구 불가능하며 엔지니어가 와서 수정해야하니 담당자에게 문의해주세요')
             time.sleep(2)
             
             su = ''
@@ -379,7 +379,7 @@ class TelegramRepoter():
                 #라즈베리파이로 인식한다
                 su = 'sudo '
                 
-            pip_command = '{}pip install -U -r requirements.txt'.format(su)
+            pip_command = '{}pip3 install -U -r requirements.txt'.format(su)
             os.popen(pip_command)
             
             restart_command = '{}kill `cat ./ant.pid` | {}./run.sh'.format(su, su)
