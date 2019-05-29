@@ -172,6 +172,8 @@ class ExchangesEnv(BaseClass, metaclass=Singleton):
             self.__set_default__()
             return
         
+        self.logger.debug('ExchangeEnv check_default')
+        
         if(exc.get('default') is None):
             exc['default'] = self.get_default_setting()
         
@@ -187,6 +189,7 @@ class ExchangesEnv(BaseClass, metaclass=Singleton):
         
         
     def __set_default__(self):
+        self.logger.debug('ExchangeEvn set default')
         #있어야하는 값들이 다 있는지 확인 후 없으면 초기화 한다
         Enviroments().exchanges = {}
         self.exchanges = Enviroments().exchanges

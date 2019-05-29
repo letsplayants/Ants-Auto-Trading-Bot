@@ -225,7 +225,7 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
             total_acc += acc
             
         buy_msg += '보유 중 코인들 수익률 : {:.2f}%\n'.format(buy_total_acc)
-        buy_msg += '거래한 누적 수익률 : {:.2f}%'.format(total_acc)
+        buy_msg += '봇거래한 누적 수익률 : {:.2f}%'.format(total_acc)
         return buy_msg
         
     def __run__(self):
