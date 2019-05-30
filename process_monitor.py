@@ -7,9 +7,15 @@ from subprocess import Popen, PIPE
 current_pwd = os.getcwd() + '/'
 main_py = current_pwd + 'ants/main.py'
 
+su = ''
+if(current_pwd.find('/home/pi/') == 0):
+    #라즈베리파이로 인식한다
+    su = 'sudo '
+    
 while(True):
     try:
-        proc = Popen(["python3", main_py], stdout=PIPE, universal_newlines=True)
+        command = '{}python3'.format(su)
+        proc = Popen([command, main_py], stdout=PIPE, universal_newlines=True)
     except Exception as exp:
         print('Can''t start {} with exception : {}'.format(main_py, exp))
         sys.exit(1)
