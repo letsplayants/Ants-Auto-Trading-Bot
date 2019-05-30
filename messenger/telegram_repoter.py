@@ -372,10 +372,10 @@ class TelegramRepoter():
             
             self.send_message('패키지 업데이트 중입니다')
                 
-            import subprocess
-            pip_command = 'pip install -U -r requirements.txt'
-            p = subprocess.Popen(pip_command.split(), stdout=subprocess.PIPE, shell=False)
-            p_status = p.wait()
+            # import subprocess
+            # pip_command = 'pip install -U -r requirements.txt'
+            # p = subprocess.Popen(pip_command.split(), stdout=subprocess.PIPE, shell=False)
+            # p_status = p.wait()
             
             self.send_message('시스템을 재시작합니다')
             self.send_message('보통 1분안에 완료가 됩니다. 최대 3분까지 기다려보시고 응답이 없으면 업그레이드 실패로 판단하시면 됩니다.')
