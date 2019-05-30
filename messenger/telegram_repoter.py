@@ -370,11 +370,7 @@ class TelegramRepoter():
             self.send_message('설정 복구 중입니다')
             copy_tree(backup_path, gitDir+'configs')
             
-            self.send_message('시스템을 재시작합니다')
-            self.send_message('보통 1분안에 완료가 됩니다. 최대 3분까지 기다려보시고 응답이 없으면 업그레이드 실패로 판단하시면 됩니다.')
-            self.send_message('업그레이드 실패시 텔레그램에서 복구 불가능하며 엔지니어가 와서 수정해야하니 담당자에게 문의해주세요')
-            time.sleep(2)
-            
+            self.send_message('패키지 업데이트 중입니다')
             su = ''
             if(gitDir.find('/home/pi/') == 0):
                 #라즈베리파이로 인식한다
@@ -383,16 +379,23 @@ class TelegramRepoter():
             pip_command = '{}pip3 install -U -r requirements.txt'.format(su)
             os.popen(pip_command)
             
+            
+            self.send_message('시스템을 재시작합니다')
+            self.send_message('보통 1분안에 완료가 됩니다. 최대 3분까지 기다려보시고 응답이 없으면 업그레이드 실패로 판단하시면 됩니다.')
+            self.send_message('업그레이드 실패시 텔레그램에서 복구 불가능하며\n담당자에게 문의해주세요')
+            time.sleep(2)
+            
             try:
                 import signal
                 os.kill(os.getpid(), 3)
             except SystemExit:
-                print("sys.exit() worked as expected")
+                self.logger.error("sys.exit() worked as expected")
             except Exception as exp:
-                print("Something went horribly wrong : ".format(exp)) # some other exception got raised
+                self.logger.error("Something went horribly wrong : ".format(exp)) # some other exception got raised
             
         except Exception as exp:
             self.send_message('업그레이드 실패 : \n{}'.format(exp))
+            self.logger.error('업그레이드 실패 : \n{}'.format(exp))
 
 if __name__ == '__main__':
     print('strategy test')
