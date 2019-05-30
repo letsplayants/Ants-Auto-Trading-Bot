@@ -55,6 +55,9 @@ class QsystemEnv():
     def get_telegram_messenge_q(self):
         return 'messenger.telegram.{}.message'.format(self.enviroments.messenger['bot_id'])
     
+    def get_upgrade_q(self):
+        return 'upgrade.{}'.format(self.enviroments.messenger['bot_id'])
+    
     def set_value(self, v):
         if(v.get('qlist') is None):
             nq = {}

@@ -371,27 +371,31 @@ class TelegramRepoter():
             copy_tree(backup_path, gitDir+'configs')
             
             self.send_message('패키지 업데이트 중입니다')
-            su = ''
-            if(gitDir.find('/home/pi/') == 0):
-                #라즈베리파이로 인식한다
-                su = 'sudo '
                 
-            pip_command = '{}pip3 install -U -r requirements.txt'.format(su)
-            os.popen(pip_command)
-            
+            import subprocess
+            pip_command = 'pip install -U -r requirements.txt'
+            p = subprocess.Popen(pip_command.split(), stdout=subprocess.PIPE, shell=False)
+            p_status = p.wait()
             
             self.send_message('시스템을 재시작합니다')
             self.send_message('보통 1분안에 완료가 됩니다. 최대 3분까지 기다려보시고 응답이 없으면 업그레이드 실패로 판단하시면 됩니다.')
-            self.send_message('업그레이드 실패시 텔레그램에서 복구 불가능하며\n담당자에게 문의해주세요')
+            self.send_message('업그레이드 실패시 텔레그램에서 복구 불가능하며 담당자에게 문의해주세요')
             time.sleep(2)
             
-            try:
-                import signal
-                os.kill(os.getpid(), 3)
-            except SystemExit:
-                self.logger.error("sys.exit() worked as expected")
-            except Exception as exp:
-                self.logger.error("Something went horribly wrong : ".format(exp)) # some other exception got raised
+            upgrade_q = Enviroments().qsystem.get_upgrade_q()
+            self.logger.debug('upgrade q : {}'.format(upgrade_q))
+            publisher = MQPublisher(upgrade_q)
+            publisher.send('restart')
+            
+            #리스타트는 모니터링 프로세스에게 요청한다
+            # try:
+            #     import signal
+            #     ret = os.kill(os.getpid(), 3)
+            #     print('ret:{}'.format(ret))
+            # except SystemExit:
+            #     self.logger.error("sys.exit() worked as expected")
+            # except Exception as exp:
+            #     self.logger.error("Something went horribly wrong : ".format(exp)) # some other exception got raised
             
         except Exception as exp:
             self.send_message('업그레이드 실패 : \n{}'.format(exp))

@@ -2,8 +2,22 @@
 import os, sys
 import subprocess
 import time
-
 from subprocess import Popen, PIPE
+from q_receiver import MQReceiver
+from env_server import Enviroments
+
+Enviroments().load_config()
+proc = None
+
+def sbuscribe_message(ch, method, properties, body):
+    print('got message : {}'.format(body))
+    body =  body.decode("utf-8")
+    if(body.find('restart') == 0):
+        os.kill(proc.pid, 3)
+
+subscriber_name = Enviroments().qsystem.get_upgrade_q()
+subscriber = MQReceiver(subscriber_name, sbuscribe_message).start()
+
 current_pwd = os.getcwd() + '/'
 main_py = current_pwd + 'ants/main.py'
 
