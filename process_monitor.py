@@ -55,7 +55,7 @@ if(current_pwd.find('/home/pi/') == 0):
 
 while(True):
     try:
-        proc = Popen([command, main_py], stdout=PIPE, universal_newlines=True)
+        proc = Popen([command, main_py])
     except Exception as exp:
         logger.error('Can''t start {} with exception : {}'.format(main_py, exp))
         sys.exit(1)
