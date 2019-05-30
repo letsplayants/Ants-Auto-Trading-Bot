@@ -6,6 +6,7 @@ import json
 import os, sys
 import subprocess
 import time
+import signal
 from subprocess import Popen, PIPE
 from q_receiver import MQReceiver
 from env_server import Enviroments
@@ -32,7 +33,7 @@ def sbuscribe_message(ch, method, properties, body):
     if(body.find('restart') == 0):
         child_pid = proc.pid
         logger.info('child process({}) kill'.format(child_pid))
-        os.kill(child_pid, 3)
+        os.kill(child_pid, signal.SIGTERM)
         
 
 subscriber_name = Enviroments().qsystem.get_upgrade_q()
