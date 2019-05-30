@@ -13,6 +13,7 @@ configs/
 #config files
 *.key
 *.conf
+requirements.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
