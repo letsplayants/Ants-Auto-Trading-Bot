@@ -1,11 +1,12 @@
 import pika
+import logging
 
 class MQPublisher():
     def __init__(self, exchange_name=None):
+        self.logger = logging.getLogger(__name__)
         self.g_cnt = 0
         if(exchange_name is not None):
             self.make_exchange(exchange_name)
-        
         pass
 
     def get_exchange_name(self):
@@ -26,16 +27,18 @@ class MQPublisher():
         if(type(message) is dict):
             message = str(message)
             
+        self.logger.debug('send msg : {}'.format(message))
         #연결이 끊히는 예외가 있다
         try:
             self.channel.basic_publish(exchange=self.exchange_name,
                                         routing_key='',
                                         body=message)
         except Exception as exp:
+            self.logger.warning('send exception : {}'.format(exp))
             if(self.g_cnt > 10):
                 raise Exception(exp)
             
-            self.g_cnt += 1    
+            self.g_cnt += 1
             self.make_exchange(self.exchange_name)
             self.send(message)
             return
@@ -47,6 +50,15 @@ class MQPublisher():
     
 if __name__ == '__main__':
     print('exchange publisher test')
+    
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    stream_hander = logging.StreamHandler()
+    stream_hander.setFormatter(formatter)
+    logger.addHandler(stream_hander)
+    
+    logging.getLogger("pika").setLevel(logging.WARNING)
     
     queue_name = 'trading_msg'
     # queue_name = 'messenger.telegram.quick_trading'
