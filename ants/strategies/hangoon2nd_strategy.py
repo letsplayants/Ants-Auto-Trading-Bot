@@ -230,6 +230,11 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         
     def __run__(self):
         s = sched.scheduler(time.time, time.sleep)
+        def run_once():
+            msg = self.get_bought_coin_list()
+            self.logger.debug('report time : {}'.format(msg))
+            self.messenger_q.send('{}'.format(msg))
+            
         def run_every_time():
             msg = self.get_bought_coin_list()
             self.logger.debug('report time : {}'.format(msg))
@@ -239,11 +244,11 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
             one_hour = 60 * 60 * 1
             one_sec = 1 #for test
             s.enter(one_hour, 1, run_every_time)
-            
-        run_every_time()
+        
         four_hour = 60 * 60 * 4
         one_hour = 60 * 60 * 1
         one_sec = 1 #for test
+        s.enter(one_sec * 30, 1, run_once)
         s.enter(one_hour, 1, run_every_time)
         s.run()
         
