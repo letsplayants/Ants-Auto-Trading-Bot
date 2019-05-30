@@ -261,7 +261,7 @@ class TelegramRepoter():
         # self.updater.idle()
     
     def stop(self):
-        stop_listener()
+        self.stop_listener()
         
     def stop_listener(self):
         self.logger.info('telegram will be stop')
@@ -351,6 +351,7 @@ class TelegramRepoter():
     
     def do_upgrade(self, update, context):
         self.send_message('업그레이드를 진행합니다\n 업그레이드하는데 약 3~5분 가량 걸리며 완료되면 텔레그램 봇이 재시작 됩니다')
+        
         #TODO 프로그램이 실행된 경로를 찾아서 .. 프로젝트 시작 경로를 찾아서 업데이트하도록 한다
         gitDir = os.getcwd() + '/'
         backup_path = gitDir + '/../config_backup_' + self.conf['bot_id']
@@ -382,8 +383,13 @@ class TelegramRepoter():
             pip_command = '{}pip3 install -U -r requirements.txt'.format(su)
             os.popen(pip_command)
             
-            restart_command = '{}kill `cat ./ant.pid` | {}./run.sh'.format(su, su)
-            os.popen(restart_command)
+            try:
+                import signal
+                os.kill(os.getpid(), 3)
+            except SystemExit:
+                print("sys.exit() worked as expected")
+            except Exception as exp:
+                print("Something went horribly wrong : ".format(exp)) # some other exception got raised
             
         except Exception as exp:
             self.send_message('업그레이드 실패 : \n{}'.format(exp))
