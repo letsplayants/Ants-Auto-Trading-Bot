@@ -203,6 +203,9 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         class_name = self.__class__.__name__.lower()
         coin_list = Enviroments().strategies[class_name][exchange]
         
+        #TODO 거래한 모든 코인의 수익율을 보여주고
+        #보유한 코인 목록만 리스팅 한다
+        
         total_acc = 0
         buy_total_acc = 0
         buy_msg = '보유한 코인 목록 \n'
@@ -225,7 +228,7 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
             total_acc += acc
             
         buy_msg += '보유 중 코인들 수익률 : {:.2f}%\n'.format(buy_total_acc)
-        buy_msg += '봇거래한 누적 수익률 : {:.2f}%'.format(total_acc)
+        # buy_msg += '봇거래한 누적 수익률 : {:.2f}%'.format(total_acc)
         return buy_msg
         
     def __run__(self):
@@ -243,13 +246,13 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
             four_hour = 60 * 60 * 4
             one_hour = 60 * 60 * 1
             one_sec = 1 #for test
-            s.enter(one_hour, 1, run_every_time)
+            s.enter(four_hour, 1, run_every_time)
         
         four_hour = 60 * 60 * 4
         one_hour = 60 * 60 * 1
         one_sec = 1 #for test
-        s.enter(one_sec * 30, 1, run_once)
-        s.enter(one_hour, 1, run_every_time)
+        s.enter(one_sec * 10, 1, run_once)
+        s.enter(four_hour, 1, run_every_time)
         s.run()
         
     def show_coin_has_show(self):
