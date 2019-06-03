@@ -179,6 +179,12 @@ class SmartTrader:
         2. exchange별 설정된 값
         3. exchange에 가용 가능한 모든 머니
         """
+        #2019-06-03
+        #cache가 도입되면서 사용가능한 금액 부분이 올바르게 안나올 수 있다.
+        #100원에서 90원을 사용했는데 연속 주문이 들어올 경우 캐시된 100원이 그대로
+        #사용 가능한 금액으로 나와서 문제가 될 수 있다
+        #다만 이 경우 어떨 때는 금액이 자투리 금액을 다 사용하고 어떨 때는 
+        #주문 자체가 안들어가는 경우이다.
         sm = exchange.get_availabel_size(base)
         self.logger.debug('{} seed_money : {}'.format(base, sm))
         return sm

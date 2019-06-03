@@ -64,15 +64,20 @@ class Upbit(Base):
     
     def get_balance(self, target):
         #업비트는 전체 계좌 조회만 제공한다
+        cached, data = self.cache.get_cache(target)
+        if(cached):
+            return data
+            
         balance = Balance()
         ret = self.exchange.fetch_balance()
-        print('rettttt')
-        print(ret)
+        
+        self.logger.debug(ret)
         if(not ret.get(target)):
             #보유한 것이 없어서 None일 수도 있고 미지원 코인일 때도 None가 뜬다
             #2019-05-23 신생 계좌일 경우 0원이 있는 경우도 있다. 이때를 위해 디펜스 코드를 작성해야함
             #target가 KRW이고 잔고가 아래와 같을때 오류 발생한다
             #{'info': [{'currency': 'BTC', 'balance': '0.15', 'locked': '0.0', 'avg_buy_price': '9512000', 'avg_buy_price_modified': False, 'unit_currency': 'KRW', 'avg_krw_buy_price': '9512000', 'modified': False}], 'BTC': {'free': 0.15, 'used': 0.0, 'total': 0.15}, 'free': {'BTC': 0.15}, 'used': {'BTC': 0.0}, 'total': {'BTC': 0.15}}
+            self.cache.set_cache(target, None)
             return None
             
         #업빗에서는 total = used + free
@@ -98,20 +103,26 @@ class Upbit(Base):
         
         balance.add(target, total, used, free)
 
+        self.cache.set_cache(target, balance)
         return balance
     
     def get_all_balance(self):
         #업비트는 전체 계좌 조회만 제공한다
+        cached, data = self.cache.get_cache('get_all_balance')
+        if(cached):
+            return data
+            
         balance = Balance()
         ret = self.exchange.fetch_balance()
         info = ret['info']
         for item in info:
             name = item['currency']
             balance.add(name, 
-                        ret[name]['total'],
-                        ret[name]['used'],
-                        ret[name]['free'])
+                        item['balance'] + item['locked'],
+                        item['locked'],
+                        item['balance'])
 
+        self.cache.set_cache('get_all_balance', balance)
         return balance
     
     def get_investment_history(self, currency=None):
@@ -132,6 +143,10 @@ class Upbit(Base):
         return ret
     
     def get_investment_state(self):
+        cached, data = self.cache.get_cache('get_investment_state')
+        if(cached):
+            return data
+            
         all_history = self.exchange.fetch_balance()
         info = all_history['info']
         ret = {}
@@ -153,6 +168,8 @@ class Upbit(Base):
             total_krw_profit = total_krw_profit + d_item['krw']
             
         ret['total_krw'] = total_krw_profit
+        
+        self.cache.set_cache('get_investment_state', ret)
         return ret
     
     
@@ -217,14 +234,19 @@ class Upbit(Base):
         pass
 
     def get_last_price(self, symbol):
+        key = self.cache.to_key(symbol)
+        cached, data = self.cache.get_cache(key)
+        if(cached):
+            return data
+            
         ticker = self.exchange.fetch_ticker(symbol)
         self.logger.debug(ticker)
         """
         {'symbol': 'BTC/KRW', 'timestamp': 1549698009141, 'datetime': '2019-02-09T07:40:09.141Z', 'high': 4100000.0, 'low': 3776000.0, 'bid': 4002000.0, 'bidVolume': None, 'ask': 4004000.0, 'askVolume': None, 'vwap': 3927711.3257, 'open': 3778000.0, 'close': 4004000.0, 'last': 4004000.0, 'previousClose': None, 'change': 226000.0, 'percentage': 5.9820010587612495, 'average': 3891000.0, 'baseVolume': 5113.40675249, 'quoteVolume': 20083985614.66583, 'info': {'opening_price': '3778000', 'closing_price': '4004000', 'min_price': '3776000', 'max_price': '4100000', 'average_price': '3927711.3257', 'units_traded': '5113.40675249', 'volume_1day': '5113.40675249', 'volume_7day': '17281.38692642', 'buy_price': '4002000', 'sell_price': '4004000', '24H_fluctate': '226000', '24H_fluctate_rate': '5.98', 'date': '1549698009141'}}
         """
+        self.cache.set_cache(key, ticker['last'])
         return ticker['last']
-        pass
-    
+
     def get_fee(self, market):
         fee = 0.0015
         #업비트의 원화 수수료는 0.05% 이다
@@ -273,27 +295,41 @@ if __name__ == '__main__':
     
     up = Upbit()
 
+    #cache적용 테스트
     item = up.get_investment_state()
-    print(item )
+    item = up.get_investment_state()
+    item = up.get_investment_state()
+    item = up.get_investment_state()
     print('보유한 총 원화 가치 : {}'.format(item['total_krw']))
-    import sys
-    sys.exit(0)
-
+    
     bal = up.get_balance('없는코인')
     if(bal is not None):
         print(bal.get_all())
     
     bal = up.get_balance('KRW')
+    bal = up.get_balance('KRW')
+    bal = up.get_balance('KRW')
+    bal = up.get_balance('KRW')
+    bal = up.get_balance('KRW')
     if(bal is not None):
         print(bal.get_all())
         print(bal.get('KRW'))
         
+    
     print('balance---------------------------------------------------------------')
     print(up.get_all_balance().get('KRW'))
     print(up.get_all_balance().get_all())
+    up.get_all_balance().get('KRW')
+    up.get_all_balance().get_all()
+    up.get_all_balance().get('KRW')
+    up.get_all_balance().get_all()
     print('balance---------------------------------------------------------------')
     
     print('last price : ', up.get_last_price('BTC/KRW'))
+    print('last price : ', up.get_last_price('BTC/KRW'))
+    print('last price : ', up.get_last_price('BTC/KRW'))
+    print('last price : ', up.get_last_price('BTC/KRW'))
+    
     print('fee : ', up.get_fee('KRW'))
     amount, price, fee = up.check_amount('BTC/KRW', 10000, 3900901)
     print('order : ', amount, price, fee)
@@ -303,11 +339,16 @@ if __name__ == '__main__':
     print('order : ', up.check_amount('BTC/KRW', 10000, 8823.9157))
     print('order : ', up.check_amount('BTC/KRW', 0.005, 4000000))
     
+    
+    print('KRW seed limit : ', up.get_availabel_size('KRW'))
+    print('KRW seed limit : ', up.get_availabel_size('KRW'))
     print('KRW seed limit : ', up.get_availabel_size('KRW'))
     print('BTC seed limit : ', up.get_availabel_size('BTC'))
     print('ETH seed limit : ', up.get_availabel_size('ETH'))
     print('EOS seed limit : ', up.get_availabel_size('EOS'))
     print('seed limit : ', up.get_availabel_size('EOS111'))
+    
+    
     
     print('has_market :', up.has_market('BTC/KRW'))
     print('has_market :', up.has_market('BTC/NONE'))
@@ -320,6 +361,9 @@ if __name__ == '__main__':
     print('$1 is small balance ? ', up.is_small_balance(1, 'USDT'))
     print('0.00000001 satosi is small balance ? ', up.is_small_balance(0.00000001, 'BTC'))
     print('0.001 satosi is small balance ? ', up.is_small_balance(0.001, 'BTC'))
+    
+    import sys
+    sys.exit(0)
     
     # up.connect()
     

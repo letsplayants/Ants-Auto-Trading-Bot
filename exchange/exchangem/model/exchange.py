@@ -27,10 +27,12 @@ from ccxt.base.decimal_to_precision import NO_PADDING            # noqa F401
 
 from exchangem.model.observers import ObserverNotifier
 from exchangem.crypto import Crypto
+from exchangem.cache import Cache
 from exchangem.utils import Util as util
 from exchangem.model.order_record import OrderRecord
 from exchangem.model.order_info import OrderInfo
 from exchangem.model.coin_model import CoinModel
+
 
 from env_server import Enviroments, ExchangesEnv
 
@@ -40,6 +42,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         orderes = []
         env = Enviroments()
         self.env = env
+        self.cache = Cache()
         self.exchange_name = self.__class__.__name__.lower()
         self.logger.debug('{} exchange init with args : {}'.format(self.exchange_name, args))
         self.exchange = None
@@ -263,6 +266,10 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
     #     ddddd
     
     def get_availabel_size(self, coin_name, is_buy=True):
+        cached, data = self.cache.get_cache(coin_name)
+        if(cached):
+            return data
+        
         """
         coin_name의 사용 제한 값을 돌려준다
         법정화폐 및 통화도 코인으로 간주하여 처리한다
@@ -301,11 +308,13 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         if(balance == None or balance.get(coin_name) == None):
             #해당 코인의 잔고가 0일 경우
             self.logger.debug('get_availabel_size balance : {}'.format(balance))
+            self.cache.set_cache(coin_name, 0)
             return 0
         
         bal_left = balance.get(coin_name)['free'] - freeze_size
         if(bal_left < 0):
             self.logger.debug('get_availabel_size 0 caseu balance, freeze_size : {}/{}'.format(balance.get(coin_name)['free'], freeze_size))
+            self.cache.set_cache(coin_name, 0)
             return 0
         
         if(is_buy):    
@@ -319,20 +328,27 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
                 # ret = balance.get(coin_name)['free']
                 availabel_size = 0    
                 self.logger.debug('get_availabel_size(BUY) availabel_size is not setting : {}'.format(availabel_size))
+                self.cache.set_cache(coin_name, availabel_size)
                 return availabel_size
             
             
             if(availabel_size < bal_left):
-                return self.decimal_to_precision(availabel_size)
+                ret = self.decimal_to_precision(availabel_size)
+                self.cache.set_cache(coin_name, ret)
+                return ret
             else:
+                self.cache.set_cache(coin_name, bal_left)
                 return self.decimal_to_precision(bal_left)
         else: #sell mode일 떄
             if(availabel_size == None):
+                self.cache.set_cache(coin_name, bal_left)
                 return bal_left
             
             if(availabel_size < bal_left):
+                self.cache.set_cache(coin_name, availabel_size)
                 return availabel_size
             else:
+                self.cache.set_cache(coin_name, bal_left)
                 return bal_left
 
     
@@ -439,7 +455,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         st = int(datetime.now(tz=timezone.utc).timestamp() * 1000)
         result = self.exchange.fetch_order_book(symbol)
         tgap = st - result.get('timestamp') #milliseconds
-        print('st:{}, rl:{}, tgap : {}'.format(st, result.get('timestamp'), tgap))
+        self.logger.debug('st:{}, rl:{}, tgap : {}'.format(st, result.get('timestamp'), tgap))
         return result
         
     def get_order_books(self, symbols, params={}):
