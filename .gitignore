@@ -9,6 +9,8 @@ logs/
 *.conf
 configs/
 *.tmp
+ant.pid
+run_console.out
 
 #config files
 *.key
