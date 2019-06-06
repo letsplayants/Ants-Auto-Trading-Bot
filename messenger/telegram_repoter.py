@@ -129,7 +129,7 @@ class TelegramRepoter():
         self.bot.send_message(chat_id=self.conf['chat_id'], text=self.welcome_message, reply_markup=reply_markup)
   
     def message_parser(self, bot, update):
-        #받은 메시지를 해당 클래스에 전달함
+        self.logger.debug('got some message')
         try:
             message = update.message
             text = message.text
@@ -257,7 +257,6 @@ class TelegramRepoter():
         # 내부적으로 쓰레드로 처리된다.
         # https://github.com/python-telegram-bot/python-telegram-bot/blob/master/telegram/ext/updater.py
         self.updater.start_polling(timeout=10, clean=True)
-        
         # self.updater.idle()
     
     def stop(self):
@@ -265,7 +264,8 @@ class TelegramRepoter():
         
     def stop_listener(self):
         self.logger.info('telegram will be stop')
-        self.updater.signal_handler(SIGINT, 0)
+        self.updater.stop()
+        self.updater.signal_handler(SIGTERM, 0)
     
     def menu_func(self, update, context):
         context.message.reply_text('Please choose:', reply_markup=self.menu_keyboard())

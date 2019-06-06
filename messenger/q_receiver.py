@@ -37,14 +37,24 @@ class MQReceiver():
         self.thread_hnd.start()
         
     def _run(self):
+        
         self.channel.start_consuming()
+        
         
     def stop(self):
         self.close()
         
     def close(self):
+        try:
+            self.channel.close()
+        except :
+            self.logger.warning('exception..')
+            
+        # while self.channel._consumer_infos:
+        #     self.channel.connection.process_data_events(time_limit=1) # 1 second
+    
         self.thread_hnd.join()
-        self.connection.close()
+        # self.connection.close()
         
 if __name__ == '__main__':
     print('strategy test')

@@ -59,7 +59,6 @@ class MQStrategy(ants.strategies.strategy.StrategyBase, Observer):
         pass
     
     def stop(self):
-        self.telegram.stop_listener()
         self.data_provider.stop()
         self.logger.info('Strategy will stop')
     
