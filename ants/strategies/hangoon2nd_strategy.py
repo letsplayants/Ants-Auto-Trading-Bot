@@ -68,6 +68,8 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         pass
     
     def stop(self):
+        self.thread_run = False
+        self.thread_hnd.join()
         self.telegram.stop_listener()
         self.data_provider.stop()
         self.logger.info('Strategy will stop')
@@ -230,24 +232,29 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
                 continue
             
             buy_info = coin_list.get(coin).get('krw')
-            if(buy_info is not None):
-                buy_cnt = int(buy_info.get('buy_cnt')) if buy_info.get('buy_cnt') is not None else None
-                b0 = float(buy_info.get('1')) if buy_info.get('1') is not None else 0
-                b1 = float(buy_info.get('2')) if buy_info.get('2') is not None else 0
-                acc = float(buy_info.get('accumulate')) if buy_info.get('accumulate') is not None else 0
+            if(buy_info is None):
+                continue
+            
+            #항목 아래 함수가 자주 호출되면 block 걸린다
+            symbol = '{}/{}'.format(coin, 'krw').upper()
+            price = exchange.get_last_price(symbol)
+            
+            buy_cnt = int(buy_info.get('buy_cnt')) if buy_info.get('buy_cnt') is not None else None
+            b0 = float(buy_info.get('1')) if buy_info.get('1') is not None else price
+            b1 = float(buy_info.get('2')) if buy_info.get('2') is not None else price
+            acc = float(buy_info.get('accumulate')) if buy_info.get('accumulate') is not None else 0
+            
             if(buy_cnt == 1):
                 buy_price = b0
             elif(buy_cnt == 2):
                 #예외 상황 - b0이 0이거나 b1이 0일때가 있음
                 buy_price = (b0 + b1) / 2
             
-            #항목 아래 함수가 자주 호출되면 block 걸린다
-            symbol = '{}/{}'.format(coin, 'krw').upper()
-            price = exchange.get_last_price(symbol)
-            profit_percent = ((price - buy_price)  * 100) / buy_price
-            time.sleep(1) #가격 정보 받아오는 쿨다운..
-            
             if(buy_cnt != 0):
+                
+                profit_percent = ((price - buy_price)  * 100) / buy_price
+                time.sleep(1) #가격 정보 받아오는 쿨다운..
+                
                 message += '{:5}\n누적 수익률: {:6.2f}%\n현재 수익률: {:6.2f}%\n\n'.format(coin.upper(), acc, profit_percent)
             else:
                 message += '{:5}\n누적 수익률: {:6.2f}%\n\n'.format(coin.upper(), acc)
@@ -265,13 +272,14 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         # schedule.every(1).minutes.do(self.report_every_time)  #for test
         schedule.every().hour.at(":00").do(self.report_every_time)    #매시간마다 보고서를 출력한다
         schedule.every().day.at("15:00").do(self.report_daily_report)    #한국시간 밤 12시
-        while True:
+        while self.thread_run:
             schedule.run_pending()
             time.sleep(1)
         
     def show_coin_has_show(self):
         self.thread_hnd = threading.Thread(target=self.__run__, args=())
         self.thread_hnd.start()
+        self.thread_run = True
         pass
     
     def report_every_time(self):
@@ -491,7 +499,7 @@ if __name__ == '__main__':
     # if(test.check_signal(msg)):
     #     print('eth 1 do sell')
     
-    # test.show_coin_has_show()
+    test.show_coin_has_show()
     # print(test.get_bought_coin_list())
     
     
