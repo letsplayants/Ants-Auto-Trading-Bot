@@ -6,6 +6,8 @@ import logging
 from datetime import datetime
 from datetime import timedelta
 
+import schedule
+
 import ants.strategies.strategy
 from ants.provider.observers import Observer
 from ants.provider.email_provider import EmailProvider
@@ -27,6 +29,7 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         self.messenger_q = MQPublisher(self.telegram_messenger_exchange_name)
         self.logger.debug('telegram message q name : {}'.format(self.telegram_messenger_exchange_name))
         self.exchanges = {}
+        self.trading_cnt = 0
         self.add_exchange('upbit', cUpbit())
 
     def add_exchange(self, name, exchange):
@@ -53,27 +56,22 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         msg=msg[msg.find(':')+2:]
         
         try:
-            do, add_msg = self.check_signal(msg)
+            #sell count 표시, 가격정보로 바꿔서 표시
+            do, msg = self.check_signal(msg)
             if(do):
-                msg = msg + '\n' + add_msg
+                # msg = msg + '\n' + add_msg
                 self.messenger_q.send('{}'.format(msg))
+            else:
+                self.logger.debug('dont send to telegram')
         except Exception as exp:
-            self.logger.debug(f'upate got error : {exp}')
+            self.logger.warning(f'upate got error : {exp}')
         pass
     
     def stop(self):
         self.telegram.stop_listener()
         self.data_provider.stop()
         self.logger.info('Strategy will stop')
-    
-    def get_avg_price(self):
-        text = msg.split(' ')
-        
-        command = text[0].strip().upper()
-        exchange_name = text[1].strip().upper()
-        market = text[2].strip().upper()
-        coin_name = text[3].strip().upper()
-    
+
     def check_signal(self, msg):
         """
         세번째 buy일 경우 false
@@ -86,19 +84,19 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         market = text[2].strip().upper()
         coin_name = text[3].strip().upper()
         
-        symbol = '{}/{}'.format(coin_name, market)
         exchange = self.get_exchange(exchange_name)
         if(exchange is None):
             msg = '{} 이름이 유효하지 않습니다.'.format(exchange_name)
             self.logger.debug(msg)
             return False, msg
             
+        fee = exchange.get_fee('krw')
         #항목 아래 함수가 자주 호출되면 block 걸린다
+        symbol = '{}/{}'.format(coin_name, market)
         price = exchange.get_last_price(symbol)
         
-        
         buy_info = self.get_state(exchange_name, coin_name, market)
-        print('buy info : {}'.format(buy_info))
+        self.logger.debug('buy info : {}'.format(buy_info))
         if(buy_info == None):
             buy_cnt = 0
             b0 = price
@@ -121,6 +119,7 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
                 price_msg += '평균 구매 단가: {:,.2f}\n'.format((b0 + price) / 2)
             
             buy_cnt += 1
+            self.trading_cnt += 1
             accumulate_profit = None
             
         elif(command == 'SELL'):
@@ -139,21 +138,29 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
                 accumulate_profit = 0
             
             sell_price = price
-            profit_price = ((sell_price - buy_price)  * 100) / buy_price
-            accumulate_profit = accumulate_profit + profit_price
+            profit_percent = ((sell_price - buy_price)  * 100) / buy_price - fee * 2 * 100
+            accumulate_profit = accumulate_profit + profit_percent
             
             price_msg = '매수 단가 : {:,.2f}\n'.format(buy_price)
             price_msg += '매도 단가 : {:,.2f}\n'.format(sell_price)
-            price_msg += '매매 수익률 : {:.2f}%\n'.format(profit_price)
+            price_msg += '매매 수익률 : {:.2f}%\n'.format(profit_percent)
             price_msg += '누적 수익률 : {:.2f}%\n'.format(accumulate_profit)
             
             buy_cnt = 0
             
-        self.save_state(exchange_name, coin_name, market, 'buy', buy_cnt, price, accumulate_profit)
+        self.save_state(exchange_name, coin_name, market, 'buy', buy_cnt, price, self.trading_cnt, accumulate_profit)
         
-        return True, price_msg
+        command = text[0].strip().upper()
+        exchange_name = text[1].strip().upper()
+        market = text[2].strip().upper()
+        coin_name = text[3].strip().upper()
+        
+        message = f'{command} {exchange_name} {market} {coin_name} {price} 100%\n'
+        message += price_msg 
+        
+        return True, message
    
-    def save_state(self, exchange, coin, market, action, buy_cnt, price, accumulate=None):
+    def save_state(self, exchange, coin, market, action, buy_cnt, price, trading_cnt, accumulate=None):
         class_name = self.__class__.__name__.lower()
         exchange = exchange.lower()
         coin = coin.lower()
@@ -173,6 +180,7 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         record_market['buy_cnt'] = buy_cnt
         record_coin[market] = record_market
         record_exchange[coin] = record_coin
+        record_exchange['trading_cnt'] = trading_cnt
         record_strategy[exchange] = record_exchange
         
         Enviroments().strategies[class_name] = record_strategy
@@ -199,17 +207,28 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
             return None
    
     def get_bought_coin_list(self):
-        exchange = 'upbit' #현재는 upbit만 있으므로~
+        exchange_name = 'upbit' #현재는 upbit만 있으므로~
         class_name = self.__class__.__name__.lower()
-        coin_list = Enviroments().strategies[class_name][exchange]
+        coin_list = Enviroments().strategies[class_name][exchange_name]
         
         #TODO 거래한 모든 코인의 수익율을 보여주고
         #보유한 코인 목록만 리스팅 한다
         
+        got_coin_list = []
         total_acc = 0
         buy_total_acc = 0
-        buy_msg = '보유한 코인 목록 \n'
+        message = '보유한 코인 목록 \n'
+        
+        exchange = self.get_exchange(exchange_name)
+        if(exchange is None):
+            msg = '{} 이름이 유효하지 않습니다.'.format(exchange_name)
+            self.logger.debug(msg)
+            return False, msg
+        
         for coin in coin_list:
+            if(coin == 'trading_cnt'):
+                continue
+            
             buy_info = coin_list.get(coin).get('krw')
             if(buy_info is not None):
                 buy_cnt = int(buy_info.get('buy_cnt')) if buy_info.get('buy_cnt') is not None else None
@@ -221,43 +240,93 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
             elif(buy_cnt == 2):
                 #예외 상황 - b0이 0이거나 b1이 0일때가 있음
                 buy_price = (b0 + b1) / 2
-                
+            
+            #항목 아래 함수가 자주 호출되면 block 걸린다
+            symbol = '{}/{}'.format(coin, 'krw').upper()
+            price = exchange.get_last_price(symbol)
+            profit_percent = ((price - buy_price)  * 100) / buy_price
+            time.sleep(1) #가격 정보 받아오는 쿨다운..
+            
             if(buy_cnt != 0):
-                buy_msg += '{:5}\n구매단가: {:12,.2f}\n누적 수익률:{:6.2f}%\n'.format(coin.upper(), buy_price, acc)
-                buy_total_acc += acc
+                message += '{:5}\n누적 수익률: {:6.2f}%\n현재 수익률: {:6.2f}%\n\n'.format(coin.upper(), acc, profit_percent)
+            else:
+                message += '{:5}\n누적 수익률: {:6.2f}%\n\n'.format(coin.upper(), acc)
+                
             total_acc += acc
             
-        buy_msg += '보유 중 코인들 수익률 : {:.2f}%\n'.format(buy_total_acc)
-        # buy_msg += '봇거래한 누적 수익률 : {:.2f}%'.format(total_acc)
-        return buy_msg
+        # message += '보유 중 코인들 수익률 : {:.2f}%\n'.format(buy_total_acc)
+        message += '봇거래한 누적 수익률 : {:.2f}%'.format(total_acc)
+        return message
         
     def __run__(self):
-        s = sched.scheduler(time.time, time.sleep)
-        def run_once():
-            msg = self.get_bought_coin_list()
-            self.logger.debug('report time : {}'.format(msg))
-            self.messenger_q.send('{}'.format(msg))
-            
-        def run_every_time():
-            msg = self.get_bought_coin_list()
-            self.logger.debug('report time : {}'.format(msg))
-            self.messenger_q.send('{}'.format(msg))
-            
-            four_hour = 60 * 60 * 4
-            one_hour = 60 * 60 * 1
-            one_sec = 1 #for test
-            s.enter(four_hour, 1, run_every_time)
+        self.report_every_time()
+        # self.report_daily_report()
         
-        four_hour = 60 * 60 * 4
-        one_hour = 60 * 60 * 1
-        one_sec = 1 #for test
-        s.enter(one_sec * 10, 1, run_once)
-        s.enter(four_hour, 1, run_every_time)
-        s.run()
+        # schedule.every(1).minutes.do(self.report_every_time)  #for test
+        schedule.every().hour.at(":00").do(self.report_every_time)    #매시간마다 보고서를 출력한다
+        schedule.every().day.at("15:00").do(self.report_daily_report)    #한국시간 밤 12시
+        while True:
+            schedule.run_pending()
+            time.sleep(1)
         
     def show_coin_has_show(self):
         self.thread_hnd = threading.Thread(target=self.__run__, args=())
         self.thread_hnd.start()
+        pass
+    
+    def report_every_time(self):
+        msg = self.get_bought_coin_list()
+        self.logger.debug('report time : {}'.format(msg))
+        self.messenger_q.send('{}'.format(msg))
+            
+    def report_daily_report(self):
+        #일일 보고서 쓰고, 결산하고 종료
+        # 2019.06.05
+        # 거래 횟수 : 100번
+        # 누적 거래 수익률 : 45.55%
+        # 코인별 누적 결과 :
+        # BTC : 23.00%
+        # ETH : -2.55%
+        exchange_name = 'upbit' #현재는 upbit만 있으므로~
+        class_name = self.__class__.__name__.lower()
+        coin_list = Enviroments().strategies[class_name][exchange_name]
+        trading_cnt = int(coin_list.get('trading_cnt')) if coin_list.get('trading_cnt') is not None else 0
+        self.trading_cnt = 0
+        coin_list['trading_cnt'] = 0
+        
+        
+        got_coin_list = []
+        total_acc = 0
+        
+        coin_msg = '코인별 누적 결과 :\n'
+        for coin in coin_list:
+            if(coin == 'trading_cnt'):
+                continue
+            
+            buy_info = coin_list.get(coin).get('krw')
+            if(buy_info is not None):
+                acc = float(buy_info.get('accumulate')) if buy_info.get('accumulate') is not None else 0
+                coin_list.get(coin)['krw']['accumulate'] = 0
+                
+            total_acc += acc
+            coin_msg += '{} : {:.2f}%\n'.format(coin.upper(), acc)
+            
+
+        #날짜는 그냥 쓰도록 한다. 시스템 시간은 UTC 기준인데 한국 시간은 -9시간 해야한다
+        #보고서가 출력되는 시간은 매일밤 자정이다
+        #UTC시간으로 날짜가 변경되기 전이다.
+        #그러므로 날짜는 그냥 쓰도록 한다.
+        now = datetime.now()
+        nowDate = now.strftime('%Y-%m-%d')
+        
+        message = f'{nowDate}\n'
+        message += '거래 횟수 : {}\n'.format(trading_cnt)
+        message += '누적 거래 수익률 : {}\n'.format(total_acc)
+        message += coin_msg
+        
+        self.logger.debug(message)
+        Enviroments().save_config()
+        return message
         pass
    
 if __name__ == '__main__':
@@ -422,7 +491,8 @@ if __name__ == '__main__':
     # if(test.check_signal(msg)):
     #     print('eth 1 do sell')
     
-    test.show_coin_has_show()
+    # test.show_coin_has_show()
     # print(test.get_bought_coin_list())
+    
     
     
