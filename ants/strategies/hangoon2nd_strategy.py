@@ -219,6 +219,7 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         got_coin_list = []
         total_acc = 0
         buy_total_acc = 0
+        trading_cnt = 0
         message = '보유한 코인 목록 \n'
         
         exchange = self.get_exchange(exchange_name)
@@ -229,6 +230,7 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         
         for coin in coin_list:
             if(coin == 'trading_cnt'):
+                trading_cnt = coin_list.get(coin)
                 continue
             
             buy_info = coin_list.get(coin).get('krw')
@@ -262,16 +264,17 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
             total_acc += acc
             
         # message += '보유 중 코인들 수익률 : {:.2f}%\n'.format(buy_total_acc)
+        message += '거래 횟수 : {}\n'.format(trading_cnt)
         message += '봇거래한 누적 수익률 : {:.2f}%'.format(total_acc)
         return message
         
     def __run__(self):
         self.report_every_time()
-        # self.report_daily_report()
+        self.report_daily_report()
         
         # schedule.every(1).minutes.do(self.report_every_time)  #for test
         schedule.every().hour.at(":00").do(self.report_every_time)    #매시간마다 보고서를 출력한다
-        schedule.every().day.at("15:00").do(self.report_daily_report)    #한국시간 밤 12시
+        schedule.every().day.at("15:00").do(self.cleanup_daily)    #한국시간 밤 12시
         while self.thread_run:
             schedule.run_pending()
             time.sleep(1)
@@ -287,8 +290,22 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         self.logger.debug('report time : {}'.format(msg))
         self.messenger_q.send('{}'.format(msg))
             
+    def cleanup_daily(self):
+        #일일 데이터에서 거래횟수나 코인별 누적 수익률은 리셋 한다
+        self.report_daily_report()
+        
+        class_name = self.__class__.__name__.lower()
+        coin_list = Enviroments().strategies[class_name][exchange_name]
+        trading_cnt = int(coin_list.get('trading_cnt')) if coin_list.get('trading_cnt') is not None else 0
+        self.trading_cnt = 0
+        coin_list['trading_cnt'] = 0
+        
+        self.logger.debug(message)
+        Enviroments().save_config()
+        
     def report_daily_report(self):
         #일일 보고서 쓰고, 결산하고 종료
+        
         # 2019.06.05
         # 거래 횟수 : 100번
         # 누적 거래 수익률 : 45.55%
@@ -299,9 +316,6 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         class_name = self.__class__.__name__.lower()
         coin_list = Enviroments().strategies[class_name][exchange_name]
         trading_cnt = int(coin_list.get('trading_cnt')) if coin_list.get('trading_cnt') is not None else 0
-        self.trading_cnt = 0
-        coin_list['trading_cnt'] = 0
-        
         
         got_coin_list = []
         total_acc = 0
@@ -314,7 +328,7 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
             buy_info = coin_list.get(coin).get('krw')
             if(buy_info is not None):
                 acc = float(buy_info.get('accumulate')) if buy_info.get('accumulate') is not None else 0
-                coin_list.get(coin)['krw']['accumulate'] = 0
+                # coin_list.get(coin)['krw']['accumulate'] = 0 #코인별 누적 수익률을 리셋하면 코인별 수익이 추적이 안된다
                 
             total_acc += acc
             coin_msg += '{} : {:.2f}%\n'.format(coin.upper(), acc)
@@ -329,12 +343,12 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         
         message = f'{nowDate}\n'
         message += '거래 횟수 : {}\n'.format(trading_cnt)
-        message += '누적 거래 수익률 : {}\n'.format(total_acc)
+        message += '누적 거래 수익률 : {:.2f}%\n'.format(total_acc)
         message += coin_msg
         
-        self.logger.debug(message)
-        Enviroments().save_config()
-        return message
+        
+        
+        self.messenger_q.send('{}'.format(message))
         pass
    
 if __name__ == '__main__':
