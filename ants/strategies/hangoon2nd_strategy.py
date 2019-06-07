@@ -212,7 +212,11 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
     def get_bought_coin_list(self):
         exchange_name = 'upbit' #현재는 upbit만 있으므로~
         class_name = self.__class__.__name__.lower()
-        coin_list = Enviroments().strategies[class_name][exchange_name]
+        try:
+            coin_list = Enviroments().strategies[class_name][exchange_name]
+        except Exception as exp:
+            self.logger.warning('strategies storage not exist : {}'.format(exp))
+            coin_list = []
         
         #TODO 거래한 모든 코인의 수익율을 보여주고
         #보유한 코인 목록만 리스팅 한다
@@ -255,7 +259,7 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         return message
         
     def shedule_start(self):
-        self.sched = BackgroundScheduler() 
+        self.sched = BackgroundScheduler()
         self.sched.start()
         
         self.report_every_time()
@@ -275,16 +279,34 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         msg = self.get_bought_coin_list()
         self.logger.debug('report time : {}'.format(msg))
         self.messenger_q.send('{}'.format(msg))
-            
+        
     def cleanup_daily(self):
+        exchange_name = 'upbit' #현재는 upbit만 있으므로~
+        
         #일일 데이터에서 거래횟수나 코인별 누적 수익률은 리셋 한다
         self.report_daily_report()
         
         class_name = self.__class__.__name__.lower()
-        coin_list = Enviroments().strategies[class_name][exchange_name]
-        trading_cnt = int(coin_list.get('trading_cnt')) if coin_list.get('trading_cnt') is not None else 0
+        try:
+            coin_list = Enviroments().strategies[class_name][exchange_name]
+        except Exception as exp:
+            self.logger.warning('strategies storage not exist : {}'.format(exp))
+            coin_list = []
+        
         self.trading_cnt = 0
         coin_list['trading_cnt'] = 0
+        
+        for coin in coin_list:
+            if(coin == 'trading_cnt'):
+                trading_cnt = coin_list.get(coin)
+                continue
+            
+            buy_info = coin_list.get(coin).get('krw')
+            if(buy_info is None):
+                continue
+            
+            if(buy_info.get('accumulate') != None):
+                buy_info['accumulate'] = 0
         
         Enviroments().save_config()
         
@@ -299,7 +321,12 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         # ETH : -2.55%
         exchange_name = 'upbit' #현재는 upbit만 있으므로~
         class_name = self.__class__.__name__.lower()
-        coin_list = Enviroments().strategies[class_name][exchange_name]
+        try:
+            coin_list = Enviroments().strategies[class_name][exchange_name]
+        except Exception as exp:
+            self.logger.warning('strategies storage not exist : {}'.format(exp))
+            coin_list = []
+        
         trading_cnt = int(coin_list.get('trading_cnt')) if coin_list.get('trading_cnt') is not None else 0
         
         got_coin_list = []
@@ -500,6 +527,8 @@ if __name__ == '__main__':
     # test.show_coin_has_show()
     # print(test.get_bought_coin_list())
     
+    
+    test.cleanup_daily()
     
     print(test.get_bought_coin_list())
     # test.report_daily_report()
