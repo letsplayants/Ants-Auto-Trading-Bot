@@ -6,7 +6,7 @@ import logging
 from datetime import datetime
 from datetime import timedelta
 
-import schedule
+from apscheduler.schedulers.background import BackgroundScheduler
 
 import ants.strategies.strategy
 from ants.provider.observers import Observer
@@ -43,7 +43,7 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         self.data_provider = EmailProvider(True)
         self.data_provider.attach(self)
         self.data_provider.run()
-        self.show_coin_has_show()
+        self.shedule_start()
         self.logger.info('strategy run')
 
     def update(self, msg):
@@ -69,6 +69,7 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
     
     def stop(self):
         self.thread_run = False
+        self.shedule_stop()
         self.thread_hnd.join()
         self.telegram.stop_listener()
         self.data_provider.stop()
@@ -268,22 +269,22 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         message += '봇거래한 누적 수익률 : {:.2f}%'.format(total_acc)
         return message
         
-    def __run__(self):
+    def shedule_start(self):
+        self.sched = BackgroundScheduler() 
+        self.sched.start()
+        
         self.report_every_time()
         self.report_daily_report()
         
-        # schedule.every(1).minutes.do(self.report_every_time)  #for test
-        schedule.every().hour.at(":00").do(self.report_every_time)    #매시간마다 보고서를 출력한다
-        schedule.every().day.at("15:00").do(self.cleanup_daily)    #한국시간 밤 12시
-        while self.thread_run:
-            schedule.run_pending()
-            time.sleep(1)
-        
-    def show_coin_has_show(self):
-        self.thread_hnd = threading.Thread(target=self.__run__, args=())
-        self.thread_hnd.start()
-        self.thread_run = True
-        pass
+        # self.sched.add_job(self.report_every_time, 'cron', second='00', id='test')
+        self.sched.add_job(self.report_every_time, 'cron', minute='00', id='report_every_time')
+        self.sched.add_job(self.cleanup_daily, 'cron', hour='00', minute='05', id='cleanup_daily')
+    
+    def shedule_stop(self):
+        self.sched.remove_job('test')
+        self.sched.remove_job('report_every_time')
+        self.sched.remove_job('cleanup_daily')
+        self.sched.shutdown()
     
     def report_every_time(self):
         msg = self.get_bought_coin_list()
@@ -513,8 +514,45 @@ if __name__ == '__main__':
     # if(test.check_signal(msg)):
     #     print('eth 1 do sell')
     
-    test.show_coin_has_show()
+    # test.show_coin_has_show()
     # print(test.get_bought_coin_list())
     
+    
+    
+    from apscheduler.schedulers.background import BackgroundScheduler
+    def job():
+        print('3')
+        
+    def job5():
+        print('5')
+        raise
+    # BackgroundScheduler 를 사용하면 stat를 먼저 하고 add_job 을 이용해 수행할 것을 등록해줍니다. 
+    sched = BackgroundScheduler() 
+    sched.start()
+    
+    # interval - 매 3조마다 실행 
+    # sched.add_job(job, 'interval', seconds=3, id="test_2") 
+    
+    # cron 사용 - 매 5초마다 job 실행 
+    # : id 는 고유 수행번호로 겹치면 수행되지 않습니다. 
+    # 만약 겹치면 다음의 에러 발생 => 'Job identifier (test_1) conflicts with an existing job' 
+    # sched.add_job(job5, 'cron', second='*/5', id="test_1") 
+    
+    # cron 으로 하는 경우는 다음과 같이 파라미터를 상황에 따라 여러개 넣어도 됩니다. 
+    # 매시간 59분 10초에 실행한다는 의미. 
+    # sched.add_job(job_2, 'cron', minute="59", second='10', id="test_2")
+    sched.add_job(job5, 'cron', second='5', id='test_5') 
+    
+    count = 0 
+    while True: 
+        time.sleep(1)
+        count += 1 
+        if count == 70: 
+            # sched.remove_job("test_2")  #제거 기능
+            sched.shutdown()
+            break
+
+
+
     
     

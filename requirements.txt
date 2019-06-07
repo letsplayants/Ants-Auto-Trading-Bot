@@ -29,3 +29,4 @@ urllib3==1.24.1
 websocket==0.2.1
 yarl==1.1.0
 schedule==0.6.0
+apscheduler==3.6.0
