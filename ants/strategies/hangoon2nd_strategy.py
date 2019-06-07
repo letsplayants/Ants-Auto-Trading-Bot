@@ -281,7 +281,7 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         self.sched.add_job(self.cleanup_daily, 'cron', hour='00', minute='05', id='cleanup_daily')
     
     def shedule_stop(self):
-        self.sched.remove_job('test')
+        # self.sched.remove_job('test')
         self.sched.remove_job('report_every_time')
         self.sched.remove_job('cleanup_daily')
         self.sched.shutdown()
@@ -542,6 +542,8 @@ if __name__ == '__main__':
     # 매시간 59분 10초에 실행한다는 의미. 
     # sched.add_job(job_2, 'cron', minute="59", second='10', id="test_2")
     sched.add_job(job5, 'cron', second='5', id='test_5') 
+    
+    sched.remove_job("test_2")  #제거 기능
     
     count = 0 
     while True: 
