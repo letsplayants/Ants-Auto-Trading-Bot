@@ -3,8 +3,8 @@ import sched, time
 
 import threading
 import logging
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
+import pytz
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -221,7 +221,7 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         total_acc = 0
         buy_total_acc = 0
         trading_cnt = 0
-        message = '보유한 코인 목록 \n'
+        message = '거래한 코인 목록 \n'
         
         exchange = self.get_exchange(exchange_name)
         if(exchange is None):
@@ -238,35 +238,20 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
             if(buy_info is None):
                 continue
             
-            #항목 아래 함수가 자주 호출되면 block 걸린다
-            symbol = '{}/{}'.format(coin, 'krw').upper()
-            price = exchange.get_last_price(symbol)
-            
-            buy_cnt = int(buy_info.get('buy_cnt')) if buy_info.get('buy_cnt') is not None else None
-            b0 = float(buy_info.get('1')) if buy_info.get('1') is not None else price
-            b1 = float(buy_info.get('2')) if buy_info.get('2') is not None else price
             acc = float(buy_info.get('accumulate')) if buy_info.get('accumulate') is not None else 0
-            
-            if(buy_cnt == 1):
-                buy_price = b0
-            elif(buy_cnt == 2):
-                #예외 상황 - b0이 0이거나 b1이 0일때가 있음
-                buy_price = (b0 + b1) / 2
-            
-            if(buy_cnt != 0):
-                
-                profit_percent = ((price - buy_price)  * 100) / buy_price
-                time.sleep(1) #가격 정보 받아오는 쿨다운..
-                
-                message += '{:5}\n누적 수익률: {:6.2f}%\n현재 수익률: {:6.2f}%\n\n'.format(coin.upper(), acc, profit_percent)
-            else:
-                message += '{:5}\n누적 수익률: {:6.2f}%\n\n'.format(coin.upper(), acc)
+            message += '{:8} {:6.2f}%\n'.format(coin.upper(), acc)
                 
             total_acc += acc
             
-        # message += '보유 중 코인들 수익률 : {:.2f}%\n'.format(buy_total_acc)
+        
         message += '거래 횟수 : {}\n'.format(trading_cnt)
-        message += '봇거래한 누적 수익률 : {:.2f}%'.format(total_acc)
+        message += '봇거래한 누적 수익률 : {:.2f}%\n'.format(total_acc)
+        
+        ttime = datetime.now(pytz.timezone('Asia/Seoul')) 
+        ttime = ttime.strftime('%Y-%m-%d %H:%M')
+        
+        message += '현재 시간(GMT+9) : {}'.format(ttime)
+        
         return message
         
     def shedule_start(self):
@@ -301,7 +286,6 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         self.trading_cnt = 0
         coin_list['trading_cnt'] = 0
         
-        self.logger.debug(message)
         Enviroments().save_config()
         
     def report_daily_report(self):
@@ -347,8 +331,7 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         message += '누적 거래 수익률 : {:.2f}%\n'.format(total_acc)
         message += coin_msg
         
-        
-        
+        self.logger.debug('daily report :\n{}'.format(message))
         self.messenger_q.send('{}'.format(message))
         pass
    
@@ -518,43 +501,8 @@ if __name__ == '__main__':
     # print(test.get_bought_coin_list())
     
     
-    
-    from apscheduler.schedulers.background import BackgroundScheduler
-    def job():
-        print('3')
-        
-    def job5():
-        print('5')
-        raise
-    # BackgroundScheduler 를 사용하면 stat를 먼저 하고 add_job 을 이용해 수행할 것을 등록해줍니다. 
-    sched = BackgroundScheduler() 
-    sched.start()
-    
-    # interval - 매 3조마다 실행 
-    # sched.add_job(job, 'interval', seconds=3, id="test_2") 
-    
-    # cron 사용 - 매 5초마다 job 실행 
-    # : id 는 고유 수행번호로 겹치면 수행되지 않습니다. 
-    # 만약 겹치면 다음의 에러 발생 => 'Job identifier (test_1) conflicts with an existing job' 
-    # sched.add_job(job5, 'cron', second='*/5', id="test_1") 
-    
-    # cron 으로 하는 경우는 다음과 같이 파라미터를 상황에 따라 여러개 넣어도 됩니다. 
-    # 매시간 59분 10초에 실행한다는 의미. 
-    # sched.add_job(job_2, 'cron', minute="59", second='10', id="test_2")
-    sched.add_job(job5, 'cron', second='5', id='test_5') 
-    
-    sched.remove_job("test_2")  #제거 기능
-    
-    count = 0 
-    while True: 
-        time.sleep(1)
-        count += 1 
-        if count == 70: 
-            # sched.remove_job("test_2")  #제거 기능
-            sched.shutdown()
-            break
-
-
+    print(test.get_bought_coin_list())
+    # test.report_daily_report()
 
     
     
