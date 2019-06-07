@@ -24,8 +24,10 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     
     logger.info('Program Starting')
+    tel = TelegramRepoter()
+    
     w = Worker()
     w.run()
-    tel = TelegramRepoter()
+    
     
     pass
