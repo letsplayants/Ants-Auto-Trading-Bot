@@ -25,6 +25,7 @@ from env_server import Enviroments
 class TelegramRepoter():
     def __init__(self):
         self.logger = logging.getLogger(__name__)
+        self.logger.info('TelegramRepoter init...')
         self.menu_string_set()
         
         try:
