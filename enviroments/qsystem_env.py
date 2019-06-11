@@ -58,6 +58,9 @@ class QsystemEnv():
     def get_upgrade_q(self):
         return 'upgrade.{}'.format(self.enviroments.messenger['bot_id'])
     
+    def get_database_q(self):
+        return 'database.{}'.format(self.enviroments.messenger['bot_id'])
+    
     def set_value(self, v):
         if(v.get('qlist') is None):
             nq = {}
@@ -89,6 +92,8 @@ if __name__ == '__main__':
     get_q = Enviroments().qsystem['messenger']
     print('messenger_q:{}'.format(get_q['telegrma_id']))
     
+    
+    Enviroments().qsystem['db'] = 'database'
     # print('qlist : {}'.format(Enviroments().qsystem.show_list()))
     
     

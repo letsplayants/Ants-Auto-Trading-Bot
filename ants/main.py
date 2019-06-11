@@ -6,6 +6,7 @@ import signal
 import alogger
 import logging
 from telegram_repoter import TelegramRepoter
+from database import Database
 from env_server import Enviroments
 from worker import Worker
 
@@ -25,6 +26,7 @@ if __name__ == "__main__":
     
     logger.info('Program Starting')
     tel = TelegramRepoter()
+    Database()
     
     w = Worker()
     w.run()

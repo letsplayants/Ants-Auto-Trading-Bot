@@ -35,6 +35,8 @@ from exchangem.model.coin_model import CoinModel
 
 
 from env_server import Enviroments, ExchangesEnv
+from q_publisher import MQPublisher
+from q_receiver import MQReceiver
 
 class Base(ObserverNotifier, metaclass=abc.ABCMeta):
     def __init__(self, args={}):
@@ -47,16 +49,12 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         self.logger.debug('{} exchange init with args : {}'.format(self.exchange_name, args))
         self.exchange = None
         
+        
         self.config = env.exchanges.get(self.exchange_name)
         if(self.config == {}):
             self.config = env.exchanges.get('default')
         
         self.telegram = args.get('telegram')
-        
-        #exchange가 생성될 때 마다 sqlite가 생성된다.
-        #session이 race condition에 걸릴 수 있다.
-        #구조를 고쳐야함
-        self.db = args.get('db')
         
         self.logger = logging.getLogger('exchange.' + self.__class__.__name__.lower())
         
@@ -81,6 +79,8 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             env.exchanges[self.exchange_name] = {}
             env.exchanges[self.exchange_name]['coin'] = env.exchanges['default']['coin']
             env.save_config()
+        
+        self.database = MQPublisher(self.env.qsystem.get_database_q())
         
 
     def load_key(self, exchange_name):
@@ -132,6 +132,8 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             try:
                 desc = self.exchange.create_order(symbol, type, side, amount, price, params)
                 order_info = self.parsing_order_info(desc)
+                #오더 id를 디비큐로 날려준다
+                self.database.send(str(order_info))
             except Exception as exp:
                 #주문 오류도 exception으로 처리 된다.
                 self.logger.warning('create_oder exception :\n{}'.format(exp))
@@ -199,8 +201,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             #                             d_amount, 
             #                             d_price, 
             #                             total)
-            if(self.db != None):
-                self.db.add(record)
+            
             
         except Exception as exp:
             raise exp

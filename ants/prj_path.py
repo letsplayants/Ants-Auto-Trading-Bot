@@ -8,11 +8,13 @@ basePath = os.getcwd()
 exchanges = basePath + '/exchange'
 messenger = basePath + '/messenger'
 enviroments = basePath + '/enviroments'
+database = basePath + '/database'
 
 sys.path.insert(0, basePath)
 sys.path.append(exchanges)
 sys.path.append(messenger)
 sys.path.append(enviroments)
+sys.path.append(database)
 
 logger = logging.getLogger(__name__)
 

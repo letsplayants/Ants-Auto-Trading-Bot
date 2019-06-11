@@ -10,6 +10,8 @@ import json
 # https://docs.djangoproject.com/en/2.1/topics/logging/
 # https://stackoverflow.com/questions/38537905/set-logging-levels
 
+# format 참고
+# '%(levelname) -10s %(asctime)s %(name) -30s %(funcName) -35s %(lineno) -5d: %(message)s'
 
 DEFAULT_CONFIG = {
     "version": 1,
