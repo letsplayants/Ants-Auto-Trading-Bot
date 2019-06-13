@@ -34,7 +34,9 @@ class Balance():
         
     def get_all(self):
         return self.balance
-        
+    
+    def __repr__(self):
+        return str(self.balance)    
         
 if __name__ == '__main__':
     print('test')

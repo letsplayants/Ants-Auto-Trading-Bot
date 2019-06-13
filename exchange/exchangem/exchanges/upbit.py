@@ -95,8 +95,8 @@ class Upbit(Base):
         
 
         #그러므로 여기서 해당 버그를 감안해 보정해준다. 2019-03-14        
-        free = ret[target]['free']
-        used = ret[target]['used']
+        free = float(ret[target]['free'])
+        used = float(ret[target]['used'])
         if(free < 0):
             free = 0
         total = free + used
@@ -118,7 +118,7 @@ class Upbit(Base):
         for item in info:
             name = item['currency']
             balance.add(name, 
-                        item['balance'] + item['locked'],
+                        float(item['balance']) + float(item['locked']),
                         item['locked'],
                         item['balance'])
 
@@ -271,6 +271,17 @@ class Upbit(Base):
         msg = self.exchange.fetch_order(id)
         return self.parsing_order_info(msg)
     
+    def get_done_private_orders(self, param={}):
+        list = []
+        ret = self.exchange.fetch_orders_by_state('done')
+        if(ret == None):
+            return list
+        
+        for i in ret:
+            r = self.parsing_order_info(i)
+            list.append(r)
+            
+        return list
     
 if __name__ == '__main__':
     print('test')
