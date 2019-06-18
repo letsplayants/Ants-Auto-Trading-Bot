@@ -10,12 +10,30 @@ import ccxt
 from exchangem.model.exchange import Base
 from exchangem.model.balance import Balance
 from exchangem.model.order_info import OrderInfo
+from exchangem.model.price_storage import PriceStorage
+from async_upbit import ASyncUpbit
 from env_server import Enviroments
+
 
 class Upbit(Base):
     def __init__(self, args={}):
         Base.__init__(self, args)
-   
+        self.init_price()
+        
+        self.async_upbit = ASyncUpbit()
+        self.async_upbit.run()
+        
+    def init_price(self):
+        ps = PriceStorage()
+        tickers = self.exchange.fetch_tickers()
+        for item in tickers:
+            market_name = item.split('/')[1]
+            coin_name = item.split('/')[0]
+            
+            self.logger.debug('{}:{} - {:.8f}'.format(market_name, coin_name, tickers[item]['info']['trade_price']))
+            ps.set_price('UPBIT', market_name, coin_name, tickers[item]['info']['trade_price'], tickers[item]['info']['timestamp'])
+        
+        
     def connect(self):
         self.noti_msg( '### 연결 중..')
         # websocket.enableTrace(False)
@@ -223,9 +241,6 @@ class Upbit(Base):
             fee_p = 0
             amount = 0
     
-            
-            
-
         amount = float("{:.8f}".format(amount))
         seed = float("{:.8f}".format(seed))
         fee_p = float("{:.8f}".format(fee_p))
@@ -234,19 +249,11 @@ class Upbit(Base):
         pass
 
     def get_last_price(self, symbol):
-        key = self.cache.to_key(symbol)
-        cached, data = self.cache.get_cache(key)
-        if(cached):
-            return data
-            
-        ticker = self.exchange.fetch_ticker(symbol)
-        self.logger.debug(ticker)
-        """
-        {'symbol': 'BTC/KRW', 'timestamp': 1549698009141, 'datetime': '2019-02-09T07:40:09.141Z', 'high': 4100000.0, 'low': 3776000.0, 'bid': 4002000.0, 'bidVolume': None, 'ask': 4004000.0, 'askVolume': None, 'vwap': 3927711.3257, 'open': 3778000.0, 'close': 4004000.0, 'last': 4004000.0, 'previousClose': None, 'change': 226000.0, 'percentage': 5.9820010587612495, 'average': 3891000.0, 'baseVolume': 5113.40675249, 'quoteVolume': 20083985614.66583, 'info': {'opening_price': '3778000', 'closing_price': '4004000', 'min_price': '3776000', 'max_price': '4100000', 'average_price': '3927711.3257', 'units_traded': '5113.40675249', 'volume_1day': '5113.40675249', 'volume_7day': '17281.38692642', 'buy_price': '4002000', 'sell_price': '4004000', '24H_fluctate': '226000', '24H_fluctate_rate': '5.98', 'date': '1549698009141'}}
-        """
-        self.cache.set_cache(key, ticker['last'])
-        return ticker['last']
-
+        ps = PriceStorage()
+        p = ps.get_price('UPBIT', symbol.split('/')[1], symbol.split('/')[0])
+        return p['price']
+        
+        
     def get_fee(self, market):
         fee = 0.0015
         #업비트의 원화 수수료는 0.05% 이다
@@ -302,7 +309,8 @@ if __name__ == '__main__':
     logging.getLogger("ccxt").setLevel(logging.WARNING)
     logging.getLogger("exchangem.model.exchange").setLevel(logging.WARNING)
     logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
-    
+    logging.getLogger("websockets").setLevel(logging.WARNING)
+    logging.getLogger("async_upbit").setLevel(logging.INFO)
     
     up = Upbit()
 
@@ -361,10 +369,8 @@ if __name__ == '__main__':
     
     
     
-    print('has_market :', up.has_market('BTC/KRW'))
-    print('has_market :', up.has_market('BTC/NONE'))
-    
-    print(up.get_key_market_price('BTC'))
+    print('BTC/KRW has_market :', up.has_market('BTC/KRW'))
+    print('BTC/NONE has_market :', up.has_market('BTC/NONE'))
     
     print('1200 won is small balance ? ', up.is_small_balance(1200, 'KRW'))
     print('1310 won is small balance ? ', up.is_small_balance(1310, 'KRW'))

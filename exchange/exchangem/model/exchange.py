@@ -32,7 +32,7 @@ from exchangem.utils import Util as util
 from exchangem.model.order_record import OrderRecord
 from exchangem.model.order_info import OrderInfo
 from exchangem.model.coin_model import CoinModel
-
+from exchangem.model.price_storage import PriceStorage
 
 from env_server import Enviroments, ExchangesEnv
 from q_publisher import MQPublisher
@@ -72,7 +72,6 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             self.logger.warning('Key file loading failed. : {}'.format(exp))
         
         self.markets = self.exchange.loadMarkets()
-        self.save_key_market_price()
         
         #설정파일에 있어야하는데 없는 설정들을 초기화 한다
         if(env.exchanges.get(self.exchange_name) is None or env.exchanges.get(self.exchange_name).get('coin') is None):
@@ -412,7 +411,8 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
                 return False
         
         #KRW을 제외한 ETH, BTC일 경우
-        pre_price = self.get_key_market_price(market)
+        ps = PriceStorage()
+        pre_price = ps.get_price(self.exchange_name.upper(), 'USDT', market)['price']
         
         price = count * pre_price
         if(price < BASE_PRICE_USDT):
@@ -427,30 +427,6 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         
         info = requests.get(url, headers=headers).json()
         return info[0]['basePrice']
-
-    def save_key_market_price(self):
-        #해당 거래소의 BTC가격을 저장하고 있는다.
-        # 마켓 정보중 USDT가 있는지 확인 후 BTC 가격 저장
-        # KRW마켓의 BTC가 있으면 환율 정보와 함께 나눈 후 BTC가격 저장
-        # 이왕하는거 ETH나 다른 것들도 저장할까?...
-        
-        #key market list를 얻어온다.
-        #USDT, ETH, BTC를 주요 key로 본다
-        
-        self.key_currency = ['BTC/KRW', 'BTC/USDT', 'ETH/KRW', 'ETH/USDT', 'BNB/USDT']
-        self.key_market_price = {}
-        self.logger.debug('-'*80)
-        # print(self.exchange.markets.keys())
-        for item in self.exchange.markets.keys():
-            try:
-                self.key_currency.index(item)
-                self.key_market_price[item] = self.get_last_price(item)
-            except Exception as exp:
-                self.logger.debug('It is ok : {}'.format(exp))
-                pass
-                
-        self.logger.debug('key market price : {}'.format(self.key_market_price))
-        self.logger.debug('-'*80)
     
     def get_order_book(self, symbol):
         st = int(datetime.now(tz=timezone.utc).timestamp() * 1000)

@@ -36,7 +36,10 @@ class Balance():
         return self.balance
     
     def __repr__(self):
-        return str(self.balance)    
+        return str(self.balance)
+        
+    def __str__(self):
+        return str(self.balance)
         
 if __name__ == '__main__':
     print('test')
