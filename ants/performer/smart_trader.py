@@ -21,7 +21,7 @@ class SmartTrader:
         exchange = self.exchanges.get(exchange)
         return exchange.get_private_orders()
     
-    def trading(self, exchange_name, market, action, coin_name, price=None, amount=None):
+    def trading(self, exchange_name, market, action, coin_name, price=None, amount=None, etc={}):
         """
         사용가능한 금액에 맞춰서 개수를 구매한다
         """
@@ -45,9 +45,9 @@ class SmartTrader:
                 seed_money = self.check_percent(exchange, seed_money, amount)
                 pass
                 
-            ret = self._buy(exchange, market, coin_name, seed_money, price)
+            ret = self._buy(exchange, market, coin_name, seed_money, price, etc)
         elif(action == 'SELL'):
-            ret = self._sell(exchange, market, coin_name, price, amount)
+            ret = self._sell(exchange, market, coin_name, price, amount, etc)
         
         if(ret is None):
             self.logger.warning('action fail')
@@ -73,7 +73,7 @@ class SmartTrader:
                seed_money = req_sm 
             return exchange.decimal_to_precision(float(seed_money))
     
-    def _buy(self, exchange, market, coin_name, seed_size, price=None):
+    def _buy(self, exchange, market, coin_name, seed_size, price=None, etc={}):
         symbol = coin_name + '/' + market #'BTC/KRW'
         _type = 'limit'  # or 'market' or 'limit'
         side = 'buy'  # 'buy' or 'sell'
@@ -106,7 +106,7 @@ class SmartTrader:
         
         self.logger.info('_buy - price: {}, amount: {}, fee: {}'.format(price, amount, fee))
         try:
-            desc = exchange.create_order(symbol, _type, side, amount, price, params)
+            desc = exchange.create_order(symbol, _type, side, amount, price, params, etc)
             self.logger.debug('order complete : {}'.format(desc))
         except Exception as exp:
             self.logger.warning('create_order exception : {}'.format(exp))
@@ -114,7 +114,7 @@ class SmartTrader:
             
         return desc
     
-    def _sell(self, exchange, market, coin_name, price=None, amount=None):
+    def _sell(self, exchange, market, coin_name, price=None, amount=None, etc={}):
         symbol = coin_name + '/' + market #'BTC/KRW'
         _type = 'limit'  # or 'market' or 'limit'
         side = 'sell'  # 'buy' or 'sell'
@@ -165,7 +165,7 @@ class SmartTrader:
         fee = exchange.decimal_to_precision(fee)
         self.logger.info('_sell - price: {}, amount: {}, fee: {}'.format(price, amount, fee))
         try:
-            desc = exchange.create_order(symbol, _type, side, amount, price, params)
+            desc = exchange.create_order(symbol, _type, side, amount, price, params, etc)
             self.logger.debug('order complete : {}'.format(desc))
         except Exception as exp:
             self.logger.warning('create_order exception : {}'.format(exp))

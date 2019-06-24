@@ -131,28 +131,55 @@ class TelegramRepoter():
   
     def message_parser(self, bot, update):
         self.logger.debug('got some message')
-        try:
-            message = update.message
-            text = message.text
-            self.logger.debug(text)
-        except Exception as exp:
-            #그룹 대화방이나 1:1 대화방이 아닌 경우 오류가 발생함
-            self.logger.debug(update)
-            self.logger.debug(update.channel_post.text)
-            text = update.channel_post.text
+        #1:1 에서 메시지 수신시
+        #update : {'update_id': 371978001, 'message': {'message_id': 12490, 'date': 1561387246, 'chat': {'id': 444609550, 'type': 'private', 'username': 'lemy0715', 'first_name': 'LeMY'}, 'text': '123', 'entities': [], 'caption_entities': [], 'photo': [], 'new_chat_members': [], 'new_chat_photo': [], 'delete_chat_photo': False, 'group_chat_created': False, 'supergroup_chat_created': False, 'channel_chat_created': False, 'from': {'id': 444609550, 'first_name': 'LeMY', 'is_bot': False, 'username': 'lemy0715', 'language_code': 'ko'}}, '_effective_message': {'message_id': 12490, 'date': 1561387246, 'chat': {'id': 444609550, 'type': 'private', 'username': 'lemy0715', 'first_name': 'LeMY'}, 'text': '123', 'entities': [], 'caption_entities': [], 'photo': [], 'new_chat_members': [], 'new_chat_photo': [], 'delete_chat_photo': False, 'group_chat_created': False, 'supergroup_chat_created': False, 'channel_chat_created': False, 'from': {'id': 444609550, 'first_name': 'LeMY', 'is_bot': False, 'username': 'lemy0715', 'language_code': 'ko'}}}
+
+        #그룹 대화방에서 메시지 수신
+        #현재 설정으로 메시지를 못 받는듯
+        
+        #channel에서 메시지 수신시
+        #update : {'update_id': 371978003, 'channel_post': {'message_id': 3, 'date': 1561387474, 'chat': {'id': -1001207026903, 'type': 'channel', 'title': '개발테스트용'}, 'text': '채널 메시지', 'entities': [], 'caption_entities': [], 'photo': [], 'new_chat_members': [], 'new_chat_photo': [], 'delete_chat_photo': False, 'group_chat_created': False, 'supergroup_chat_created': False, 'channel_chat_created': False}, '_effective_message': {'message_id': 3, 'date': 1561387474, 'chat': {'id': -1001207026903, 'type': 'channel', 'title': '개발테스트용'}, 'text': '채널 메시지', 'entities': [], 'caption_entities': [], 'photo': [], 'new_chat_members': [], 'new_chat_photo': [], 'delete_chat_photo': False, 'group_chat_created': False, 'supergroup_chat_created': False, 'channel_chat_created': False}}
+
+        self.logger.debug('update : {}'.format(type(update)))
+        self.logger.debug('update.message : {}'.format(update.message))
+        
+        if(update.channel_post is not None):
+            #channel post
+            message = {
+                'text' : update.channel_post.text,
+                'from' : update.channel_post.chat
+            }
+        elif(update.message is not None): 
+            #1:1 message
+            message = {
+                'text' : update.message.text,
+                'from' : update.message.chat
+            }
+        else :
+            return
+            
+        # try:
+        #     message = update.message
+        #     text = message.text
+        #     self.logger.debug(text)
+        # except Exception as exp:
+        #     #그룹 대화방이나 1:1 대화방이 아닌 경우 오류가 발생함
+        #     self.logger.debug(update)
+        #     self.logger.debug(update.channel_post.text)
+        #     text = update.channel_post.text
         
         menu_item = None
         for item in self.menu:
             item_txt = str(item)
-            if(item_txt == text):
-                self.logger.debug("item : {}\t text: {}\t{}".format(item_txt, text, (item_txt == text)))
+            if(item_txt == message['text']):
+                self.logger.debug("item : {}\t text: {}\t{}".format(item_txt, message['text'], (item_txt == message['text'])))
                 menu_item = item
                 self.menu_stack.append(item)
                 break;
         
         self.logger.debug('fined item : {}'.format(menu_item))
         if(menu_item is None):
-            self.check_quick_trading(text)
+            self.check_quick_trading(message)
             return
         
         # 방법1. 동작안함. dp.restart 해야하는데, stop이후 start하면 뻗음.. 설령 stop이 된다고 하더라도 내부적으로 thread라 join되는데 기다리는데 시간이 많이 걸림
@@ -173,10 +200,10 @@ class TelegramRepoter():
         menu_item.run()
         # menu_item.parsering(update, text)
         
-    def check_quick_trading(self, text):
-        self.logger.debug('text : {}'.format(text))
+    def check_quick_trading(self, message):
+        self.logger.debug('check_quick_trading got message : {}'.format(message))
         try:
-            text = text.split(' ')
+            text = message['text'].split(' ')
             action = text[0].strip().lower()
             
             if((action in ['buy', 'sell', 'show']) == False):
@@ -189,7 +216,7 @@ class TelegramRepoter():
             self.logger.debug('check quick trading msg : {}'.format(action))
             # text = text.split(' ')
             ret = {}
-            ret['version'] = 2
+            ret['version'] = 3
             command = ret['command'] = text[0].strip().upper()
             
             if(command in ['BUY', 'SELL']):
@@ -198,6 +225,8 @@ class TelegramRepoter():
                 ret['coin'] = text[3].strip().upper()
                 ret['price'] = text[4].strip()
                 ret['seed'] = text[5].strip()
+                ret['etc'] = {}
+                ret['etc']['from'] = eval(str(message['from']))
             else:
                 if(command in ['SHOW']):
                     ret['sub_cmd'] = text[1].strip().upper()
@@ -248,6 +277,7 @@ class TelegramRepoter():
         dp.add_handler(CallbackQueryHandler(self.welcome, pattern='welcome'))
         dp.add_handler(CallbackQueryHandler(self.cancel_order, pattern='cancel_order'))
         
+        # self.message_handler = MessageHandler(Filters.text, self.message_parser)
         self.message_handler = MessageHandler(Filters.text, self.message_parser)
         dp.add_handler(self.message_handler)
         

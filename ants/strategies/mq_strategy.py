@@ -71,6 +71,7 @@ class MQStrategy(ants.strategies.strategy.StrategyBase, Observer):
             coin_name = msg['coin']
             price = msg['price']
             amount = msg['seed']
+            etc = msg['etc']
         except Exception as exp:
             self.logger.warning('msg parsing error : {}'.format(exp))
             return
@@ -84,7 +85,7 @@ class MQStrategy(ants.strategies.strategy.StrategyBase, Observer):
         #     return
         
         try:
-            result = self.trader.trading(exchange, market, command, coin_name, price, amount)
+            result = self.trader.trading(exchange, market, command, coin_name, price, amount, etc)
         except Exception as exp:
             self.messenger_q.send(str(exp))
             self.logger.warning('Trading was failed : {}'.format(exp))

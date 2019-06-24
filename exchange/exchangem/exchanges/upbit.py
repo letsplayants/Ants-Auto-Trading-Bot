@@ -11,7 +11,7 @@ from exchangem.model.exchange import Base
 from exchangem.model.balance import Balance
 from exchangem.model.order_info import OrderInfo
 from exchangem.model.price_storage import PriceStorage
-from async_upbit import ASyncUpbit
+from exchangem.exchanges.async_upbit import ASyncUpbit
 from env_server import Enviroments
 
 
@@ -20,8 +20,9 @@ class Upbit(Base):
         Base.__init__(self, args)
         self.init_price()
         
-        self.async_upbit = ASyncUpbit()
-        self.async_upbit.run()
+        if(args.get('no_async') is None or args.get('no_async') == False):
+            self.async_upbit = ASyncUpbit()
+            self.async_upbit.run()
         
     def init_price(self):
         ps = PriceStorage()
@@ -278,9 +279,10 @@ class Upbit(Base):
         msg = self.exchange.fetch_order(id)
         return self.parsing_order_info(msg)
     
-    def get_done_private_orders(self, param={}):
+    def get_private_orders_by_state(self, state, param={}):
         list = []
-        ret = self.exchange.fetch_orders_by_state('done')
+        state = state.lower()
+        ret = self.exchange.fetch_orders_by_state(state)
         if(ret == None):
             return list
         
@@ -289,6 +291,103 @@ class Upbit(Base):
             list.append(r)
             
         return list
+        
+    def reuqest_orders_by_uuid(self, state, uuids):
+        import jwt
+        import uuid
+        import hashlib
+        from urllib.parse import urlencode
+        
+        import requests
+        
+        access_key = self.key_set['apiKey']
+        secret_key = self.key_set['secret']
+        
+        query = {
+            'state': state,
+        }
+        query_string = urlencode(query)
+        
+        # uuids = [
+        #     'd914abb5-de18-497c-a34a-95e66edece8d',
+        #     #...
+        # ]
+        uuids_query_string = '&'.join(["uuids[]={}".format(uuid) for uuid in uuids])
+        
+        query['uuids[]'] = uuids
+        query_string = "{0}&{1}".format(query_string, uuids_query_string).encode()
+        
+        m = hashlib.sha512()
+        m.update(query_string)
+        query_hash = m.hexdigest()
+        
+        payload = {
+            'access_key': access_key,
+            'nonce': str(uuid.uuid4()),
+            'query_hash': query_hash,
+            'query_hash_alg': 'SHA512',
+        }
+        
+        jwt_token = jwt.encode(payload, secret_key).decode('utf-8')
+        authorize_token = 'Bearer {}'.format(jwt_token)
+        headers = {"Authorization": authorize_token}
+        
+        try:
+            res = requests.get("https://api.upbit.com/v1/orders", params=query, headers=headers)
+            if(res.status_code != 200):
+                raise Exception({
+                    'status_code':res.status_code,
+                    'message':res.text
+                })
+            # self.logger.debug(res)
+        except Exception as exp:
+            raise exp
+        
+        return res.json()
+    
+    def get_trading_list(self, uuids):
+        #한번에 요청할 수 있는 uuid의 한계는 56개 이다.
+        #그러므로 uuid가 56개를 넘길 땐 나눠준다
+        unknow_state_uuids = uuids
+        
+        result = []
+        states = ['cancel', 'wait', 'done']
+        for state in states:
+            self.logger.debug('State : {}, Count : {}'.format(state, len(unknow_state_uuids)))
+            if(len(unknow_state_uuids) <= 56 and len(unknow_state_uuids) > 0):
+                result += self.reuqest_orders_by_uuid(state, unknow_state_uuids)
+                for item in result:
+                    try:
+                        unknow_state_uuids.remove(item['uuid'])
+                    except:
+                        pass
+            
+            uuid_p = []
+            result_part = []
+            cnt = 0
+            for uuid in unknow_state_uuids:
+                uuid_p.append(uuid)
+                cnt += 1
+                if(cnt == 56):
+                    try:
+                        result_part = self.reuqest_orders_by_uuid(state, uuid_p)
+                        for item in result_part:
+                            try:
+                                unknow_state_uuids.remove(item['uuid'])
+                            except:
+                                pass
+                        result += result_part
+                        cnt = 0
+                        uuid_p=[]
+                    except Exception as exp:
+                        raise exp
+            
+        return result
+        
+    def fetch_market_by_id(self, symbol, params={}):
+        return self.exchange.fetch_market_by_id(symbol, params)
+    
+    
     
 if __name__ == '__main__':
     print('test')
@@ -310,7 +409,7 @@ if __name__ == '__main__':
     logging.getLogger("exchangem.model.exchange").setLevel(logging.WARNING)
     logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
     logging.getLogger("websockets").setLevel(logging.WARNING)
-    logging.getLogger("async_upbit").setLevel(logging.INFO)
+    logging.getLogger("exchangem.exchanges.async_upbit").setLevel(logging.WARNING)
     
     up = Upbit()
 
@@ -379,10 +478,30 @@ if __name__ == '__main__':
     print('0.00000001 satosi is small balance ? ', up.is_small_balance(0.00000001, 'BTC'))
     print('0.001 satosi is small balance ? ', up.is_small_balance(0.001, 'BTC'))
     
-    import sys
-    sys.exit(0)
-    
     # up.connect()
+    
+    # 다수 오더북 읽어오는 테스트
+    uuids = ['d914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', #1
+            'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d',
+            'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d',
+            'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d',
+            'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d',#5
+            'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d',
+            'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d',
+            'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d',
+            'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d',
+            'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d',#10
+            'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d',
+            'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d',
+            'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d',
+            'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d',
+            'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', '0b82f80a-5889-408d-8c63-7257622927e8'] #14 * 4 = 56개
+            
+    uuids = ['0b82f80a-5889-408d-8c63-7257622927e8', 'd914abb5-de18-497c-a34a-95e66edece8d']
+    order_list = up.get_trading_list(uuids=uuids)
+    print('order_list ')
+    
+    print(order_list)
     
     #공개 오더북 읽어오는 테스트
     # print('get order books', up.get_order_books(None))
@@ -391,14 +510,15 @@ if __name__ == '__main__':
     # print('get order books', up.get_order_books(['GNT/KRW', 'BTC/KRW', 'BTC/USDT']))
     
     #개인 오더북 읽어오는 테스트
-    print('get private orders', up.get_private_orders())
+    # print('get private orders', up.get_private_orders())
     # print('get my orders : ', up.get_private_orders('BCH/KRW'))
     # print('get my orders', up.get_private_orders(['BCH/KRW','ZEC/KRW'])) #이렇게 동작하도록 만들어야지..
     
-    try:
-        order = up.create_order('BTC/KRW', 'limit', 'buy', '1', '1', '')
-    except Exception as exp:
-        print(exp)
+    #거래 생성 테스트
+    # try:
+    #     order = up.create_order('BTC/KRW', 'limit', 'buy', '1', '1', '')
+    # except Exception as exp:
+    #     print(exp)
         
     #거래 취소 테스트, 실제 거래를 넣고 취소하는 테스트이므로 주의를 요구함
     # order = up.create_order('BTC/KRW', 'limit', 'buy', '1', '1', '')

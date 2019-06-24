@@ -65,8 +65,8 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
                 break
         
         try:
-            key_set = self.load_key(self.exchange_name)
-            self.exchange = exchange_obj(key_set)
+            self.key_set = self.load_key(self.exchange_name)
+            self.exchange = exchange_obj(self.key_set)
         except Exception as exp:
             self.exchange = exchange_obj()
             self.logger.warning('Key file loading failed. : {}'.format(exp))
@@ -111,7 +111,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
     def get_balance(self, target):
         pass
     
-    def create_order(self, symbol, type, side, amount, price, params):
+    def create_order(self, symbol, type, side, amount, price, params, etc):
         prefix_str = ''
         d_amount = self.decimal_to_precision(amount)
         d_price = self.decimal_to_precision(price)
@@ -130,7 +130,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         else:
             try:
                 desc = self.exchange.create_order(symbol, type, side, amount, price, params)
-                order_info = self.parsing_order_info(desc)
+                order_info = self.parsing_order_info(desc, etc)
                 #오더 id를 디비큐로 날려준다
                 self.database.send(str(order_info))
             except Exception as exp:
@@ -145,6 +145,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
                 order['side'] = side
                 order['amount'] = d_amount
                 order['price'] = d_price
+                order['etc'] = etc
                 
                 _dict['request_order'] = order
                 raise Exception(_dict)
@@ -206,10 +207,10 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             raise exp
         
         
-        return msg
+        return msg, order_info
         
 
-    def parsing_order_info(self, msg):
+    def parsing_order_info(self, msg, etc):
         """
         binance 값 예제
         {'info': {'symbol': 'BTTBTC', 'orderId': 1588726, 'clientOrderId': 'and_3f55e388f97e463fa3776d02e726ec12', 'price': '0.00000034', 'origQty': '18633.00000000', 'executedQty': '0.00000000', 'cummulativeQuoteQty': '0.00000000', 'status': 'NEW', 'timeInForce': 'GTC', 'type': 'LIMIT', 'side': 'SELL', 'stopPrice': '0.00000000', 'icebergQty': '0.00000000', 'time': 1549975901810, 'updateTime': 1549975901810, 'isWorking': True}, 'id': '1588726', 'timestamp': 1549975901810, 'datetime': '2019-02-12T12:51:41.810Z', 'lastTradeTimestamp': None, 'symbol': 'BTT/BTC', 'type': 'limit', 'side': 'sell', 'price': 3.4e-07, 'amount': 18633.0, 'cost': 0.0, 'average': None, 'filled': 0.0, 'remaining': 18633.0, 'status': 'open', 'fee': None, 'trades': None}, 
@@ -224,7 +225,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         """
         self.logger.debug('parsing msg to orderInfo : {}'.format(msg))
         r = OrderInfo()
-        r.add(
+        r.set(
             msg.get('symbol'),
             msg.get('id'),
             msg.get('side'),
@@ -233,7 +234,9 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             msg.get('status'),
             msg.get('remaining'),
             msg.get('timestamp'),
-            msg.get('lastTradeTimestamp')
+            msg.get('lastTradeTimestamp'),
+            self.exchange_name,
+            etc['from']
             )
         return r
     
