@@ -528,7 +528,7 @@ if __name__ == '__main__':
     # print(test.get_bought_coin_list())
     
     
-    test.cleanup_daily()
+    # test.cleanup_daily()
     
     print(test.get_bought_coin_list())
     # test.report_daily_report()
