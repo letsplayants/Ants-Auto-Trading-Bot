@@ -1,5 +1,6 @@
 import pika
 import logging
+import time
 
 class MQPublisher():
     def __init__(self, exchange_name=None):
@@ -27,9 +28,8 @@ class MQPublisher():
         if(type(message) is dict):
             message = str(message)
             
-        if self.channel is None or not self.channel.is_open:
-            return
-        self.make_exchange(self.exchange_name)
+        if self.connection.is_closed or self.connection.is_closing or self.channel is None or not self.channel.is_open:
+            self.make_exchange(self.exchange_name)
         
         self.logger.debug('send msg : {}'.format(message))
         #연결이 끊히는 예외가 있다
@@ -42,6 +42,7 @@ class MQPublisher():
             if(self.g_cnt > 10):
                 raise Exception(exp)
             
+            time.sleep(1)
             self.g_cnt += 1
             self.make_exchange(self.exchange_name)
             self.send(message)
