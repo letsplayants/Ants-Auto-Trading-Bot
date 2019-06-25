@@ -28,7 +28,7 @@ class MQPublisher():
         if(type(message) is dict):
             message = str(message)
             
-        if self.connection.is_closed or self.connection.is_closing or self.channel is None or not self.channel.is_open:
+        if self.connection.is_closed or self.channel is None or not self.channel.is_open:
             self.make_exchange(self.exchange_name)
         
         self.logger.debug('send msg : {}'.format(message))
