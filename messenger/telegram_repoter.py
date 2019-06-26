@@ -74,7 +74,7 @@ class TelegramRepoter():
         Enviroments().save_config()
     
     def sbuscribe_message(self, ch, method, properties, body):
-        body =  body.decode("utf-8")
+        body =  json.loads(body.decode("utf-8"))
         if(body.find('SHOW ORDER') == 0):
             self.send_message_order(body)
         else:

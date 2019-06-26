@@ -27,7 +27,7 @@ class MQProvider(Provider):
         pass
     
     def callback(self, ch, method, properties, body):
-        body =  body.decode("utf-8")
+        body =  json.loads(body.decode("utf-8"))
         try:
             ret = eval(body)
         except Exception as exp:

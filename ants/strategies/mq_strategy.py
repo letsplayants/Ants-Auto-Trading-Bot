@@ -135,7 +135,6 @@ class MQStrategy(ants.strategies.strategy.StrategyBase, Observer):
             
         self.messenger_q.send('주문 취소 성공')
         
-    
     def show_order(self, msg):
         try:
             version = msg['version']
@@ -149,7 +148,7 @@ class MQStrategy(ants.strategies.strategy.StrategyBase, Observer):
             self.logger.warning('msg parsing error : {}'.format(exp))
             return
         
-        try:    
+        try:
             orders = self.trader.get_private_orders(exchange)
             order_str = '오더목록\n'
             self.messenger_q.send(order_str)
@@ -161,7 +160,7 @@ class MQStrategy(ants.strategies.strategy.StrategyBase, Observer):
                 
                 if(order_str is not None):
                     self.messenger_q.send(order_str)
-                
+            
         except Exception as exp:
             self.messenger_q.send('요청하신 작업 중 오류가 발생하였습니다.\n{}'.format(exp))
             
