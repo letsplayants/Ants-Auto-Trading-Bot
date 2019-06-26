@@ -140,8 +140,7 @@ class TelegramRepoter():
         #channel에서 메시지 수신시
         #update : {'update_id': 371978003, 'channel_post': {'message_id': 3, 'date': 1561387474, 'chat': {'id': -1001207026903, 'type': 'channel', 'title': '개발테스트용'}, 'text': '채널 메시지', 'entities': [], 'caption_entities': [], 'photo': [], 'new_chat_members': [], 'new_chat_photo': [], 'delete_chat_photo': False, 'group_chat_created': False, 'supergroup_chat_created': False, 'channel_chat_created': False}, '_effective_message': {'message_id': 3, 'date': 1561387474, 'chat': {'id': -1001207026903, 'type': 'channel', 'title': '개발테스트용'}, 'text': '채널 메시지', 'entities': [], 'caption_entities': [], 'photo': [], 'new_chat_members': [], 'new_chat_photo': [], 'delete_chat_photo': False, 'group_chat_created': False, 'supergroup_chat_created': False, 'channel_chat_created': False}}
 
-        self.logger.debug('update : {}'.format(type(update)))
-        self.logger.debug('update.message : {}'.format(update.message))
+        self.logger.debug('update : {}'.format(update))
         
         if(update.channel_post is not None):
             #channel post
