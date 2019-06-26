@@ -9,9 +9,11 @@ import ants.utils as utils
 class MessengerEnv():
     """
     {
-        "bot_token" : "738520272:AAFm_svmDBERNLDs6Sm0N9X75_y2ivOkR3k",
-        "chat_id": "444609550", "1111",
-        "bot_id": "@lemy_trader_bot"
+        "bot_id": "ants_chat_bot",
+        "bot_token": "738520272:AAFm_svmDBERNLDs6Sm0N9X75_y2ivOkR3k",
+        "chat_id": "444609550",
+        "use": "True",
+        "authorized":["444609550", "444609550"]
     }
     """
     messenger={}
@@ -57,7 +59,8 @@ class MessengerEnv():
         self.messenger={
             "bot_token": "",
             "chat_id": "",
-            "bot_id":""
+            "bot_id":"",
+            "authorized":[]
         }
         
     def check_default(self):
@@ -78,6 +81,15 @@ class MessengerEnv():
 
     def get(self, key):
         return self.messenger.get(key)
+        
+    def set_authorized(self, value):
+        self.messenger['authorized'].append(value)
+        
+    def remove_authorized(self, value):
+        self.messenger['authorized'].remove(value)
+    
+    def get_authorized(self):
+        return self.messenger['authorized']
 
 if __name__ == '__main__':
     print('Enviroments test')
@@ -113,6 +125,10 @@ if __name__ == '__main__':
     print(env.messenger)
     env.save_config()
     
+    env.messenger.set_authorized('auth1')
+    print(env.messenger.get_authorized())
+    env.messenger.remove_authorized('auth1')
+    env.save_config()
     
     # tel_id='@lemy_bot'
     # messenger_q = {

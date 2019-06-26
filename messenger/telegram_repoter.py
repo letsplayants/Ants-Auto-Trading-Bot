@@ -129,6 +129,17 @@ class TelegramRepoter():
             
         self.bot.send_message(chat_id=self.conf['chat_id'], text=self.welcome_message, reply_markup=reply_markup)
   
+    def check_authorized(self, from_who):
+        from_id = str(from_who['id'])
+        
+        if(self.conf['chat_id'] == from_id):
+            return True
+        elif(from_id in self.conf['authorized']):
+            return True
+        else:
+            self.logger.warning('Unauthorized user send to command - input:{}\tchat_id:{}'.format(from_who, self.conf['chat_id']))
+            return False
+        
     def message_parser(self, bot, update):
         self.logger.debug('got some message')
         #1:1 에서 메시지 수신시
@@ -157,6 +168,9 @@ class TelegramRepoter():
         else :
             return
             
+        if(not self.check_authorized(message['from'])):
+            return
+        
         # try:
         #     message = update.message
         #     text = message.text
