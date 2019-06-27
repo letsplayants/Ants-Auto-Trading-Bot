@@ -252,7 +252,8 @@ class Upbit(Base):
     def get_last_price(self, symbol):
         ps = PriceStorage()
         p = ps.get_price('UPBIT', symbol.split('/')[1], symbol.split('/')[0])
-        self.logger.warning('Price info is too slow update : {}sec slow'.format(gap_sec))
+        # gap_sec = 
+        # self.logger.warning('Price info is too slow update : {}sec slow'.format(gap_sec))
         return p['price']
         
         
