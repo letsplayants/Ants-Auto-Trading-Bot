@@ -47,10 +47,11 @@ class ASyncUpbit():
                 message = await self.websocket.recv();
                 self.consumer(message)
                 cnt = cnt + 1
+                
+        self.logger.info("receive func finished")
     
     def consumer(self, message):
         data = json.loads(message)
-        
         
         self.logger.debug("%s : %s" % (data.get('cd'), data))
 # KRW-TT : {'ty': 'ticker', 'cd': 'KRW-TT', 'op': 23.7, 'hp': 24.1, 'lp': 23.1, 'tp': 23.3, 'pcp': 23.7, 'atp': 909465642.869787, 'c': 'FALL', 'cp': 0.4, 'scp': -0.4, 'cr': 0.0168776371, 'scr': -0.0168776371, 'ab': 'ASK', 'tv': 11219.34033412, 'atv': 38776896.77642389, 'tdt': '20190618', 'ttm': '085100', 'ttms': 1560847860000, 'aav': 24791470.33970973, 'abv': 13985426.43671416, 'h52wp': 53.0, 'h52wdt': '2019-05-09', 'l52wp': 16.0, 'l52wdt': '2019-05-09', 'ts': None, 'ms': 'ACTIVE', 'msfi': None, 'its': False, 'dd': None, 'mw': 'NONE', 'tms': 1560847860760, 'atp24h': 1495933525.146969, 'atv24h': 63739833.56441668, 'st': 'SNAPSHOT'}
@@ -73,6 +74,7 @@ class ASyncUpbit():
         loop.close()
 
     def run(self):
+        self.logger.info('async_upbit run')
         self.recv_thread_hnd = threading.Thread(target=self._run_recv, args=())
         self.recv_thread_hnd.start()
         
@@ -88,6 +90,7 @@ class ASyncUpbit():
     
     
     def list_update(self, coins):
+        self.logger.info('async_upbit update coin price : {}'.format(coins))
         self.target_coin = coins
         self._run_send()
         

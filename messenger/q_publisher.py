@@ -6,6 +6,7 @@ import logging
 import json
 import pika
 import threading
+import time
 
 class MQPublisher(object):
     # EXCHANGE = 'trading_msg'
@@ -276,24 +277,17 @@ class MQPublisher(object):
         """
         Run the example code by connecting and then starting the IOLoop.
         """
-        # while not self._stopping:
-        self._connection = None
-        self._deliveries = []
-        self._acked = 0
-        self._nacked = 0
-        self._message_number = 0
-
-        try:
+        while not self._stopping:
+            self._connection = None
+            self._deliveries = []
+            self._acked = 0
+            self._nacked = 0
+            self._message_number = 0
+    
             self._connection = self.connect()
             self._connection.ioloop.start()
-        except KeyboardInterrupt:
-            self.stop()
-            if (self._connection is not None and
-                    not self._connection.is_closed):
-                # Finish closing
-                self._connection.ioloop.start()
-
-        # self.logger.info('Stopped')
+            
+        self.logger.info('Stopped q publisher')
 
     def stop(self):
         """
@@ -352,5 +346,5 @@ if __name__ == '__main__':
                     'action' : 'buy',
                     'exchange': 'upbit'
         })
-        time.sleep(10)
+        time.sleep(1)
     pub.close()

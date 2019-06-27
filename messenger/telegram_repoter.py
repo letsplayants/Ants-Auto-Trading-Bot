@@ -22,6 +22,8 @@ import time
 import os, sys
 from env_server import Enviroments
 
+from exchangem.model.price_storage import PriceStorage
+
 class TelegramRepoter():
     def __init__(self):
         self.logger = logging.getLogger(__name__)
@@ -284,6 +286,7 @@ class TelegramRepoter():
         
         # on different commands - answer in Telegram
         dp.add_handler(CommandHandler("menu", self.menu_func))
+        dp.add_handler(CommandHandler("price", self.show_price))
         dp.add_handler(CommandHandler("upgrade", self.do_upgrade))
         dp.add_handler(CallbackQueryHandler(self.whoami, pattern='whoami'))
         dp.add_handler(CallbackQueryHandler(self.roominfo, pattern='roominfo'))
@@ -311,6 +314,15 @@ class TelegramRepoter():
         self.updater.stop()
         self.updater.signal_handler(SIGTERM, 0)
     
+    def show_price(self, update, context):
+        self.logger.debug(f'update:{update}')
+        self.logger.debug(f'context:{context}')
+        # from exchangem.model.pricest_storage import pricestStorage
+        ps = PriceStorage()
+        price = ps.get_price('UPBIT', 'KRW', 'BTC')
+        self.send_message(price)
+        
+        
     def menu_func(self, update, context):
         context.message.reply_text('Please choose:', reply_markup=self.menu_keyboard())
         
