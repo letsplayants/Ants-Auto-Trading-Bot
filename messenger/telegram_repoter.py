@@ -324,6 +324,9 @@ class TelegramRepoter():
         
         
     def menu_func(self, update, context):
+        if(not self.check_authorized(message['from'])):
+            return
+        
         context.message.reply_text('Please choose:', reply_markup=self.menu_keyboard())
         
     def menu_keyboard(self):
@@ -345,12 +348,18 @@ class TelegramRepoter():
         self.bot.sendMessage(self.conf['chat_id'], msg)
     
     def roominfo(self, update, context):
+        if(not self.check_authorized(message['from'])):
+            return
+        
         query = context.callback_query
         
         self.edit_message(update, query, '방(Group) 속성 : {}\n Group id : {}'.format(query.message.chat.type, query.message.chat.id))
         
         
     def whoami(self, update, context):
+        if(not self.check_authorized(message['from'])):
+            return
+        
         print('get message in whoami')
         query = context.callback_query
         if(query.message.chat.type != 'private'):
@@ -359,6 +368,9 @@ class TelegramRepoter():
         self.edit_message(update, query, '당신의 ID : {}'.format(query.message.chat.id))
 
     def cancel_order(self, update, context):
+        if(not self.check_authorized(message['from'])):
+            return
+        
         message = context.callback_query.message.text
         
         self.logger.debug('cancel order msg : {}'.format(context))
@@ -395,6 +407,8 @@ class TelegramRepoter():
                         reply_markup=self.menu_keyboard())
     
     def welcome(self, update, context):
+        if(not self.check_authorized(message['from'])):
+            return
         query = context.callback_query
         
         user = query.from_user
@@ -406,6 +420,9 @@ class TelegramRepoter():
         self.logger.warning('Update "%s" caused error "%s"', bot_info, message)
     
     def do_upgrade(self, update, context):
+        if(not self.check_authorized(message['from'])):
+            return
+        
         self.send_message('업그레이드를 진행합니다\n 업그레이드하는데 약 3~5분 가량 걸리며 완료되면 텔레그램 봇이 재시작 됩니다')
         
         #TODO 프로그램이 실행된 경로를 찾아서 .. 프로젝트 시작 경로를 찾아서 업데이트하도록 한다
