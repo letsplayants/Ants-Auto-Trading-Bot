@@ -33,21 +33,27 @@ class ASyncUpbit():
 # 현재가 샘플
 # KRW-BCH : {'ty': 'ticker', 'cd': 'KRW-BCH', 'op': 509100.0, 'hp': 524800.0, 'lp': 508100.0, 'tp': 510500.0, 'pcp': 509800.0, 'atp': 20833988691.30604, 'c': 'RISE', 'cp': 700.0, 'scp': 700.0, 'cr': 0.0013730875, 'scr': 0.0013730875, 'ab': 'BID', 'tv': 0.14288839, 'atv': 40406.4139489, 'tdt': '20190617', 'ttm': '161317', 'ttms': 1560787997000, 'aav': 23652.72329474, 'abv': 16753.69065416, 'h52wp': 1040000.0, 'h52wdt': '2018-06-19', 'l52wp': 83620.0, 'l52wdt': '2018-12-15', 'ts': None, 'ms': 'ACTIVE', 'msfi': None, 'its': False, 'dd': None, 'mw': 'NONE', 'tms': 1560787997948, 'atp24h': 24638571107.618538, 'atv24h': 47844.02311627, 'st': 'REALTIME'}
 # KRW-XRP : {'ty': 'ticker', 'cd': 'KRW-XRP', 'op': 511.0, 'hp': 520.0, 'lp': 509.0, 'tp': 511.0, 'pcp': 511.0, 'atp': 37875194786.84065, 'c': 'EVEN', 'cp': 0.0, 'scp': 0.0, 'cr': 0, 'scr': 0, 'ab': 'ASK', 'tv': 3030.0, 'atv': 73750770.48785424, 'tdt': '20190617', 'ttm': '161317', 'ttms': 1560787997000, 'aav': 37080876.57326398, 'abv': 36669893.91459026, 'h52wp': 885.0, 'h52wdt': '2018-09-21', 'l52wp': 292.0, 'l52wdt': '2018-09-12', 'ts': None, 'ms': 'ACTIVE', 'msfi': None, 'its': False, 'dd': None, 'mw': 'NONE', 'tms': 1560787997960, 'atp24h': 73938416795.68704, 'atv24h': 143913323.17611742, 'st': 'REALTIME'}
-        async with websockets.connect(
-                'wss://api.upbit.com/websocket/v1') as websocket:
-            self.logger.info("connected")
-            self.websocket = websocket
+        while self.recv_loop:
+            try:
+                async with websockets.connect(
+                        'wss://api.upbit.com/websocket/v1') as websocket:
+                    self.logger.info("connected")
+                    self.websocket = websocket
+                    
+                    # Snapshot mode로 send 요청을 날릴 땐 아래 주석을 풀어서 날린다.
+                    # self.send_thread_hnd = threading.Thread(target=self._run_send, args=())
+                    # self.send_thread_hnd.start()
+                    
+                    while self.recv_loop:
+                        cnt = 0
+                        message = await self.websocket.recv();
+                        self.consumer(message)
+                        cnt = cnt + 1
+            except Exception as exp:
+                self.logger.warning('websockets recv except : {}'.format(exp))
+                self.logger.info('websockets will be reconnect after 10 sec')
+                time.sleep(10)
             
-            # Snapshot mode로 send 요청을 날릴 땐 아래 주석을 풀어서 날린다.
-            # self.send_thread_hnd = threading.Thread(target=self._run_send, args=())
-            # self.send_thread_hnd.start()
-            
-            while self.recv_loop:
-                cnt = 0
-                message = await self.websocket.recv();
-                self.consumer(message)
-                cnt = cnt + 1
-                
         self.logger.info("receive func finished")
     
     def consumer(self, message):
