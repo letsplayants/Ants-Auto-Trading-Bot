@@ -11,6 +11,7 @@ from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
 import ants.utils as utils
 import logging
 import json
+import re
 import m_emoji as em
 from menus.main_menu import MainMenu
 from q_publisher import MQPublisher
@@ -100,6 +101,14 @@ class TelegramRepoter():
     def menu_string_set(self):
         self.menu = MainMenu()
     
+    def escape_ansi(self, line):
+        p = r'(\x9B|\x1B\[)[0-?]*[ -\/]*[@-~]'
+        p = r'(\x9B|\x1B\[)[0-?]*[ -\/]*[@-~]'
+        # p = r'\x1B\[[0-?]*[ -/]*[@-~]'
+        ansi_escape =re.compile(p)
+        return ansi_escape.sub('', line)
+
+
     def make_menu_keyboard(self, bot = None, chat_id = None):
         keyboard = []
         for item in self.menu:
@@ -117,19 +126,28 @@ class TelegramRepoter():
             
         support_exchange_list = 'upbit'
         
-        self.welcome_message = """
-        안녕하세요,\n\n버전 : {}\n동작 모드 : {}\n지원 거래소 : {}\n이 화면에서만 퀵매매가 동작합니다.
+        result = git.log('-1')
+        # str = str.encode('utf-8')
+        result = str(result)
+        
+        git_id = self.escape_ansi(result).strip()
+        self.logger.debug(git_id)
+
+        welcome_message = """
+        안녕하세요,\n\n버젼:\n{}\n동작 모드 : {}\n지원 거래소 : {}\n이 화면에서만 퀵매매가 동작합니다.
         """.format(
-            '개발 버전(git commit id표시)',
+            git_id,
             mode_str,
             support_exchange_list)
+            
+        self.logger.debug(welcome_message)
         
         if(self.custom_keyboard):
             reply_markup = telegram.ReplyKeyboardMarkup(self.build_menu(keyboard, n_cols=2))
         else:
             reply_markup = None
             
-        self.bot.send_message(chat_id=self.conf['chat_id'], text=self.welcome_message, reply_markup=reply_markup)
+        self.bot.send_message(chat_id=self.conf['chat_id'], text=welcome_message, reply_markup=reply_markup)
   
     def check_authorized(self, from_who):
         from_id = str(from_who['id'])
