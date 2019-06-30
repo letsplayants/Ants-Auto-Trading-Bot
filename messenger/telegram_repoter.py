@@ -126,19 +126,17 @@ class TelegramRepoter():
             
         support_exchange_list = 'upbit'
         
-        result = git.log('-1')
+        result = git.log('-1', _tty_out=False)
         # str = str.encode('utf-8')
         result = str(result)
         
-        git_id = self.escape_ansi(result).strip()
+        git_id = self.escape_ansi(result)
         self.logger.debug(git_id)
 
-        welcome_message = """
-        안녕하세요,\n\n버젼:\n{}\n동작 모드 : {}\n지원 거래소 : {}\n이 화면에서만 퀵매매가 동작합니다.
-        """.format(
-            git_id,
-            mode_str,
-            support_exchange_list)
+        welcome_message = '안녕하세요,\n\n버젼:\n{}\n동작 모드 : {}\n지원 거래소 : {}\n이 화면에서만 퀵매매가 동작합니다.'.format(
+                            git_id,
+                            mode_str,
+                            support_exchange_list)
             
         self.logger.debug(welcome_message)
         
@@ -147,6 +145,8 @@ class TelegramRepoter():
         else:
             reply_markup = None
             
+        print('*'*120)
+        print(f'{git_id[3]}')
         self.bot.send_message(chat_id=self.conf['chat_id'], text=welcome_message, reply_markup=reply_markup)
   
     def check_authorized(self, from_who):
