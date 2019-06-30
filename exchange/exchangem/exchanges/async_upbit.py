@@ -43,6 +43,7 @@ class ASyncUpbit():
                     # Snapshot mode로 send 요청을 날릴 땐 아래 주석을 풀어서 날린다.
                     # self.send_thread_hnd = threading.Thread(target=self._run_send, args=())
                     # self.send_thread_hnd.start()
+                    await self._send()
                     
                     while self.recv_loop:
                         cnt = 0
@@ -124,7 +125,10 @@ class ASyncUpbit():
             self.logger.info('Wait for websocket connected.')
             time.sleep(1)
         
-        await self.websocket.send(json.dumps(data))
+        try:
+            await self.websocket.send(json.dumps(data))
+        except Exception as exp:
+            self.logger.warning('websocket send failed : {}'.format(exp))
 
     def get_market_list(self):
         url = "https://api.upbit.com/v1/market/all"
