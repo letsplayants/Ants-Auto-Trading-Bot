@@ -254,6 +254,7 @@ class MQPublisher(object):
         class.
         """
         if self._channel is None or not self._channel.is_open:
+            self.logger.debug('channel is not open. : {}'.format(self._channel))
             return
 
         # hdrs = {u'مفتاح': u' قيمة', u'键': u'值', u'キー': u'値'}
@@ -331,7 +332,7 @@ if __name__ == '__main__':
     stream_hander.setFormatter(formatter)
     logger.addHandler(stream_hander)
     
-    logging.getLogger("pika").setLevel(logging.WARNING)
+    logging.getLogger("pika").setLevel(logging.INFO)
     
     queue_name = 'trading_msg'
     # queue_name = 'messenger.telegram.quick_trading'
@@ -346,5 +347,5 @@ if __name__ == '__main__':
                     'action' : 'buy',
                     'exchange': 'upbit'
         })
-        time.sleep(1)
+        time.sleep(60*45)
     pub.close()
