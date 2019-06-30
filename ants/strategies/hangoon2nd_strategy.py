@@ -64,7 +64,8 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
             else:
                 self.logger.debug('dont send to telegram')
         except Exception as exp:
-            self.logger.warning(f'upate got error : {exp}')
+            # https://api.telegram.org/bot 연결 테스트 후 결과도 함께 출력
+            self.logger.warning(f'update got error : {exp}')
         pass
     
     def stop(self):
