@@ -5,13 +5,13 @@ import logging
 class MQReceiver():
     def __init__(self, exchange_name=None, callback=None):
         self.logger = logging.getLogger(__name__)
+        self.loop = True
         if(exchange_name is not None and callback is not None):
             self.make_exchange(exchange_name, callback)
         pass
     
     def get_exchange_name(self):
         return self.exchange_name
-    
     
     def callback_chain(self, ch, methode, properties, body):
         self.logger.debug('got message : {}'.format(body))
@@ -21,7 +21,9 @@ class MQReceiver():
         if(exchange_name is not None and callback is not None):
             self.exchange_name = exchange_name
             self.regist_callback = callback
-            
+        
+        self.logger.info('exchange binding with {}, {}'.format(self.exchange_name, self.regist_callback))
+        
         self.connection = pika.BlockingConnection(pika.ConnectionParameters('localhost', heartbeat=180))
         self.channel = self.connection.channel()
             
@@ -37,14 +39,22 @@ class MQReceiver():
         self.thread_hnd.start()
         
     def _run(self):
-        
-        self.channel.start_consuming()
-        
+        while(self.loop):
+            try:
+                self.channel.start_consuming()
+            except Exception as exp:
+                self.logger.warning('Q consuming has exception cause : \n{}'.format(exp))
+            
+            time.sleep(10)
+            self.make_exchange(self.exchange_name, self.regist_callback)
+            
         
     def stop(self):
+        self.loop = False
         self.close()
         
     def close(self):
+        self.loop = False
         try:
             self.channel.close()
         except :

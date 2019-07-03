@@ -11,7 +11,7 @@ import time
 class MQPublisher(object):
     # EXCHANGE = 'trading_msg'
     EXCHANGE_TYPE = 'fanout'
-    PUBLISH_INTERVAL = 6
+    PUBLISH_INTERVAL = 3600
     QUEUE = ''
     ROUTING_KEY = 'example.text'
 
@@ -189,7 +189,7 @@ class MQPublisher(object):
         """
         self.logger.info('Issuing consumer related RPC commands')
         self.enable_delivery_confirmations()
-        # self.schedule_next_message()
+        self.schedule_next_message()
 
     def enable_delivery_confirmations(self):
         """Send the Confirm.Select RPC method to RabbitMQ to enable delivery
@@ -234,7 +234,10 @@ class MQPublisher(object):
         self.logger.info('Scheduling next message for %0.1f seconds',
                     self.PUBLISH_INTERVAL)
         self._connection.ioloop.call_later(self.PUBLISH_INTERVAL,
-                                           self.publish_message)
+                                           self.scheduler_check_func)
+    def scheduler_check_func(self):
+        self.logger.info('scheduler loop is alive')
+
 
     def send(self, message):
         if(type(message) is dict):
