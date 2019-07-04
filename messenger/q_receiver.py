@@ -1,6 +1,7 @@
 import pika
 import threading
 import logging
+import time
 
 class MQReceiver():
     def __init__(self, exchange_name=None, callback=None):
@@ -40,11 +41,9 @@ class MQReceiver():
         
     def _run(self):
         while(self.loop):
-            try:
-                self.channel.start_consuming()
-            except Exception as exp:
-                self.logger.warning('Q consuming has exception cause : \n{}'.format(exp))
+            self.channel.start_consuming()
             
+            self.logger.info('consuming blocking finished')
             time.sleep(10)
             self.make_exchange(self.exchange_name, self.regist_callback)
             
