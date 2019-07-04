@@ -27,7 +27,7 @@ class MQStrategy(ants.strategies.strategy.StrategyBase, Observer):
         self.trader = SmartTrader()
         self.db = None
         
-        self.upbit = cUpbit({'root_config_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/upbit.conf', 'telegram': None, 'db':self.db})
+        self.upbit = cUpbit()
         self.trader.add_exchange('UPBIT', self.upbit)
         
         # self.bithumb = cBithumb({'root_config_file':'configs/ants.conf', 'key_file':'configs/exchanges.key', 'config_file':'configs/bithumb.conf', 'telegram': self.telegram, 'db':self.db})
@@ -85,19 +85,28 @@ class MQStrategy(ants.strategies.strategy.StrategyBase, Observer):
         #     return
         
         try:
-            result = self.trader.trading(exchange, market, command, coin_name, price, amount, etc)
+            message, order_info = self.trader.trading(exchange, market, command, coin_name, price, amount, etc)
+            #results는 ['msg']와 ['order_info']로 나눠져서 들어온다
+            #order_info는 오더를 생성하고 서버에서 받은 정보를 가지고 있다. 즉 오더 id를 가지고 있음
+            
+            #생성된 오더 정보를 기반으로 추적 시스템에 넣는다
+            #오더 분봉에 정보를 가지고 와서 분봉이 close되면 모든 오더가 취소되는 기능을 넣는다
+            # message = result['msg']
+            # order_info = result['order_info']
+            self.logger.debug('trading result : \n{}\n{}'.format(message, order_info))
         except Exception as exp:
             self.messenger_q.send(str(exp))
             self.logger.warning('Trading was failed : {}'.format(exp))
             return
             
-        if(result == None):
+        if(order_info == None):
             #트레이딩 실패
             self.logger.warning('Trading was failed')
+            self.messenger_q.send('실패 : 요청하신 내용을 실패하였습니다.\n{}'.format(order_info))
             return
         
-        self.logger.info('Action Done {}'.format(result))
-        self.messenger_q.send('요청하신 내용을 완료하였습니다.\n{}'.format(result))
+        self.logger.info('Action Done {}'.format(order_info))
+        self.messenger_q.send('요청하신 내용을 완료하였습니다.\n{}\n{}'.format(message, order_info))
         
     def do_action(self, msg):
         try:
@@ -154,9 +163,9 @@ class MQStrategy(ants.strategies.strategy.StrategyBase, Observer):
             self.messenger_q.send(order_str)
             for order in orders:
                 if(exchange == 'UPBIT'):
-                    order_str = self.order_paring(exchange, order.get(), coin_name)
+                    order_str = self.order_paring(exchange, order, coin_name)
                 else:
-                    order_str = str(order.get()) + '\n'
+                    order_str = str(order) + '\n'
                 
                 if(order_str is not None):
                     self.messenger_q.send(order_str)

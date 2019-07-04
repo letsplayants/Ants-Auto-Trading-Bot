@@ -116,6 +116,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         d_amount = self.decimal_to_precision(amount)
         d_price = self.decimal_to_precision(price)
         order_info = None
+        desc = None
         coin_name = symbol.split('/')[0].lower()
         
         if(ExchangesEnv().get_trading_list('default').get('all') != True):
@@ -127,6 +128,8 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             self.logger.info('EXCHANGE IN TEST MODE : {} {} {} {} {}'.format(symbol, type, side, d_amount, d_price))
             desc = {'TEST_MODE':'True'}
             prefix_str = '가상'
+            order_info = OrderInfo()
+            order_info.set(symbol, 'id', side, d_price, d_amount, '', '', datetime.now(), '', self.exchange_name, etc['from'], etc={})
         else:
             try:
                 desc = self.exchange.create_order(symbol, type, side, amount, price, params)
@@ -210,7 +213,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         return msg, order_info
         
 
-    def parsing_order_info(self, msg, etc):
+    def parsing_order_info(self, msg, etc=None):
         """
         binance 값 예제
         {'info': {'symbol': 'BTTBTC', 'orderId': 1588726, 'clientOrderId': 'and_3f55e388f97e463fa3776d02e726ec12', 'price': '0.00000034', 'origQty': '18633.00000000', 'executedQty': '0.00000000', 'cummulativeQuoteQty': '0.00000000', 'status': 'NEW', 'timeInForce': 'GTC', 'type': 'LIMIT', 'side': 'SELL', 'stopPrice': '0.00000000', 'icebergQty': '0.00000000', 'time': 1549975901810, 'updateTime': 1549975901810, 'isWorking': True}, 'id': '1588726', 'timestamp': 1549975901810, 'datetime': '2019-02-12T12:51:41.810Z', 'lastTradeTimestamp': None, 'symbol': 'BTT/BTC', 'type': 'limit', 'side': 'sell', 'price': 3.4e-07, 'amount': 18633.0, 'cost': 0.0, 'average': None, 'filled': 0.0, 'remaining': 18633.0, 'status': 'open', 'fee': None, 'trades': None}, 
@@ -224,6 +227,13 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         info를 제외한 다른 key들은 모든 거래소 공통 값이다
         """
         self.logger.debug('parsing msg to orderInfo : {}'.format(msg))
+        
+        try:
+            __from__ = etc['from']
+        except:
+            self.logger.warning('from info is not exist')
+            __from__='unknow'
+            
         r = OrderInfo()
         r.set(
             msg.get('symbol'),
@@ -236,7 +246,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
             msg.get('timestamp'),
             msg.get('lastTradeTimestamp'),
             self.exchange_name,
-            etc['from']
+            __from__
             )
         return r
     
@@ -371,7 +381,7 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         return float(decimal_to_precision(value, TRUNCATE, 8, DECIMAL_PLACES))
         
     def except_parsing(self, exp):
-        #ccxt에서 예외 args를 공백(' ')으로 구분해서 넣어줌.
+        #ccxt에서 예외 args를 공��(' ')으로 구분해서 넣어줌.
         exp_str = exp.args[0]
         error = exp.args[0][exp_str.index(' '):]
         dd = eval(error)

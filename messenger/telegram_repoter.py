@@ -44,6 +44,7 @@ class TelegramRepoter():
             sys.exit(1)
             return
         
+        self.bot_error_cnt = 0
         bot_id = self.conf['bot_id']
         if(bot_id is None or bot_id is ''):
             self.conf['bot_id'] = self.bot.get_me()['username']
@@ -191,16 +192,6 @@ class TelegramRepoter():
         if(not self.check_authorized(message['from'])):
             return
         
-        # try:
-        #     message = update.message
-        #     text = message.text
-        #     self.logger.debug(text)
-        # except Exception as exp:
-        #     #그룹 대화방이나 1:1 대화방이 아닌 경우 오류가 발생함
-        #     self.logger.debug(update)
-        #     self.logger.debug(update.channel_post.text)
-        #     text = update.channel_post.text
-        
         menu_item = None
         for item in self.menu:
             item_txt = str(item)
@@ -234,6 +225,10 @@ class TelegramRepoter():
         # menu_item.parsering(update, text)
         
     def check_quick_trading(self, message):
+        #이중 체크라 필요없지만 다른 곳에서 이 함수를 호출 할 수 있으므로.
+        if(not self.check_authorized(message['from'])):
+            return
+        
         self.logger.debug('check_quick_trading got message : {}'.format(message))
         try:
             text = message['text'].split(' ')
@@ -360,10 +355,23 @@ class TelegramRepoter():
         query = context.callback_query
         query.edit_message_text(text="Selected option: {}".format(query.data))
     
-        
     def send_message(self, msg):
         self.logger.debug('send_msg : {}-{}'.format(self.conf['chat_id'], msg))
-        self.bot.sendMessage(self.conf['chat_id'], msg)
+        try:
+            self.bot.sendMessage(self.conf['chat_id'], msg)
+        except Exception as exp:
+            self.bot_error_cnt += 1
+            self.logger.warning('SendMessage failed cause : {}-{}'.format(self.bot_error_cnt, exp))
+            if(self.bot_error_cnt >= 100):
+                self.logger.error('Can''t send message to telegram : {}'.format(msg))
+                raise Exception(exp)
+            
+            time.sleep(5)    
+            self.bot = telegram.Bot(token=self.conf["bot_token"])
+            self.send_message(msg)
+            
+        self.bot_error_cnt = 0
+            
     
     def roominfo(self, update, context):
         if(not self.check_authorized(message['from'])):
