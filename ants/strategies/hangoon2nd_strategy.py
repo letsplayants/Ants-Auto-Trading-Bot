@@ -62,7 +62,7 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
                 # msg = msg + '\n' + add_msg
                 self.messenger_q.send('{}'.format(msg))
             else:
-                self.logger.debug('dont send to telegram')
+                self.logger.debug('dont send to telegram : {}'.format(msg))
         except Exception as exp:
             # https://api.telegram.org/bot 연결 테스트 후 결과도 함께 출력
             self.logger.warning(f'update got error : {exp}')
@@ -76,17 +76,95 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         self.data_provider.stop()
         self.logger.info('Strategy will stop')
 
+    def parsing(self, msg):
+        msg = msg.upper().split('#')
+        msg = msg[1:]
+        self.logger.debug(msg)
+        
+        ver = None
+        for item in msg:
+            ver = item.split(':')[0].upper().strip()
+            if(ver == 'VER'):
+                ver = item.split(':')[1].strip()
+                break
+            
+        if(ver == None):
+            msg = 'can''t find version information'
+            self.logger.debug(msg)
+            raise Exception(msg)
+        
+        if(ver == '1'):
+            return self.parsing_v1(msg)
+        
+        msg = f'This version:({ver}) is not support'
+        self.logger.debug(msg)
+        raise Exception(msg)
+            
+    def parsing_v1(self, msg):
+        """
+        {
+            'AUTO':True,
+            'EXCHANGE':'upbit',
+            'COIN':'BTC',
+            'MARKET':'KRW',
+            'TYPE':'LIMIT',
+            'SIDE':'BUY',
+            'RULE':'TSB',
+            'TSB-MINUTE':'15m'
+            'TSB-VER':'3.3'
+        }
+        """
+        result = {}
+        for item in msg:
+            try:
+                item = item.strip() #공백 제거
+                item = item.split(':')
+                result[item[0].lower()]=item[1].upper()
+            except Exception as exp:
+                self.logger.warning('message parsing error : {}'.format(exp))
+                raise exp
+            
+        c = result['ver']
+        c = result['auto']
+        c = result['exchange']
+        c = result['coin']
+        c = result['market']
+        if(result.get('type') is None):
+            result['type'] = 'limit'
+        c = result['type']
+        c = result['side']
+        c = result['rule']
+        
+        return result
+        
     def check_signal(self, msg):
         """
         세번째 buy일 경우 false
         그 외 true
-        """
-        text = msg.split(' ')
         
-        command = text[0].strip().upper()
-        exchange_name = text[1].strip().upper()
-        market = text[2].strip().upper()
-        coin_name = text[3].strip().upper()
+        msg 포멧은 다음과 같다
+        헤더간 구분은 #을 사용한다
+        헤더와 데이터는 :를 사용하여 구분한다
+        대소문자를 가리지 않는다.
+        커스텀 헤더가 붙을 수 있다
+        
+        #AUTO:0
+        #VER:1
+        #EXCHANGE:upbit
+        #coin:btc
+        #market:krw
+        #type:limit
+        #side:buy
+        #rule:tsb
+        --------아래로는 전략에 따른 커스텀 헤더-------------
+        #tsb-minute:15
+        """
+        order = self.parsing(msg)
+        
+        command = order['side'].upper()
+        exchange_name = order['exchange']
+        market = order['market']
+        coin_name = order['coin']
         
         exchange = self.get_exchange(exchange_name)
         if(exchange is None):
@@ -95,7 +173,6 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
             return False, msg
             
         fee = exchange.get_fee('krw')
-        #항목 아래 함수가 자주 호출되면 block 걸린다
         symbol = '{}/{}'.format(coin_name, market)
         price = exchange.get_last_price(symbol)
         
@@ -115,10 +192,12 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
             if(buy_cnt >= 2):
                 return False, '{}\n평균 구매 단가: {:,.2f}\n현재 2회 구매 중입니다\n추가 매입하지 않음\n'.format(coin_name, ((b0 + b1) / 2))
             
+            price_msg = '{}\n{}\n'.format('-'*70, symbol)
+            
             if(buy_cnt == 0):
-                price_msg = '1회차 구매 단가: {:,.2f}'.format(price)
+                price_msg += '1회차 구매 단가: {:,.2f}'.format(price)
             elif(buy_cnt == 1):
-                price_msg = '1회차 구매 단가: {:,.2f}\n'.format(b0)
+                price_msg += '1회차 구매 단가: {:,.2f}\n'.format(b0)
                 price_msg += '2회차 구매 단가: {:,.2f}\n'.format(price)
                 price_msg += '평균 구매 단가: {:,.2f}\n'.format((b0 + price) / 2)
             
@@ -145,7 +224,8 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
             profit_percent = ((sell_price - buy_price)  * 100) / buy_price - fee * 2 * 100
             accumulate_profit = accumulate_profit + profit_percent
             
-            price_msg = '매수 단가 : {:,.2f}\n'.format(buy_price)
+            price_msg = '{}\n'.format(symbol)
+            price_msg += '매수 단가 : {:,.2f}\n'.format(buy_price)
             price_msg += '매도 단가 : {:,.2f}\n'.format(sell_price)
             price_msg += '매매 수익률 : {:.2f}%\n'.format(profit_percent)
             price_msg += '누적 수익률 : {:.2f}%\n'.format(accumulate_profit)
@@ -154,12 +234,16 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
             
         self.save_state(exchange_name, coin_name, market, 'buy', buy_cnt, price, self.trading_cnt, accumulate_profit)
         
-        command = text[0].strip().upper()
-        exchange_name = text[1].strip().upper()
-        market = text[2].strip().upper()
-        coin_name = text[3].strip().upper()
+        ver = order['ver']
+        __type = order['type']
+        rule = order['rule']
+        tsb1 = order['tsb-minute']
+        tsb_ver = order['tsb-ver']
+        order['price'] = price
         
-        message = f'{command} {exchange_name} {market} {coin_name} {price} 100%\n'
+        #나중에 Q를 사용하여 메시지를 전달할 땐 order 구조체를 json 타입으로 전달한다
+        #build message for other TSB Slave bot
+        message = f'#AUTO:0 #VER:{ver} #EXCHANGE:{exchange_name} #SIDE:{command} #TYPE:{__type} #COIN:{coin_name} #MARKET:{market} #PRICE:{price} #AMOUNT:100% #RULE:{rule} #TSB-MINUTE:{tsb1} #TSB-VER:{tsb_ver}\n'
         message += price_msg 
         
         return True, message
@@ -263,8 +347,11 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         self.sched = BackgroundScheduler()
         self.sched.start()
         
-        self.report_every_time()
-        self.report_daily_report()
+        try:
+            self.report_every_time()
+            self.report_daily_report()
+        except Exception as exp:
+            self.logger.warning('exception in to print report : {}'.format(exp))
         
         # self.sched.add_job(self.report_every_time, 'cron', second='00', id='test')
         self.sched.add_job(self.report_every_time, 'cron', minute='00', id='report_every_time')
@@ -346,7 +433,7 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
             total_acc += acc
             coin_msg += '{} : {:.2f}%\n'.format(coin.upper(), acc)
             
-
+        
         #날짜는 그냥 쓰도록 한다. 시스템 시간은 UTC 기준인데 한국 시간은 -9시간 해야한다
         #보고서가 출력되는 시간은 매일밤 자정이다
         #UTC시간으로 날짜가 변경되기 전이다.
@@ -362,7 +449,7 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         self.logger.debug('daily report :\n{}'.format(message))
         self.messenger_q.send('{}'.format(message))
         pass
-   
+        
 if __name__ == '__main__':
     print('strategy test')
     
@@ -383,6 +470,7 @@ if __name__ == '__main__':
     logging.getLogger("telegram").setLevel(logging.WARNING)
     logging.getLogger("exchangem").setLevel(logging.ERROR)
     logging.getLogger("exchange").setLevel(logging.ERROR)
+    logging.getLogger("websockets").setLevel(logging.WARNING)
     
     
     s='TradingView Alert: sell upbit krw btc 0% 100%'
@@ -406,11 +494,11 @@ if __name__ == '__main__':
     # if(do):
     #     print('1 do sell : {}'.format(add_msg))
     
-    # print('한번 구매 테스트')
-    # msg ='buy upbit krw btc 0% 100%'
-    # do, add_msg = test.check_signal(msg)
-    # if(do):
-    #     print('1 do buy : {}'.format(add_msg))
+    print('한번 구매 테스트')
+    msg ='#AUTO:0#COIN:NEO#MARKET:KRW#SIDE:BUY#TSB-MINUTE:45#TSB-VER:3.14#VER:1#RULE:TSB#EXCHANGE:UPBIT'
+    do, add_msg = test.check_signal(msg)
+    if(do):
+        print('1 do buy : {}'.format(add_msg))
     # msg ='sell upbit krw btc 0% 100%'
     # do, add_msg = test.check_signal(msg)
     # if(do):
