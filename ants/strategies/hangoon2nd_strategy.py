@@ -224,7 +224,8 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
             profit_percent = ((sell_price - buy_price)  * 100) / buy_price - fee * 2 * 100
             accumulate_profit = accumulate_profit + profit_percent
             
-            price_msg = '{}\n'.format(symbol)
+            price_msg = '{}\n{}\n'.format('-'*70, symbol)
+            price_msg += '{}\n'.format(symbol)
             price_msg += '매수 단가 : {:,.2f}\n'.format(buy_price)
             price_msg += '매도 단가 : {:,.2f}\n'.format(sell_price)
             price_msg += '매매 수익률 : {:.2f}%\n'.format(profit_percent)
