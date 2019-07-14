@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import sentry_sdk
+
 import prj_path
 import signal
 import alogger
@@ -11,7 +13,9 @@ from env_server import Enviroments
 from worker import Worker
 
 if __name__ == "__main__":
+    sentry_sdk.init("https://2cdb19291410469cbec38e3af915bcc5@sentry.io/1502212")
     logger = logging.getLogger('ANT_MAIN')
+    
     env = Enviroments()
     env.load_config()
     
