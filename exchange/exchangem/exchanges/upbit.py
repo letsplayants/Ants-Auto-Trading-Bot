@@ -347,7 +347,8 @@ class Upbit(Base):
         
         return res.json()
     
-    def get_trading_list(self, uuids):
+    # def get_trading_list(self, uuids):
+    def fetch_orders_by_uuids(self, uuids):
         #한번에 요청할 수 있는 uuid의 한계는 56개 이다.
         #그러므로 uuid가 56개를 넘길 땐 나눠준다
         unknow_state_uuids = uuids
@@ -500,7 +501,7 @@ if __name__ == '__main__':
             'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', 'd914abb5-de18-497c-a34a-95e66edece8d', '0b82f80a-5889-408d-8c63-7257622927e8'] #14 * 4 = 56개
             
     uuids = ['0b82f80a-5889-408d-8c63-7257622927e8', 'd914abb5-de18-497c-a34a-95e66edece8d']
-    order_list = up.get_trading_list(uuids=uuids)
+    order_list = up.fetch_orders_by_uuids(uuids=uuids)
     print('order_list ')
     
     print(order_list)

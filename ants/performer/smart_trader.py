@@ -17,9 +17,20 @@ class SmartTrader:
     def add_exchange(self, name, exchange):
         self.exchanges[name] = exchange
         
+    def get_order_detail(self, exchange, order_id):
+        exchange = self.exchanges.get(exchange)
+        return exchange.get_private_orders_detail(order_id)
+        
     def get_private_orders(self, exchange):
         exchange = self.exchanges.get(exchange)
         return exchange.get_private_orders()
+    
+    def fetch_orders_by_uuids(self, exchange, uuids):
+        if(uuids is None or len(uuids) == 0):
+            return None
+            
+        exchange = self.exchanges.get(exchange)
+        return exchange.fetch_orders_by_uuids(uuids)
     
     def trading(self, exchange_name, market, action, coin_name, price=None, amount=None, etc={}):
         """
@@ -36,6 +47,7 @@ class SmartTrader:
             self.logger.warning('{} has not market : {}'.format(exchange, market))
             return None
 
+        action = action.upper()
         self.logger.info('Try Action {} {}/{} {}'.format(exchange_name, coin_name, market, action))
         if(action == 'BUY'):
             #TODO seed_money 체크하는 루틴은 왜 여기있는거지? _buy 함수에 포함되는게 맞지 않나???
@@ -56,6 +68,7 @@ class SmartTrader:
         return ret
     
     def check_percent(self, exchange, seed_money, req_sm):
+        req_sm = str(req_sm)
         if(req_sm.count('%') != 0):
             percent = req_sm.split('%')[0]
             percent = int(percent)
@@ -82,8 +95,9 @@ class SmartTrader:
         last_price = exchange.decimal_to_precision(exchange.get_last_price(symbol))
         
         if(price == None):
-            price = last_price
+            price = str(last_price)
         
+        price = str(price)
         if(price.count('%') != 0):
             percent = price.split('%')[0]
             percent = int(percent)
@@ -122,8 +136,10 @@ class SmartTrader:
         #판매 단가가 너무 낮은지 체크
         last_price = exchange.decimal_to_precision(exchange.get_last_price(symbol))
         if(price == None):
-            price = last_price
-            
+            price = str(last_price)
+        
+        price = str(price)   
+        
         if(price.count('%') != 0):
             percent = price.split('%')[0]
             percent = int(percent)
@@ -234,7 +250,7 @@ class SmartTrader:
     
     def cancel_order(self, exchange_name, id):
         exchange = self.exchanges.get(exchange_name)
-        exchange.cancel_private_order(id)
+        return exchange.cancel_private_order(id)
         
     
 if __name__ == '__main__':

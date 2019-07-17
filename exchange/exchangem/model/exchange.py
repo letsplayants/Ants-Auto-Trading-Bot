@@ -111,6 +111,10 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
     def get_balance(self, target):
         pass
     
+    @abc.abstractmethod
+    def fetch_orders_by_uuids(self, uuids):
+        pass
+    
     def create_order(self, symbol, type, side, amount, price, params, etc):
         prefix_str = ''
         d_amount = self.decimal_to_precision(amount)

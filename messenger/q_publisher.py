@@ -13,7 +13,7 @@ class MQPublisher(object):
     EXCHANGE_TYPE = 'fanout'
     PUBLISH_INTERVAL = 3600
     QUEUE = ''
-    ROUTING_KEY = 'example.text'
+    ROUTING_KEY = ''
 
     def __init__(self, exchange_name):
         amqp_url = 'amqp://guest:guest@localhost:5672/%2F?connection_attempts=3&heartbeat=3600'

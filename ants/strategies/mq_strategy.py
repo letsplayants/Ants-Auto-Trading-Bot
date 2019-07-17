@@ -71,6 +71,7 @@ class MQStrategy(ants.strategies.strategy.StrategyBase, Observer):
             coin_name = msg['coin']
             price = msg['price']
             amount = msg['seed']
+            rule = msg['rule']
             etc = msg['etc']
         except Exception as exp:
             self.logger.warning('msg parsing error : {}'.format(exp))

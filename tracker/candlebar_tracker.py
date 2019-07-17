@@ -2,6 +2,8 @@
 import logging
 import threading
 import time
+import traceback
+import sys
 
 import time
 from datetime import datetime
@@ -110,13 +112,17 @@ class CandleBarTracker(BaseClass, metaclass=Singleton):
             try:
                 item[0](item[1])
             except Exception as exp:
-                self.logger.warning('Exception in schedule job : \t{}'.format(exp))
+                err_str = traceback.format_exc()
+                self.logger.warning('Exception in schedule job : \t{}\n{}'.format(exp, err_str))
+                traceback.print_tb(exp.__traceback__)
         
         for item in self.monitoring_list[key]['close']:
             try:
                 item[0](item[1])
             except Exception as exp:
-                self.logger.warning('Exception in schedule job : \t{}'.format(exp))
+                err_str = traceback.format_exc()
+                self.logger.warning('Exception in schedule job : \t{}\n{}'.format(exp, err_str))
+                
 
     def add_event(self, time_minitue, isopen, callback, args):
         """
@@ -201,7 +207,9 @@ if __name__ == '__main__':
     ct = CandleBarTracker()
     
     def myFunc(args):
+        # Working with local variables only is thread safe.
         print('call myFunc - {}'.format(args))
+        raise Exception('e')
         
     from exchangem.model.order_info import OrderInfo
     item = OrderInfo()

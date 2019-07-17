@@ -9,12 +9,14 @@ exchanges = basePath + '/exchange'
 messenger = basePath + '/messenger'
 enviroments = basePath + '/enviroments'
 database = basePath + '/database'
+tracker = basePath + '/tracker'
 
 sys.path.insert(0, basePath)
 sys.path.append(exchanges)
 sys.path.append(messenger)
 sys.path.append(enviroments)
 sys.path.append(database)
+sys.path.append(tracker)
 
 logger = logging.getLogger(__name__)
 

@@ -61,12 +61,18 @@ class QsystemEnv():
     def get_database_q(self):
         return 'database.{}'.format(self.enviroments.messenger['bot_id'])
     
+    def set(self, key, val):
+        self.qlist[key] = val
+        
+    def get(self, key):
+        return self.qlist.get(key)
+
     def set_value(self, v):
         if(v.get('qlist') is None):
             nq = {}
             
         self.qlist = v.get('qlist')
-
+        
 if __name__ == '__main__':
     print('Enviroments test')
     
@@ -81,7 +87,7 @@ if __name__ == '__main__':
     from env_server import Enviroments
     path = os.path.dirname(__file__) + '/../configs/ant_auto.conf'
     Enviroments().load_config(path)
-            
+    
     tel_id='@lemy_bot'
     messenger_q = {
         'telegrma_id': tel_id,
@@ -91,7 +97,6 @@ if __name__ == '__main__':
     
     get_q = Enviroments().qsystem['messenger']
     print('messenger_q:{}'.format(get_q['telegrma_id']))
-    
     
     Enviroments().qsystem['db'] = 'database'
     # print('qlist : {}'.format(Enviroments().qsystem.show_list()))
@@ -111,3 +116,8 @@ if __name__ == '__main__':
         
     print(Enviroments().qsystem.get_quicktrading_q())    
     # Enviroments().save_config()
+    
+    Enviroments().qsystem.set('tsb.314.45', 'tsb.314.45')
+    print(Enviroments().qsystem.get('tsb.314.45'))
+    # Enviroments().save_config()
+    

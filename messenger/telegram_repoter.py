@@ -45,11 +45,8 @@ class TelegramRepoter():
             return
         
         self.bot_error_cnt = 0
+        self.conf['bot_id'] = self.bot.get_me()['username']
         bot_id = self.conf['bot_id']
-        if(bot_id is None or bot_id is ''):
-            self.conf['bot_id'] = self.bot.get_me()['username']
-            bot_id = self.conf['bot_id']
-            Enviroments().save_config()
         
         ck = self.conf.get('use_custom_keyboard')
         if(ck is None):
@@ -57,10 +54,10 @@ class TelegramRepoter():
         else:
             self.custom_keyboard = False
         
-        
-        self.exchange_name = Enviroments().qsystem.get_quicktrading_q()
+        self.publisher_list = {}
+        self.basic_queue_exchange_name = Enviroments().qsystem.get_quicktrading_q()
         self.subscriber_name = Enviroments().qsystem.get_telegram_messenge_q()
-        self.publisher = MQPublisher(self.exchange_name)
+        self.publisher = MQPublisher(self.basic_queue_exchange_name)
         self.subscriber = MQReceiver(self.subscriber_name, self.sbuscribe_message)
         self.subscriber.start()
         
@@ -72,6 +69,8 @@ class TelegramRepoter():
         self.run_listener()
         # self.remove_kdb()
         self.make_menu_keyboard()
+        
+        Enviroments().save_config()
         
     def save_config(self):
         Enviroments().messenger = self.conf
@@ -201,9 +200,14 @@ class TelegramRepoter():
                 self.menu_stack.append(item)
                 break;
         
+        is_auto_trading = False
         self.logger.debug('fined item : {}'.format(menu_item))
         if(menu_item is None):
-            self.check_quick_trading(message)
+            if(message['text'].find('#AUTO') == 0):
+                is_auto_trading = self.check_auto_trading(message)
+            
+            if(not is_auto_trading):
+                self.check_quick_trading(message)
             return
         
         # 방법1. 동작안함. dp.restart 해야하는데, stop이후 start하면 뻗음.. 설령 stop이 된다고 하더라도 내부적으로 thread라 join되는데 기다리는데 시간이 많이 걸림
@@ -224,6 +228,115 @@ class TelegramRepoter():
         menu_item.run()
         # menu_item.parsering(update, text)
         
+    def parsing(self, msg):
+        msg = msg.upper().split('#')
+        msg = msg[1:]
+        self.logger.debug(msg)
+        
+        ver = None
+        for item in msg:
+            ver = item.split(':')[0].upper().strip()
+            if(ver == 'VER'):
+                ver = item.split(':')[1].strip()
+                break
+            
+        if(ver == None):
+            msg = 'can''t find version information'
+            self.logger.debug(msg)
+            raise Exception(msg)
+        
+        if(ver == '1'):
+            return self.parsing_v1(msg)
+        
+        msg = f'This version:({ver}) is not support'
+        self.logger.debug(msg)
+        raise Exception(msg)
+            
+    def parsing_v1(self, msg):
+        """
+        {
+            'AUTO':True,
+            'EXCHANGE':'upbit',
+            'COIN':'BTC',
+            'MARKET':'KRW',
+            'TYPE':'LIMIT',
+            'SIDE':'BUY',
+            'RULE':'TSB',
+            'TSB-MINUTE':'15m'
+            'TSB-VER':'3.3'
+        }
+        """
+        result = {}
+        for item in msg:
+            try:
+                item = item.strip() #공백 제거
+                item = item.split(':')
+                result[item[0].lower()]=item[1].upper()
+            except Exception as exp:
+                self.logger.warning('message parsing error : {}'.format(exp))
+                raise exp
+            
+        c = result['ver']
+        c = result['auto']
+        c = result['exchange']
+        c = result['coin']
+        c = result['market']
+        if(result.get('type') is None):
+            result['type'] = 'limit'
+        c = result['type']
+        c = result['side']
+        c = result['rule']
+        
+        return result
+        
+    def check_auto_trading(self, message):
+        #이중 체크라 필요없지만 다른 곳에서 이 함수를 호출 할 수 있으므로.
+        if(not self.check_authorized(message['from'])):
+            return
+        
+        self.logger.debug('check_auto_trading got message : {}'.format(message))
+        try:
+            split_key = '-'*70
+            msg = message['text']
+            msg=msg[:msg.find(split_key)]
+            order = self.parsing(msg)
+        except Exception as exp:
+            self.logger.debug('check_auto_trading header paring Exception : {}'.format(exp))
+            self.send_message('잘못된 메시지를 받았습니다\n{}'.format(exp))
+            return
+        
+        try:
+            self.logger.debug('check auto trading msg : {}'.format(order))
+            etc = order.get('etc')
+            if(etc is None):
+                etc = {}
+            etc['from'] = eval(str(message['from']))
+            order['etc'] = etc
+            
+            key = order['rule'] #rule name을 key로 가진다.
+            if(Enviroments().qsystem.get(key) == None):
+                value = 'tsb.trading.{}'.format(self.conf['bot_id'])
+                Enviroments().qsystem[key] = value
+                Enviroments().save_config()
+            q_name = Enviroments().qsystem[key]
+            
+            # rule 이름으로 된 큐로 메시지를 날려준다
+            self.publish_to_q(q_name, order)
+        except Exception as exp:
+            self.logger.debug('check_auto_trading body paring Exception : {}'.format(exp))
+            return
+        
+        self.send_message('입력된 자동매매를 시도합니다')
+        return True
+    
+    def publish_to_q(self, name, msg):
+        if(self.publisher_list.get(name) is None):
+            self.publisher_list[name] = MQPublisher(name)
+            pub.send('first message. this message will ignore')
+        
+        pub = self.publisher_list[name]
+        pub.send(msg)
+    
     def check_quick_trading(self, message):
         #이중 체크라 필요없지만 다른 곳에서 이 함수를 호출 할 수 있으므로.
         if(not self.check_authorized(message['from'])):
@@ -366,7 +479,7 @@ class TelegramRepoter():
                 self.logger.error('Can''t send message to telegram : {}'.format(msg))
                 raise Exception(exp)
             
-            time.sleep(5)    
+            time.sleep(5)
             self.bot = telegram.Bot(token=self.conf["bot_token"])
             self.send_message(msg)
             
