@@ -354,7 +354,7 @@ class TSBTradingStrategy(ants.strategies.strategy.StrategyBase, Observer):
                             market = item['market'].split('-')[0]
                             coin = item['market'].split('-')[1]
                             action = 'buy' if item['side'] == 'bid' else 'sell'
-                            now_price = self.trader.exchanges[exchange_name].get_last_price('{}/{}'.format(coin, market)) * 2
+                            now_price = self.trader.exchanges[exchange_name].get_last_price('{}/{}'.format(coin, market))
                             amount = '100%'
                             etc = request_order['etc']
                             
