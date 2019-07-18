@@ -203,11 +203,11 @@ class TelegramRepoter():
         is_auto_trading = False
         self.logger.debug('fined item : {}'.format(menu_item))
         if(menu_item is None):
-            if(message['text'].find('#AUTO') == 0):
+            if(message['text'].find('#AUTO') == 0): #봇에 의한 자동 매매인지 확인
                 is_auto_trading = self.check_auto_trading(message)
             
             if(not is_auto_trading):
-                self.check_quick_trading(message)
+                self.check_quick_trading(message) #유저에 의해 입력된 수동 매매
             return
         
         # 방법1. 동작안함. dp.restart 해야하는데, stop이후 start하면 뻗음.. 설령 stop이 된다고 하더라도 내부적으로 thread라 join되는데 기다리는데 시간이 많이 걸림
@@ -366,6 +366,7 @@ class TelegramRepoter():
                 ret['coin'] = text[3].strip().upper()
                 ret['price'] = text[4].strip()
                 ret['seed'] = text[5].strip()
+                ret['rule'] = None
                 ret['etc'] = {}
                 ret['etc']['from'] = eval(str(message['from']))
             else:

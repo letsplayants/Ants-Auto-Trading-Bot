@@ -36,16 +36,19 @@ class SmartTrader:
         """
         사용가능한 금액에 맞춰서 개수를 구매한다
         """
+        self.logger.debug('trading with {} {} {} {}'.format(exchange_name, market, action, coin_name))
         exchange = self.exchanges.get(exchange_name)
         if(exchange == None):
-            self.logger.warning('{} is not support'.format(exchange))
-            return None
+            msg = '{} is not support'.format(exchange)
+            self.logger.warning(msg)
+            return msg, None
         self.logger.debug('select exchange : {}'.format(exchange))
         
         symbol = coin_name + '/' + market #'BTC/KRW'
         if(not exchange.has_market(symbol)):
-            self.logger.warning('{} has not market : {}'.format(exchange, market))
-            return None
+            msg = '{} has not market : {}'.format(exchange, symbol)
+            self.logger.warning(msg)
+            return msg, None
 
         action = action.upper()
         self.logger.info('Try Action {} {}/{} {}'.format(exchange_name, coin_name, market, action))
@@ -62,8 +65,9 @@ class SmartTrader:
             ret = self._sell(exchange, market, coin_name, price, amount, etc)
         
         if(ret is None):
-            self.logger.warning('action fail')
-            return None
+            msg = 'action fail'
+            self.logger.warning(msg)
+            return msg, None
         
         return ret
     

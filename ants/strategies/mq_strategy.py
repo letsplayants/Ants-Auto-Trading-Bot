@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+import traceback
 
 import ants.strategies.strategy
 from ants.provider.observers import Observer
@@ -79,12 +80,6 @@ class MQStrategy(ants.strategies.strategy.StrategyBase, Observer):
             
         symbol = coin_name + '/' + market
         self.logger.info('Try Action {} {}/{} {}'.format(exchange, coin_name, market, command))
-        # try:
-        #     availabel_size = self.trader.get_balance(exchange, coin_name, market, False)
-        # except Exception as exp:
-        #     self.logger.warning('Trading was failed : {}'.format(exp))
-        #     return
-        
         try:
             message, order_info = self.trader.trading(exchange, market, command, coin_name, price, amount, etc)
             #results는 ['msg']와 ['order_info']로 나눠져서 들어온다
@@ -97,13 +92,15 @@ class MQStrategy(ants.strategies.strategy.StrategyBase, Observer):
             self.logger.debug('trading result : \n{}\n{}'.format(message, order_info))
         except Exception as exp:
             self.messenger_q.send(str(exp))
+            err_str = traceback.format_exc()
             self.logger.warning('Trading was failed : {}'.format(exp))
+            self.logger.debug(f'{err_str}')
             return
             
         if(order_info == None):
             #트레이딩 실패
             self.logger.warning('Trading was failed')
-            self.messenger_q.send('실패 : 요청하신 내용을 실패하였습니다.\n{}'.format(order_info))
+            self.messenger_q.send('실패 : 요청하신 내용을 실패하였습니다.\n{}'.format(message))
             return
         
         self.logger.info('Action Done {}'.format(order_info))
