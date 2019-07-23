@@ -282,9 +282,9 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
     # def __coin_availabel_size(self, coin_name):
     #     ddddd
     
-    def get_availabel_size(self, coin_name, is_buy=True):
+    def get_availabel_size(self, coin_name, is_buy=True, want_cached=True):
         cached, data = self.cache.get_cache(coin_name)
-        if(cached):
+        if(cached and not want_cached):
             return data
         
         """

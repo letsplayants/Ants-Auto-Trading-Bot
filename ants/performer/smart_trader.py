@@ -163,7 +163,7 @@ class SmartTrader:
         if(price == None):
             price = exchange.get_last_price(symbol)
         
-        free_amount = exchange.get_availabel_size(coin_name, False)
+        free_amount = exchange.get_availabel_size(coin_name, False, False)
         if(amount == None):
             amount = free_amount
         

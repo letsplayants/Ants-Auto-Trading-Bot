@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 
-
+import traceback
 import pytz
 import threading
 import sched, time
@@ -312,80 +312,99 @@ class TSBTradingStrategy(ants.strategies.strategy.StrategyBase, Observer):
     
     def __sell_run__(self):
         while self.sell_loop:
-            time.sleep(self.sell_interval)
-            #지정된 시간에 맞는 모든 오더를 한번에 체크한다
-            self.logger.debug('do sell_batch_job')
-            order_list = self.sell_list
-            if(order_list is None):
-                self.logger.debug('job is none')
-                continue
+            try:
             
-            order_id_list = {
-                'UPBIT':[],
-                'BITHUMB':[],
-                'BINANCE':[]
-                }
-            for order_id in order_list:
-                order = order_list[order_id]
-                self.logger.debug(f'order : {order}')
-                # order : {'symbol': 'BTC/KRW', 'id': 'bc4c4e36-2e10-4db8-98f6-c941b1e82287', 'side': 'buy', 'price': 6447000.0, 'amount': 0.01550333, 'status': 'open', 'remaining': 0.01550333, 'ts_create': 1563257248000, 'ts_updated': None, 'exchange': 'upbit', 'from_who': {'id': -1001207026903, 'type': 'channel', 'title': '개발테스트용'}, 'etc': {'request': {'auto': '0', 'ver': '1', 'exchange': 'UPBIT', 'side': 'BUY', 'type': 'LIMIT', 'coin': 'BTC', 'market': 'KRW', 'price': '-50%', 'amount': '100%', 'rule': 'TSB', 'tsb-minute': '1', 'tsb-ver': '3.14', 'etc': {'from': {'id': -1001207026903, 'type': 'channel', 'title': '개발테스트용'}}}}}
-                exchange = order['etc']['request']['exchange'].upper()
-                order_id_list[exchange].append(order['id'])
-                
-            self.logger.debug('sell order id list : {}'.format(order_id_list))
-            
-            # 대규모 오더 조회를 한 후
-            # 거래소별로 주문조회
-            for exchange_name in order_id_list:
-                self.logger.debug(f'fetch order details from {exchange_name}')
-                details = self.trader.fetch_orders_by_uuids(exchange_name, order_id_list[exchange_name])
-                self.logger.debug('details : {}'.format(details))
-                if(details is None):
+                time.sleep(self.sell_interval)
+                #지정된 시간에 맞는 모든 오더를 한번에 체크한다
+                self.logger.debug('do sell_batch_job')
+                order_list = self.sell_list
+                if(order_list is None):
+                    self.logger.debug('job is none')
                     continue
                 
-                for item in details:
-                    # details : [{'uuid': 'b64de551-2fa6-4ff3-984e-6f4ea0863333', 'side': 'bid', 'ord_type': 'limit', 'price': '6417000.0', 'state': 'wait', 'market': 'KRW-BTC', 'created_at': '2019-07-16T16:05:11+09:00', 'volume': '0.01557581', 'remaining_volume': '0.01557581', 'reserved_fee': '49.974986385', 'remaining_fee': '49.974986385', 'paid_fee': '0.0', 'locked': '99999.947756385', 'executed_volume': '0.0', 'trades_count': 0}]
-                    if(item['state'] == 'wait'): # 미완료일 경우
-                        if(item['side'] == 'ask'): # SELL일 땐 시장가 매도
-                            self.logger.debug('reorder again : {}\nrequest : {}'.format(item, self.sell_list[item['uuid']]))
-                            #현재 가격과 주문 가격을 비교 후 현재 가격이 주문 가격 보다 더 낮을 경우 기존 주문을 취소 후 재주문한다
-                            request_order = self.sell_list[item['uuid']]
-                            order_price = float(item['price'])
-                            market = item['market'].split('-')[0]
-                            coin = item['market'].split('-')[1]
-                            action = 'buy' if item['side'] == 'bid' else 'sell'
-                            now_price = self.trader.exchanges[exchange_name].get_last_price('{}/{}'.format(coin, market))
-                            amount = '100%'
-                            etc = request_order['etc']
-                            
-                            # if(order_price > now_price): #테스트때문에 막아둠. 테스트 완료 후 풀어야함
-                            # TODO 남은 물량이 얼만지 확인 후 남은 물량 만큼 취소 한다 2019-07-16 현재는 남은 전량 다 판매
-                            # 기존 주문 취소 후 
-                            ret = self.trader.cancel_order(exchange_name, item['uuid'])
-                            #주문 실패시 후속 처리 해야함
-                            # 시장가 매도
-                            message, order_info = self.trader.trading(exchange_name, market, action, coin, now_price, amount, etc)
-                            order_info['etc']['request'] = request_order
-                            del self.sell_list[item['uuid']]
-                            self.add_to_fast_sell_list(order_info)
-                                
-                            self.logger.debug('reorder : {}'.format(ret))
-                        else:
-                            self.logger.error('{}\nthis case can not process'.format(item))
-                    elif (item['state'] == 'done'):
-                        self.logger.debug('{} was done'.format(item))
-                        del self.sell_list[item['uuid']]
-                    elif (item['state'] == 'cancel'):
-                        self.logger.debug('{} was cancel'.format(item))
-                        del self.sell_list[item['uuid']]
-                    else :
-                        self.logger.error('{}\nthis case can not process'.format(item))
+                order_id_list = {
+                    'UPBIT':[],
+                    'BITHUMB':[],
+                    'BINANCE':[]
+                    }
+                for order_id in order_list:
+                    order = order_list[order_id]
+                    self.logger.debug(f'order : {order}')
+                    # order : {'symbol': 'BTC/KRW', 'id': 'bc4c4e36-2e10-4db8-98f6-c941b1e82287', 'side': 'buy', 'price': 6447000.0, 'amount': 0.01550333, 'status': 'open', 'remaining': 0.01550333, 'ts_create': 1563257248000, 'ts_updated': None, 'exchange': 'upbit', 'from_who': {'id': -1001207026903, 'type': 'channel', 'title': '개발테스트용'}, 'etc': {'request': {'auto': '0', 'ver': '1', 'exchange': 'UPBIT', 'side': 'BUY', 'type': 'LIMIT', 'coin': 'BTC', 'market': 'KRW', 'price': '-50%', 'amount': '100%', 'rule': 'TSB', 'tsb-minute': '1', 'tsb-ver': '3.14', 'etc': {'from': {'id': -1001207026903, 'type': 'channel', 'title': '개발테스트용'}}}}}
+                    exchange = order['etc']['request']['exchange'].upper()
+                    order_id_list[exchange].append(order['id'])
                     
-            # self.logger.debug('order checking : {}'.format(detail))
-            # order checking : {'symbol': 'BTC/KRW', 'id': '69be9aff-656f-4870-b1f0-f438fc2b29a7', 'side': 'buy', 'price': 6453000.0, 'amount': 0.01548892, 'status': 'open', 'remaining': 0.01548892, 'ts_create': 1563243639000, 'ts_updated': None, 'exchange': 'upbit', 'from_who': 'unknow', 'etc': {'request': {'auto': '0', 'ver': '1', 'exchange': 'UPBIT', 'side': 'BUY', 'type': 'LIMIT', 'coin': 'BTC', 'market': 'KRW', 'price': '-50%', 'amount': '100%', 'rule': 'TSB', 'tsb-minute': '1', 'tsb-ver': '3.14', 'etc': {'from': {'id': -1001207026903, 'type': 'channel', 'title': '개발테스트용'}}}}}
-            # detail['status'] == 'open', 'wait','done', 'cancel'
-            pass
-            
+                self.logger.debug('sell order id list : {}'.format(order_id_list))
+                
+                # 대규모 오더 조회를 한 후
+                # 거래소별로 주문조회
+                for exchange_name in order_id_list:
+                    self.logger.debug(f'fetch order details from {exchange_name}')
+                    details = self.trader.fetch_orders_by_uuids(exchange_name, order_id_list[exchange_name])
+                    self.logger.debug('details : {}'.format(details))
+                    if(details is None):
+                        continue
+                    
+                    for item in details:
+                        # details : [{'uuid': 'b64de551-2fa6-4ff3-984e-6f4ea0863333', 'side': 'bid', 'ord_type': 'limit', 'price': '6417000.0', 'state': 'wait', 'market': 'KRW-BTC', 'created_at': '2019-07-16T16:05:11+09:00', 'volume': '0.01557581', 'remaining_volume': '0.01557581', 'reserved_fee': '49.974986385', 'remaining_fee': '49.974986385', 'paid_fee': '0.0', 'locked': '99999.947756385', 'executed_volume': '0.0', 'trades_count': 0}]
+                        if(item['state'] == 'wait'): # 미완료일 경우
+                            if(item['side'] == 'ask'): # SELL일 땐 시장가 매도
+                                self.logger.debug('reorder again : {}\nrequest : {}'.format(item, self.sell_list[item['uuid']]))
+                                #현재 가격과 주문 가격을 비교 후 현재 가격이 주문 가격 보다 더 낮을 경우 기존 주문을 취소 후 재주문한다
+                                request_order = self.sell_list[item['uuid']]
+                                order_price = float(item['price'])
+                                market = item['market'].split('-')[0]
+                                coin = item['market'].split('-')[1]
+                                action = 'buy' if item['side'] == 'bid' else 'sell'
+                                now_price = self.trader.exchanges[exchange_name].get_last_price('{}/{}'.format(coin, market))
+                                amount = '100%'
+                                etc = request_order['etc']
+                                
+                                if(order_price > now_price):#기존 오더 가격이랑 현시세랑 비교한다
+                                    # 기존 주문 취소 후 
+                                    # 남은 물량이 얼만지 확인 후 남은 물량 만큼 재주문 한다
+                                    remaining_volume = item['remaining_volume']
+                                    amount = remaining_volume   #남은 수량
+                                    
+                                    ret = self.trader.cancel_order(exchange_name, item['uuid'])
+                                    #TODO ret가 실패시 처리해야함
+                                    
+                                    # 주문 실패시 후속 처리 해야함
+                                    # 취소된 물량이 바로 사용가능한 물량으로 집계되지 않는다.
+                                    # 판매용 큐를 둬서 몇 판매를 따로 관리하도록 한다.
+                                    # 임시로 약 2초간의 텀을 둔 후 판매를 하도록 한다. 2019-07-22
+                                    # 약간의 시간 텀을 두고 판매를 시도한다
+                                    # 시장가 매도
+                                    time.sleep(5)
+                                    message, order_info = self.trader.trading(exchange_name, market, action, coin, now_price, amount, etc)
+                                    #order_info가 none일 경우 처리해야함
+                                    if(order_info is None): #주문 실패 시 다음 기회를 노린다
+                                        self.logger.warning(f'sell order retry after one minute cause : {message}')
+                                        continue
+                                        
+                                    order_info['etc']['request'] = request_order
+                                    del self.sell_list[item['uuid']]
+                                    self.add_to_fast_sell_list(order_info)
+                                        
+                                    self.logger.debug('reorder : {}'.format(ret))
+                            else:
+                                self.logger.error('{}\nthis case can not process'.format(item))
+                        elif (item['state'] == 'done'):
+                            self.logger.debug('{} was done'.format(item))
+                            del self.sell_list[item['uuid']]
+                        elif (item['state'] == 'cancel'):
+                            self.logger.debug('{} was cancel'.format(item))
+                            del self.sell_list[item['uuid']]
+                        else :
+                            self.logger.error('{}\nthis case can not process'.format(item))
+                        
+                # self.logger.debug('order checking : {}'.format(detail))
+                # order checking : {'symbol': 'BTC/KRW', 'id': '69be9aff-656f-4870-b1f0-f438fc2b29a7', 'side': 'buy', 'price': 6453000.0, 'amount': 0.01548892, 'status': 'open', 'remaining': 0.01548892, 'ts_create': 1563243639000, 'ts_updated': None, 'exchange': 'upbit', 'from_who': 'unknow', 'etc': {'request': {'auto': '0', 'ver': '1', 'exchange': 'UPBIT', 'side': 'BUY', 'type': 'LIMIT', 'coin': 'BTC', 'market': 'KRW', 'price': '-50%', 'amount': '100%', 'rule': 'TSB', 'tsb-minute': '1', 'tsb-ver': '3.14', 'etc': {'from': {'id': -1001207026903, 'type': 'channel', 'title': '개발테스트용'}}}}}
+                # detail['status'] == 'open', 'wait','done', 'cancel'
+                pass
+            except Exception as exp:
+                err_str = traceback.format_exc()
+                self.logger.error('Exception in sell_thread : \t{}\n{}'.format(exp, err_str))
             
     def add_to_fast_sell_list(self, order):
         self.sell_list[order['id']] = order
