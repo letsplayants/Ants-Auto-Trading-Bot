@@ -30,6 +30,8 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         self.logger.debug('telegram message q name : {}'.format(self.telegram_messenger_exchange_name))
         self.exchanges = {}
         self.trading_cnt = 0
+        self.each_coin_total_buy_cnt = {}
+        self.each_coin_total_sell_cnt = {}
         self.add_exchange('upbit', cUpbit())
 
     def add_exchange(self, name, exchange):
@@ -202,6 +204,9 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
                 price_msg += '평균 구매 단가: {:,.2f}\n'.format((b0 + price) / 2)
             
             buy_cnt += 1
+            total_cnt = self.each_coin_total_buy_cnt.get(coin_name.lower(), 0)
+            self.each_coin_total_buy_cnt[coin_name.lower()] = total_cnt + 1
+            
             self.trading_cnt += 1
             accumulate_profit = None
             
@@ -232,6 +237,8 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
             price_msg += '누적 수익률 : {:.2f}%\n'.format(accumulate_profit)
             
             buy_cnt = 0
+            total_cnt = self.each_coin_total_sell_cnt.get(coin_name.lower(), 0)
+            self.each_coin_total_sell_cnt[coin_name.lower()] = total_cnt + 1
             
         self.save_state(exchange_name, coin_name, market, 'buy', buy_cnt, price, self.trading_cnt, accumulate_profit)
         
@@ -266,7 +273,11 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
             record_market['accumulate'] = accumulate
         if(buy_cnt != 0):
             record_market[str(buy_cnt)] = price
+        
         record_market['buy_cnt'] = buy_cnt
+        record_market['buy_total_cnt'] = self.each_coin_total_buy_cnt.get(coin, 0)   #해당코인의 총 구매회수
+        record_market['sell_total_cnt'] = self.each_coin_total_sell_cnt.get(coin, 0)
+        
         record_coin[market] = record_market
         record_exchange[coin] = record_coin
         record_exchange['trading_cnt'] = trading_cnt
@@ -304,14 +315,13 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
             self.logger.warning('strategies storage not exist : {}'.format(exp))
             coin_list = []
         
-        #TODO 거래한 모든 코인의 수익율을 보여주고
-        #보유한 코인 목록만 리스팅 한다
+        #거래한 모든 코인의 수익율을 보여준다
         
         got_coin_list = []
         total_acc = 0
         buy_total_acc = 0
         trading_cnt = 0
-        message = '거래한 코인 목록 \n'
+        message = '매시간 보고서 \n'
         
         exchange = self.get_exchange(exchange_name)
         if(exchange is None):
@@ -328,13 +338,12 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
             if(buy_info is None):
                 continue
             
-            acc = float(buy_info.get('accumulate')) if buy_info.get('accumulate') is not None else 0
-            message += '{:8} {:6.2f}%\n'.format(coin.upper(), acc)
-                
+            acc = float(buy_info.get('accumulate', 0))
+            total_buy = buy_info.get('buy_total_cnt', 0)
+            total_sell = buy_info.get('sell_total_cnt', 0)
+            message += '{:8} 구매 : {:4}  판매 : {:4} 수익 : {:6.2f}%\n'.format(coin.upper(), total_buy, total_sell, acc)
             total_acc += acc
-            
         
-        message += '거래 횟수 : {}\n'.format(trading_cnt)
         message += '봇거래한 누적 수익률 : {:.2f}%\n'.format(total_acc)
         
         ttime = datetime.now(pytz.timezone('Asia/Seoul')) 
@@ -416,23 +425,24 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
             self.logger.warning('strategies storage not exist : {}'.format(exp))
             coin_list = []
         
-        trading_cnt = int(coin_list.get('trading_cnt')) if coin_list.get('trading_cnt') is not None else 0
+        trading_cnt = int(coin_list.get('trading_cnt', 0))
         
         got_coin_list = []
         total_acc = 0
         
-        coin_msg = '코인별 누적 결과 :\n'
+        coin_msg = '하루 거래 보고서 : {이름} {판매} {구매} {수익률}\n'
         for coin in coin_list:
             if(coin == 'trading_cnt'):
                 continue
             
             buy_info = coin_list.get(coin).get('krw')
             if(buy_info is not None):
-                acc = float(buy_info.get('accumulate')) if buy_info.get('accumulate') is not None else 0
-                # coin_list.get(coin)['krw']['accumulate'] = 0 #코인별 누적 수익률을 리셋하면 코인별 수익이 추적이 안된다
+                acc = float(buy_info.get('accumulate', 0))
+                total_buy = buy_info.get('buy_total_cnt', 0)
+                total_sell = buy_info.get('sell_total_cnt', 0)
                 
             total_acc += acc
-            coin_msg += '{} : {:.2f}%\n'.format(coin.upper(), acc)
+            coin_msg += '{} : {:4} {:4}    {:.2f}%\n'.format(coin.upper(), total_buy, total_sell, acc)
             
         
         #날짜는 그냥 쓰도록 한다. 시스템 시간은 UTC 기준인데 한국 시간은 -9시간 해야한다
@@ -443,7 +453,7 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
         nowDate = now.strftime('%Y-%m-%d')
         
         message = f'{nowDate}\n'
-        message += '거래 횟수 : {}\n'.format(trading_cnt)
+        message += '총 거래 횟수 : {}\n'.format(trading_cnt)
         message += '누적 거래 수익률 : {:.2f}%\n'.format(total_acc)
         message += coin_msg
         
@@ -496,30 +506,43 @@ if __name__ == '__main__':
     #     print('1 do sell : {}'.format(add_msg))
     
     print('한번 구매 테스트')
-    msg ='#AUTO:0#COIN:NEO#MARKET:KRW#SIDE:BUY#TSB-MINUTE:45#TSB-VER:3.14#VER:1#RULE:TSB#EXCHANGE:UPBIT'
+    msg ='#AUTO:0 #COIN:NEO #MARKET:KRW #SIDE:BUY #TSB-MINUTE:45#TSB-VER:3.14#VER:1#RULE:TSB#EXCHANGE:UPBIT'
     do, add_msg = test.check_signal(msg)
     if(do):
         print('1 do buy : {}'.format(add_msg))
-    # msg ='sell upbit krw btc 0% 100%'
-    # do, add_msg = test.check_signal(msg)
-    # if(do):
-    #     print('1 do sell : {}'.format(add_msg))
     
-    # print('두번 구매 테스트')
-    # msg ='buy upbit krw btc 0% 100%'
-    # do, add_msg = test.check_signal(msg)
-    # if(do):
-    #     print('1 do buy : {}\n\n'.format(add_msg))
+    msg ='#AUTO:0 #COIN:NEO #MARKET:KRW #SIDE:SELL #TSB-MINUTE:45#TSB-VER:3.14#VER:1#RULE:TSB#EXCHANGE:UPBIT'
+    do, add_msg = test.check_signal(msg)
+    if(do):
+     print('1 do sell : {}'.format(add_msg))
     
-    # msg ='buy upbit krw btc 0% 100%'
-    # do, add_msg = test.check_signal(msg)
-    # if(do):
-    #     print('2 do buy : {}\n\n'.format(add_msg))
+    print('한번 구매 테스트')
+    msg ='#AUTO:0 #COIN:IOTA #MARKET:KRW #SIDE:BUY #TSB-MINUTE:45#TSB-VER:3.14#VER:1#RULE:TSB#EXCHANGE:UPBIT'
+    do, add_msg = test.check_signal(msg)
+    if(do):
+        print('1 do buy : {}'.format(add_msg))
     
-    # msg ='sell upbit krw btc 0% 100%'
-    # do, add_msg = test.check_signal(msg)
-    # if(do):
-    #     print('1 do sell : {}'.format(add_msg))
+    msg ='#AUTO:0 #COIN:IOTA #MARKET:KRW #SIDE:SELL #TSB-MINUTE:45#TSB-VER:3.14#VER:1#RULE:TSB#EXCHANGE:UPBIT'
+    do, add_msg = test.check_signal(msg)
+    if(do):
+     print('1 do sell : {}'.format(add_msg))
+    
+    
+    print('두번 구매 테스트')
+    msg ='#AUTO:0 #COIN:BTC #MARKET:KRW #SIDE:BUY #TSB-MINUTE:45#TSB-VER:3.14#VER:1#RULE:TSB#EXCHANGE:UPBIT'
+    do, add_msg = test.check_signal(msg)
+    if(do):
+        print('1 do buy : {}\n\n'.format(add_msg))
+    
+    msg ='#AUTO:0 #COIN:BTC #MARKET:KRW #SIDE:BUY #TSB-MINUTE:45#TSB-VER:3.14#VER:1#RULE:TSB#EXCHANGE:UPBIT'
+    do, add_msg = test.check_signal(msg)
+    if(do):
+        print('2 do buy : {}\n\n'.format(add_msg))
+    
+    msg ='#AUTO:0 #COIN:BTC #MARKET:KRW #SIDE:SELL #TSB-MINUTE:45#TSB-VER:3.14#VER:1#RULE:TSB#EXCHANGE:UPBIT'
+    do, add_msg = test.check_signal(msg)
+    if(do):
+        print('1 do sell : {}'.format(add_msg))
     
     # print('세번 구매 테스트')
     # msg ='buy upbit krw btc 0% 100%'
