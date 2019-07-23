@@ -13,7 +13,8 @@ from env_server import Enviroments
 from worker import Worker
 
 if __name__ == "__main__":
-    sentry_sdk.init("https://2cdb19291410469cbec38e3af915bcc5@sentry.io/1502212")
+    # sentry_sdk.init("https://2cdb19291410469cbec38e3af915bcc5@sentry.io/1502212")
+    sentry_sdk.init("http://fcd237000f654835a24a428fcd076952@lemy0715dev.clserverer.com:15704/3")
     logger = logging.getLogger('ANT_MAIN')
     
     env = Enviroments()
