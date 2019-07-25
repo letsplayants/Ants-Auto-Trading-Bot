@@ -403,8 +403,10 @@ class Mail2QuickTradingStrategy(ants.strategies.strategy.StrategyBase, Observer)
             if(buy_info is None):
                 continue
             
-            if(buy_info.get('accumulate') != None):
-                buy_info['accumulate'] = 0
+            buy_info['accumulate'] = buy_info.get('accumulate', 0)
+            buy_info['buy_total_cnt'] = buy_info.get('buy_total_cnt', 0)
+            buy_info['sell_total_cnt'] = buy_info.get('sell_total_cnt', 0)
+                
         
         Enviroments().save_config()
         
