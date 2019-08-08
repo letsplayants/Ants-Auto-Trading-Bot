@@ -3,6 +3,7 @@
 
 from signal import signal, SIGINT, SIGTERM, SIGABRT
 
+import sentry_sdk
 import telegram
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
@@ -45,8 +46,11 @@ class TelegramRepoter():
             return
         
         self.bot_error_cnt = 0
-        self.conf['bot_id'] = self.bot.get_me()['username']
+        self.conf['bot_id'] = self.bot.get_me()['username'] #지금의 bot_id에 username이 들어간다. id가 들어가도록 바꿔야한다
         bot_id = self.conf['bot_id']
+        
+        sentry_sdk.configure_scope().set_tag('bot id', self.bot.get_me()['id'])
+        sentry_sdk.configure_scope().set_tag('bot name', bot_id) 
         
         ck = self.conf.get('use_custom_keyboard')
         if(ck is None):
@@ -131,7 +135,8 @@ class TelegramRepoter():
         result = str(result)
         
         git_id = self.escape_ansi(result)
-        self.logger.debug(git_id)
+        self.logger.debug(f'git commit id : {git_id}')
+        sentry_sdk.configure_scope().set_tag('git commit', git_id)
 
         welcome_message = '안녕하세요,\n\n버젼:\n{}\n동작 모드 : {}\n지원 거래소 : {}\n이 화면에서만 퀵매매가 동작합니다.'.format(
                             git_id,
@@ -145,8 +150,6 @@ class TelegramRepoter():
         else:
             reply_markup = None
             
-        print('*'*120)
-        print(f'{git_id[3]}')
         self.bot.send_message(chat_id=self.conf['chat_id'], text=welcome_message, reply_markup=reply_markup)
   
     def check_authorized(self, from_who):
