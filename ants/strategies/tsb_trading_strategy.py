@@ -468,17 +468,19 @@ if __name__ == '__main__':
         'exchange': 'UPBIT', 
         'side': 'SELL',
         'type': 'MARKET', 
-        'coin': 'XRP', 
+        'coin': 'ETH', 
         'market': 'KRW', 
-        'price': '10000', 
+        'price': '268400', 
         'amount': '100%',
-        'rule': 'TSB', 
+        'rule': 'TSB',
         'tsb-minute': '15', 
         'tsb-ver': '3.14',
         'etc':{
             'from' : 'test_code'
         }
     }
+    #{'auto': '0', 'ver': '1', 'exchange': 'UPBIT', 'side': 'BUY', 'type': 'LIMIT', 'coin': 'XRP', 'market': 'KRW', 'price': '268400.0', 'amount': '100%', 'rule': 'TSB', 'tsb-minute': '15', 'tsb-ver': '3.3'}
+
     tsb_trading.update(msg)
     
     # 지정가 구매 테스트

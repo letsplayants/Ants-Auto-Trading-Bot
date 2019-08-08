@@ -99,7 +99,12 @@ class SmartTrader:
         if (want_market_price):
             self.logger.info('_buy by market price - amount: {}'.format(amount))
             try:
-                amount = (float)(amount)
+                #지정가 일 때 price는 개당 단가를 의미하지만
+                #시장가 매매일 때 price는 구매하려는 금액을 의미한다
+                #파라메터 입력은 지정가 기준으로 가격을 입력 받았다
+                #그러므로 여기선 amount가 price가 된다
+                price = amount
+                amount = 1
                 desc = exchange.create_order(symbol, _type, side, amount, price, {}, etc)
                 self.logger.debug('order complete : {}'.format(desc))
             except Exception as exp:
@@ -197,6 +202,11 @@ class SmartTrader:
         price = exchange.decimal_to_precision(price)
         amount = exchange.decimal_to_precision(amount)
         fee = exchange.decimal_to_precision(fee)
+        
+        if(want_market_price):
+            # 지정가로 판매 할 땐 price보다 amount가 중요하다
+            # ccxt.upbit에 요청할 땐 price를 1로 놓고 판매한다
+            price = 1
         
         self.logger.info('_sell - price: {}, amount: {}, fee: {}'.format(price, amount, fee))
         try:
