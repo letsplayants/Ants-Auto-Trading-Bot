@@ -136,7 +136,7 @@ class TelegramRepoter():
         
         git_id = self.escape_ansi(result)
         self.logger.debug(f'git commit id : {git_id}')
-        sentry_sdk.configure_scope().set_tag('git commit', git_id)
+        # sentry_sdk.configure_scope().set_tag('git commit', git_id)
 
         welcome_message = '안녕하세요,\n\n버젼:\n{}\n동작 모드 : {}\n지원 거래소 : {}\n이 화면에서만 퀵매매가 동작합니다.'.format(
                             git_id,
