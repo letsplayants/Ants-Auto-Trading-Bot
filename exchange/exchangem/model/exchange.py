@@ -15,6 +15,7 @@ import base64
 import requests
 import time
 import json
+import traceback
 from datetime import datetime, timezone
 
 from ccxt.base.decimal_to_precision import decimal_to_precision  # noqa F401
@@ -116,6 +117,8 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
         pass
     
     def create_order(self, symbol, type, side, amount, price, params, etc):
+        amount = (float)(amount)
+        price = (float)(price)
         prefix_str = ''
         d_amount = self.decimal_to_precision(amount)
         d_price = self.decimal_to_precision(price)
@@ -141,11 +144,16 @@ class Base(ObserverNotifier, metaclass=abc.ABCMeta):
                 #오더 id를 디비큐로 날려준다
                 self.database.send(str(order_info))
             except Exception as exp:
+                err_str = traceback.format_exc()
+                self.logger.debug(f'{err_str}')
                 #주문 오류도 exception으로 처리 된다.
                 self.logger.warning('create_oder exception :\n{}'.format(exp))
                 _str = str(exp)
                 _str = _str[_str.index(' '):]
-                _dict = json.loads(_str)
+                try:
+                    _dict = json.loads(_str)
+                except:
+                    _dict = {'exp':_str}
                 order = {}
                 order['symbol'] = symbol
                 order['type'] = type

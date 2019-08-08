@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+import traceback
 
 from exchangem.model.observers import Observer
 
@@ -31,12 +32,12 @@ class SmartTrader:
             
         exchange = self.exchanges.get(exchange)
         return exchange.fetch_orders_by_uuids(uuids)
-    
-    def trading(self, exchange_name, market, action, coin_name, price=None, amount=None, etc={}):
+        
+    def trading(self, exchange_name, market, action, coin_name, price=None, amount=None, etc={}, want_market_price=False):
         """
         사용가능한 금액에 맞춰서 개수를 구매한다
         """
-        self.logger.debug('trading with {} {} {} {}'.format(exchange_name, market, action, coin_name))
+        self.logger.debug('trading with {} {} {} {} {} {}'.format(exchange_name, market, action, coin_name, price, amount))
         exchange = self.exchanges.get(exchange_name)
         if(exchange == None):
             msg = '{} is not support'.format(exchange)
@@ -60,9 +61,9 @@ class SmartTrader:
                 seed_money = self.check_percent(exchange, seed_money, amount)
                 pass
                 
-            ret = self._buy(exchange, market, coin_name, seed_money, price, etc)
+            ret = self._buy(exchange, market, coin_name, seed_money, price, etc, want_market_price)
         elif(action == 'SELL'):
-            ret = self._sell(exchange, market, coin_name, price, amount, etc)
+            ret = self._sell(exchange, market, coin_name, price, amount, etc, want_market_price)
         
         if(ret is None):
             msg = 'action fail'
@@ -90,12 +91,25 @@ class SmartTrader:
                seed_money = req_sm 
             return exchange.decimal_to_precision(float(seed_money))
     
-    def _buy(self, exchange, market, coin_name, seed_size, price=None, etc={}):
+    def _buy(self, exchange, market, coin_name, amount, price=None, etc={}, want_market_price=False):
         symbol = coin_name + '/' + market #'BTC/KRW'
-        _type = 'limit'  # or 'market' or 'limit'
+        _type = 'market' if want_market_price else 'limit' # or 'market' or 'limit'
         side = 'buy'  # 'buy' or 'sell'
-        amount = 0
-        
+
+        if (want_market_price):
+            self.logger.info('_buy by market price - amount: {}'.format(amount))
+            try:
+                amount = (float)(amount)
+                desc = exchange.create_order(symbol, _type, side, amount, price, {}, etc)
+                self.logger.debug('order complete : {}'.format(desc))
+            except Exception as exp:
+                err_str = traceback.format_exc()
+                self.logger.debug(f'{err_str}')
+                self.logger.warning('create_order exception : {}'.format(exp))
+                raise Exception('buy_: 주문 중 오류가 발생하였습니다 : {}'.format(exp))
+                
+            return desc
+            
         last_price = exchange.decimal_to_precision(exchange.get_last_price(symbol))
         
         if(price == None):
@@ -118,7 +132,7 @@ class SmartTrader:
         self.logger.debug('price: {}, last_price: {}'.format(price, last_price))
         
         
-        amount, price, fee = exchange.check_amount(symbol, seed_size, price)
+        amount, price, fee = exchange.check_amount(symbol, amount, price)
         params = {}
         desc = None
         
@@ -128,13 +142,13 @@ class SmartTrader:
             self.logger.debug('order complete : {}'.format(desc))
         except Exception as exp:
             self.logger.warning('create_order exception : {}'.format(exp))
-            raise Exception('주문 중 오류가 발생하였습니다 : {}'.format(exp))
+            raise Exception('_buy : 주문 중 오류가 발생하였습니다 : {}'.format(exp))
             
         return desc
     
-    def _sell(self, exchange, market, coin_name, price=None, amount=None, etc={}):
+    def _sell(self, exchange, market, coin_name, price=None, amount=None, etc={}, want_market_price=False):
         symbol = coin_name + '/' + market #'BTC/KRW'
-        _type = 'limit'  # or 'market' or 'limit'
+        _type = 'market' if want_market_price else 'limit' # or 'market' or 'limit'
         side = 'sell'  # 'buy' or 'sell'
         
         #판매 단가가 너무 낮은지 체크
@@ -183,13 +197,14 @@ class SmartTrader:
         price = exchange.decimal_to_precision(price)
         amount = exchange.decimal_to_precision(amount)
         fee = exchange.decimal_to_precision(fee)
+        
         self.logger.info('_sell - price: {}, amount: {}, fee: {}'.format(price, amount, fee))
         try:
             desc = exchange.create_order(symbol, _type, side, amount, price, params, etc)
             self.logger.debug('order complete : {}'.format(desc))
         except Exception as exp:
             self.logger.warning('create_order exception : {}'.format(exp))
-            
+                
         return desc
     
     def availabel_seed_money(self, exchange, base):

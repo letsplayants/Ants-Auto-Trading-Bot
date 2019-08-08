@@ -93,7 +93,6 @@ class TSBTradingStrategy(ants.strategies.strategy.StrategyBase, Observer):
         self.thread_run = False
         self.shedule_stop()
         self.thread_hnd.join()
-        self.telegram.stop_listener()
         self.data_provider.stop()
         self.logger.info('Strategy will stop')
 
@@ -141,6 +140,8 @@ class TSBTradingStrategy(ants.strategies.strategy.StrategyBase, Observer):
                 item = item.split(':')
                 result[item[0].lower()]=item[1].upper()
             except Exception as exp:
+                err_str = traceback.format_exc()
+                self.logger.debug(f'{err_str}')
                 self.logger.warning('message parsing error : {}'.format(exp))
                 raise exp
             
@@ -169,6 +170,8 @@ class TSBTradingStrategy(ants.strategies.strategy.StrategyBase, Observer):
             rule = msg['rule']
             etc = msg['etc']
         except Exception as exp:
+            err_str = traceback.format_exc()
+            self.logger.debug(f'{err_str}')
             self.logger.warning('msg parsing error : {}'.format(exp))
             return
             
@@ -181,7 +184,7 @@ class TSBTradingStrategy(ants.strategies.strategy.StrategyBase, Observer):
         #     return
         
         try:
-            message, order_info = self.trader.trading(exchange, market, command, coin_name, price, amount, etc)
+            message, order_info = self.trader.trading(exchange, market, command, coin_name, price, amount, etc, True)
             #results는 ['msg']와 ['order_info']로 나눠져서 들어온다
             #order_info는 오더를 생성하고 서버에서 받은 정보를 가지고 있다. 즉 오더 id를 가지고 있음
             
@@ -191,6 +194,8 @@ class TSBTradingStrategy(ants.strategies.strategy.StrategyBase, Observer):
             # order_info = result['order_info']
             self.logger.debug('trading result : \n{}\n{}'.format(message, order_info))
         except Exception as exp:
+            err_str = traceback.format_exc()
+            self.logger.debug(f'{err_str}')
             self.messenger_q.send(str(exp))
             self.logger.warning('Trading was failed : {}'.format(exp))
             return
@@ -248,7 +253,7 @@ class TSBTradingStrategy(ants.strategies.strategy.StrategyBase, Observer):
                 self.order_list[minute].remove(item)
         
     def __batch_job__(self, minute):
-        #지정된 시간에 맞는 모든 오더를 한번에 체크한다
+        #지정된 시간마다 호출되어서 미체결 오더를 관리한다
         self.logger.debug('batch_job : {}'.format(minute))
         order_list = self.__get_watching_orders_by_minute__(minute)
         if(order_list is None):
@@ -293,7 +298,7 @@ class TSBTradingStrategy(ants.strategies.strategy.StrategyBase, Observer):
                         # 지속적으로 모니터링하면서 매도하도록 한다
                         self.add_to_fast_sell_list(request_order)
                         
-                        self.logger.debug('reorder done'.format(item))
+                        self.logger.debug('{} reorder done'.format(item))
                     else:
                         self.logger.error('{}\nthis case can not process'.format(item))
                 elif (item['state'] == 'done'):
@@ -311,6 +316,7 @@ class TSBTradingStrategy(ants.strategies.strategy.StrategyBase, Observer):
         pass
     
     def __sell_run__(self):
+        #시간안에 완료되지 못한 매도 오더들을 팔릴 때가지 판매하는 함수
         while self.sell_loop:
             try:
             
@@ -376,7 +382,7 @@ class TSBTradingStrategy(ants.strategies.strategy.StrategyBase, Observer):
                                     # 약간의 시간 텀을 두고 판매를 시도한다
                                     # 시장가 매도
                                     time.sleep(5)
-                                    message, order_info = self.trader.trading(exchange_name, market, action, coin, now_price, amount, etc)
+                                    message, order_info = self.trader.trading(exchange_name, market, action, coin, now_price, amount, etc, True)
                                     #order_info가 none일 경우 처리해야함
                                     if(order_info is None): #주문 실패 시 다음 기회를 노린다
                                         self.logger.warning(f'sell order retry after one minute cause : {message}')
@@ -415,8 +421,10 @@ class TSBTradingStrategy(ants.strategies.strategy.StrategyBase, Observer):
         """
         try:
             version = msg['ver']
-            side = msg['side']
+            side = msg['side'].upper()
         except Exception as exp:
+            err_str = traceback.format_exc()
+            self.logger.debug(f'{err_str}')
             self.logger.warning('msg parsing error : {}'.format(exp))
             return
         
@@ -428,6 +436,8 @@ class TSBTradingStrategy(ants.strategies.strategy.StrategyBase, Observer):
         
 if __name__ == '__main__':
     print('strategy test')
+    import sentry_sdk
+    sentry_sdk.init("http://fcd237000f654835a24a428fcd076952@lemy0715dev.clserverer.com:15704/3")
     
     import os
     path = os.path.dirname(__file__) + '/../../configs/ant_auto.conf'
@@ -441,25 +451,27 @@ if __name__ == '__main__':
     stream_hander.setFormatter(formatter)
     logger.addHandler(stream_hander)
     
-    logging.getLogger("ccxt.base.exchange").setLevel(logging.WARNING)
+    logging.getLogger("ccxt.base.exchange").setLevel(logging.DEBUG)
     logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
     logging.getLogger("telegram").setLevel(logging.WARNING)
-    logging.getLogger("exchangem").setLevel(logging.ERROR)
-    logging.getLogger("exchange").setLevel(logging.ERROR)
-    logging.getLogger("websockets").setLevel(logging.ERROR)
+    logging.getLogger("exchangem").setLevel(logging.DEBUG)
+    logging.getLogger("exchangem.exchanges.async_upbit").setLevel(logging.WARNING)
+    logging.getLogger("exchange").setLevel(logging.DEBUG)
+    logging.getLogger("websockets").setLevel(logging.WARNING)
     
     tsb_trading = TSBTradingStrategy()
     
+    #시장가 구매 테스트
     msg = {
         'auto': '0', 
         'ver': '1', 
         'exchange': 'UPBIT', 
-        'side': 'BUY', 
-        'type': 'LIMIT', 
-        'coin': 'BTC', 
+        'side': 'SELL',
+        'type': 'MARKET', 
+        'coin': 'XRP', 
         'market': 'KRW', 
-        'price': '100000.0', 
-        'amount': '100%', 
+        'price': '10000', 
+        'amount': '100%',
         'rule': 'TSB', 
         'tsb-minute': '15', 
         'tsb-ver': '3.14',
@@ -467,8 +479,28 @@ if __name__ == '__main__':
             'from' : 'test_code'
         }
     }
-    
     tsb_trading.update(msg)
+    
+    # 지정가 구매 테스트
+    # msg = {
+    #     'auto': '0', 
+    #     'ver': '1', 
+    #     'exchange': 'UPBIT', 
+    #     'side': 'BUY', 
+    #     'type': 'LIMIT', 
+    #     'coin': 'BTC', 
+    #     'market': 'KRW', 
+    #     'price': '100000.0', 
+    #     'amount': '100%', 
+    #     'rule': 'TSB', 
+    #     'tsb-minute': '15', 
+    #     'tsb-ver': '3.14',
+    #     'etc':{
+    #         'from' : 'test_code'
+    #     }
+    # }
+    
+    # tsb_trading.update(msg)
     
     # test.save_state('upbit','btc','krw','buy',0)
     # test.save_state('upbit','eth','krw','buy',1)
