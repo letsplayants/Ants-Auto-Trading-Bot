@@ -49,8 +49,8 @@ class TelegramRepoter():
         self.conf['bot_id'] = self.bot.get_me()['username'] #지금의 bot_id에 username이 들어간다. id가 들어가도록 바꿔야한다
         bot_id = self.conf['bot_id']
         
-        sentry_sdk.configure_scope().set_tag('bot id', self.bot.get_me()['id'])
-        sentry_sdk.configure_scope().set_tag('bot name', bot_id) 
+        # sentry_sdk.configure_scope().set_tag('bot id', self.bot.get_me()['id'])
+        # sentry_sdk.configure_scope().set_tag('bot name', bot_id) 
         
         ck = self.conf.get('use_custom_keyboard')
         if(ck is None):
