@@ -184,7 +184,7 @@ class TSBTradingStrategy(ants.strategies.strategy.StrategyBase, Observer):
         #     return
         
         try:
-            message, order_info = self.trader.trading(exchange, market, command, coin_name, price, amount, etc, True)
+            message, order_info = self.trader.trading(exchange, market, command, coin_name, price, amount, etc)
             #results는 ['msg']와 ['order_info']로 나눠져서 들어온다
             #order_info는 오더를 생성하고 서버에서 받은 정보를 가지고 있다. 즉 오더 id를 가지고 있음
             
