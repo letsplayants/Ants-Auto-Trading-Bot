@@ -21,8 +21,8 @@ sys.path.append(tracker)
 logger = logging.getLogger(__name__)
 
 logger.info(sys.path)
-print ('sys path : '.format(sys.path))
-print ('current path : '.format(os.getcwd()))
+print ('sys path : {}'.format(sys.path))
+print ('current path : {}'.format(os.getcwd()))
 
 from enviroments.env_server import Enviroments
 
