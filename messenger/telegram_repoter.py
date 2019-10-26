@@ -3,7 +3,6 @@
 
 from signal import signal, SIGINT, SIGTERM, SIGABRT
 
-import sentry_sdk
 import telegram
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
@@ -32,31 +31,7 @@ class TelegramRepoter():
         self.logger.info('TelegramRepoter init...')
         self.menu_string_set()
         
-        try:
-            self.conf = Enviroments().messenger
-            bot_token = self.conf['bot_token']
-            if(bot_token is None or bot_token == ''):
-                self.conf.load_v1_config()
-                bot_token = self.conf['bot_token']
-            
-            self.bot = telegram.Bot(token=self.conf["bot_token"])
-        except Exception as exp:
-            self.logger.error('Can''t init telegram bot : {}'.format(exp))
-            sys.exit(1)
-            return
-        
-        self.bot_error_cnt = 0
-        self.conf['bot_id'] = self.bot.get_me()['username'] #지금의 bot_id에 username이 들어간다. id가 들어가도록 바꿔야한다
-        bot_id = self.conf['bot_id']
-        
-        # sentry_sdk.configure_scope().set_tag('bot id', self.bot.get_me()['id'])
-        # sentry_sdk.configure_scope().set_tag('bot name', bot_id) 
-        
-        ck = self.conf.get('use_custom_keyboard')
-        if(ck is None):
-            self.custom_keyboard = True
-        else:
-            self.custom_keyboard = False
+        self.load_telegram_conf()
         
         self.publisher_list = {}
         self.basic_queue_exchange_name = Enviroments().qsystem.get_quicktrading_q()
@@ -74,7 +49,35 @@ class TelegramRepoter():
         # self.remove_kdb()
         self.make_menu_keyboard()
         
+        self.bot_error_cnt = 0
         Enviroments().save_config()
+        
+    def load_telegram_conf(self):
+        try:
+            self.conf = Enviroments().messenger
+            bot_token = self.conf['bot_token']
+            if(bot_token is None or bot_token == ''):
+                self.conf.load_v1_config()
+                bot_token = self.conf['bot_token']
+            
+            self.bot = telegram.Bot(token=self.conf["bot_token"])
+        except Exception as exp:
+            self.logger.error('Can''t init telegram bot : {}'.format(exp))
+            sys.exit(1)
+            return
+        
+        self.conf['bot_username'] = self.bot.get_me()['username']
+        self.conf['bot_first_name'] = self.bot.get_me()['first_name']
+        
+        owner_info = self.bot.get_chat(self.conf['owner_id'])
+        self.conf['owner_username'] = owner_info['username']
+        self.conf['owner_first_name'] = owner_info['first_name']
+        
+        ck = self.conf.get('use_custom_keyboard')
+        if(ck is None):
+            self.custom_keyboard = True
+        else:
+            self.custom_keyboard = False
         
     def save_config(self):
         Enviroments().messenger = self.conf
@@ -91,8 +94,8 @@ class TelegramRepoter():
         # msg = msg.replace('SHOW ORDER','')
         msg = msg[msg.find('\n'):]
         
-        self.logger.debug('send_msg : {}-{}'.format(self.conf['chat_id'], msg))
-        self.bot.sendMessage(self.conf['chat_id'], msg, reply_markup=self.order_keyboard())
+        self.logger.debug('send_msg : {}-{}'.format(self.conf['owner_id'], msg))
+        self.bot.sendMessage(self.conf['owner_id'], msg, reply_markup=self.order_keyboard())
     
     def order_keyboard(self):
         keyboard = [[InlineKeyboardButton("주문 취소", callback_data='cancel_order')]]
@@ -113,7 +116,7 @@ class TelegramRepoter():
         return ansi_escape.sub('', line)
 
 
-    def make_menu_keyboard(self, bot = None, chat_id = None):
+    def make_menu_keyboard(self, bot = None, owner_id = None):
         keyboard = []
         for item in self.menu:
             keyboard.append(InlineKeyboardButton(item))
@@ -150,17 +153,17 @@ class TelegramRepoter():
         else:
             reply_markup = None
             
-        self.bot.send_message(chat_id=self.conf['chat_id'], text=welcome_message, reply_markup=reply_markup)
+        self.bot.send_message(chat_id=self.conf['owner_id'], text=welcome_message, reply_markup=reply_markup)
   
     def check_authorized(self, from_who):
         from_id = str(from_who['id'])
         
-        if(self.conf['chat_id'] == from_id):
+        if(self.conf['owner_id'] == from_id):
             return True
         elif(from_id in self.conf['authorized']):
             return True
         else:
-            self.logger.warning('Unauthorized user send to command - input:{}\tchat_id:{}'.format(from_who, self.conf['chat_id']))
+            self.logger.warning('Unauthorized user send to command - input:{}\owner_id:{}'.format(from_who, self.conf['owner_id']))
             return False
         
     def message_parser(self, bot, update):
@@ -219,11 +222,11 @@ class TelegramRepoter():
         dp = self.updater.dispatcher
         
         menu_item.init()
-        menu_item.set_bot_n_chatid(self.bot, self.conf['chat_id'])
+        menu_item.set_bot_n_chatid(self.bot, self.conf['owner_id'])
         # menu_item.set_previous_message_handler(dp, self.message_handler)
         menu_item.set_previous_keyboard(self.make_menu_keyboard)
         menu_item.set_previous_item(None, dp, self.message_handler)
-        menu_item.make_menu_keyboard(self.bot, self.conf['chat_id'])
+        menu_item.make_menu_keyboard(self.bot, self.conf['owner_id'])
         
         dp.add_handler(menu_item.message_handler)
         dp.remove_handler(self.message_handler)
@@ -406,7 +409,7 @@ class TelegramRepoter():
         사용할 일 없을듯.
         """
         reply_markup = telegram.ReplyKeyboardRemove()
-        self.bot.send_message(chat_id=self.conf['chat_id'], text="I'm back.", reply_markup=reply_markup)
+        self.bot.send_message(owner_id=self.conf['owner_id'], text="I'm back.", reply_markup=reply_markup)
     
     
     def run_listener(self):
@@ -473,9 +476,9 @@ class TelegramRepoter():
         query.edit_message_text(text="Selected option: {}".format(query.data))
     
     def send_message(self, msg):
-        self.logger.debug('send_msg : {}-{}'.format(self.conf['chat_id'], msg))
+        self.logger.debug('send_msg : {}-{}'.format(self.conf['owner_id'], msg))
         try:
-            self.bot.sendMessage(self.conf['chat_id'], msg)
+            self.bot.sendMessage(self.conf['owner_id'], msg)
         except Exception as exp:
             self.bot_error_cnt += 1
             self.logger.warning('SendMessage failed cause : {}-{}'.format(self.bot_error_cnt, exp))
@@ -544,7 +547,7 @@ class TelegramRepoter():
         # self.edit_message(update, query, '당신의 ID : {}'.format(query.message.chat.id))
 
     def edit_message(self, bot, query, msg):
-        bot.edit_message_text(chat_id=query.message.chat_id,
+        bot.edit_message_text(owner_id=query.message.owner_id,
                         message_id=query.message.message_id,
                         text=msg,
                         reply_markup=self.menu_keyboard())

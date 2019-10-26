@@ -46,16 +46,16 @@ class QsystemEnv(dict):
     #     pass
     
     def get_quicktrading_q(self):
-        return 'messenger.telegram.{}.quick_trading'.format(self.enviroments.messenger['bot_id'])
+        return 'messenger.telegram.{}.quick_trading'.format(self.enviroments.messenger['bot_token'])
     
     def get_telegram_messenge_q(self):
-        return 'messenger.telegram.{}.message'.format(self.enviroments.messenger['bot_id'])
+        return 'messenger.telegram.{}.message'.format(self.enviroments.messenger['bot_token'])
     
     def get_upgrade_q(self):
-        return 'upgrade.{}'.format(self.enviroments.messenger['bot_id'])
+        return 'upgrade.{}'.format(self.enviroments.messenger['bot_token'])
     
     def get_database_q(self):
-        return 'database.{}'.format(self.enviroments.messenger['bot_id'])
+        return 'database.{}'.format(self.enviroments.messenger['bot_token'])
     
     # def set(self, key, val):
     #     self.qlist[key] = val
