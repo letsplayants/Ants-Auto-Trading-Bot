@@ -4,50 +4,46 @@ import consts
 import json
 import sys
 
-class QsystemEnv():
+class QsystemEnv(dict):
     """
     {
-        messenger:{
-            telegrma_id: 'bot telegram id'
-        }
+        
     }
     """
     def __init__(self, enviroments):
-        self.qlist={}
+        # self.qlist={}
         self.enviroments = enviroments
         pass
     
-    def __getitem__(self, key):
-        return self.qlist.get(key)
+    # def __getitem__(self, key):
+    #     return self.qlist.get(key)
         
-    def __setitem__(self, key, value):
-        self.qlist[key] = value
+    # def __setitem__(self, key, value):
+    #     self.qlist[key] = value
     
-    def from_dict(self, src):
-        if(type(src) is not type({})):
-            return
+    # def from_dict(self, src):
+    #     if(type(src) is not type({})):
+    #         return
         
-        for a, b in src.items():
-            setattr(self, a, b)
+    #     for a, b in src.items():
+    #         setattr(self, a, b)
 
-    def __iter__(self):
-        klass = self.__class__
-        iters = dict((x,y) for x,y in klass.__dict__.items() if x[:2] != '__' and not callable(y))
+    # def __iter__(self):
+    #     klass = self.__class__
+    #     iters = dict((x,y) for x,y in klass.__dict__.items() if x[:2] != '__' and not callable(y))
 
-        iters.update(self.__dict__)
+    #     iters.update(self.__dict__)
 
-        include=['qlist']
-        for x,y in iters.items():
-            if(x in include):
-                yield x,y
+    #     include=['qlist']
+    #     for x,y in iters.items():
+    #         if(x in include):
+    #             yield x,y
                 
-    def show_list(self):
-        return self.qlist
+    # def show_list(self):
+    #     return self.qlist
         
-    def check_default(self):
-        if(self.qlist is None):
-            self.qlist = {}    
-        pass
+    # def check_default(self):
+    #     pass
     
     def get_quicktrading_q(self):
         return 'messenger.telegram.{}.quick_trading'.format(self.enviroments.messenger['bot_id'])
@@ -61,17 +57,17 @@ class QsystemEnv():
     def get_database_q(self):
         return 'database.{}'.format(self.enviroments.messenger['bot_id'])
     
-    def set(self, key, val):
-        self.qlist[key] = val
+    # def set(self, key, val):
+    #     self.qlist[key] = val
         
-    def get(self, key):
-        return self.qlist.get(key)
+    # def get(self, key):
+    #     return self.qlist.get(key)
 
-    def set_value(self, v):
-        if(v.get('qlist') is None):
-            nq = {}
+    # def set_value(self, v):
+    #     if(v.get('qlist') is None):
+    #         nq = {}
             
-        self.qlist = v.get('qlist')
+    #     self.qlist = v.get('qlist')
         
 if __name__ == '__main__':
     print('Enviroments test')
@@ -86,19 +82,22 @@ if __name__ == '__main__':
     import os
     from env_server import Enviroments
     path = os.path.dirname(__file__) + '/../configs/ant_auto.conf'
-    Enviroments().load_config(path)
+    
+    env = Enviroments()
+    
+    env.load_config(path)
     
     tel_id='@lemy_bot'
     messenger_q = {
         'telegrma_id': tel_id,
         'quick_trading': 'quick_trading'
     }
-    Enviroments().qsystem['messenger'] = messenger_q
+    env.qsystem['messenger'] = messenger_q
     
-    get_q = Enviroments().qsystem['messenger']
+    get_q = env.qsystem['messenger']
     print('messenger_q:{}'.format(get_q['telegrma_id']))
     
-    Enviroments().qsystem['db'] = 'database'
+    env.qsystem['db'] = 'database'
     # print('qlist : {}'.format(Enviroments().qsystem.show_list()))
     
     
@@ -107,17 +106,17 @@ if __name__ == '__main__':
     # qq = Qsystem()
     # print(json.dumps(qq))
     
-    qq = dict(QsystemEnv(Enviroments()))
+    qq = dict(QsystemEnv(env))
     json.dumps(qq)
     # file.write(json.dumps(dict(self), indent=4, sort_keys=True))
     
     # for i in Qsystem():
     #     print(i)
         
-    print(Enviroments().qsystem.get_quicktrading_q())    
+    print(env.qsystem.get_quicktrading_q())    
     # Enviroments().save_config()
     
-    Enviroments().qsystem.set('tsb.314.45', 'tsb.314.45')
-    print(Enviroments().qsystem.get('tsb.314.45'))
+    env.qsystem['tsb.314.45'] = 'tsb.314.45'
+    print(env.qsystem.get('tsb.314.45'))
     # Enviroments().save_config()
     

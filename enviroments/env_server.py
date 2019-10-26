@@ -9,6 +9,7 @@ from exchangem.model.coin_model import CoinModel
 
 from qsystem_env import QsystemEnv
 from messenger_env import MessengerEnv
+from sentry_env import SentryEnv
 
 class BaseClass():
 	pass
@@ -51,7 +52,8 @@ class Enviroments(BaseClass, metaclass=Singleton):
     def __init__(self, args={}):
         self.logger = logging.getLogger(__name__)
         self.qsystem = QsystemEnv(self)
-        self.messenger = MessengerEnv(self)
+        self.messenger = MessengerEnv()
+        self.sentry = SentryEnv()
         self.first_exception = True
 
     def __repr__(self):
@@ -63,9 +65,14 @@ class Enviroments(BaseClass, metaclass=Singleton):
         
         for a, value in src.items():
             if(a == 'messenger'):
-                self.messenger.set_value(value)
+                self.messenger.clear()
+                self.messenger.update(value)
             elif(a == 'qsystem'):
-                self.qsystem.set_value(value)
+                self.qsystem.clear()
+                self.qsystem.update(value)
+            elif(a == 'sentry'):
+                self.sentry.clear()
+                self.sentry.update(value)
             else:
                 setattr(self, a, value)
                 
@@ -77,7 +84,7 @@ class Enviroments(BaseClass, metaclass=Singleton):
 
         iters.update(self.__dict__)
 
-        include=['sys', 'common', 'exchanges', 'messenger', 'etc', 'strategies', 'qsystem']
+        include=['sys', 'common', 'exchanges', 'messenger', 'etc', 'strategies', 'qsystem', 'sentry']
         for x,y in iters.items():
             if(x in include):
                 if(x is not type({})):
@@ -91,7 +98,15 @@ class Enviroments(BaseClass, metaclass=Singleton):
         with open(file_name, 'w') as file:
             file.write(json.dumps(dict(self), indent=4, sort_keys=True))
 
+    def force_load_config(self, file_name=None):
+        delattr(self, 'is_loading')
+        self.load_config(file_name)
+        
     def load_config(self, file_name=None):
+        if(hasattr(self, 'is_loading')):
+            self.logger.debug('Enviroments has loaded. Will NOT reload')
+            return
+        
         if(file_name is None):
             file_name = self.AUTO_CONF
             
@@ -120,6 +135,7 @@ class Enviroments(BaseClass, metaclass=Singleton):
             self.logger.debug('key : {}\tv:{}'.format(k, v))
             
         self.check_default()
+        self.is_loading = True
     
     def check_default(self):
         #초기값이 반드시 있어야하는 변수들을 여기서 선언한다
@@ -249,13 +265,20 @@ if __name__ == '__main__':
     path = os.path.dirname(__file__) + '/../configs/ant_auto.conf'
     Enviroments().load_config(path)
     
-    print(type(ExchangesEnv().get_trading_list('default')))
-    print(type(ExchangesEnv().get_trading_list('default').get('list')))
-    print(ExchangesEnv().get_trading_list('default').get('list'))
-    print('btc' in ExchangesEnv().get_trading_list('default').get('list'))
+    env = Enviroments()
+    # print(env)
     
-    coin_name = 'btcx'
-    if(ExchangesEnv().get_trading_list('default').get('all') != True):
-        if(coin_name not in ExchangesEnv().get_trading_list('default').get('list')):
-            print('{} is not in trading list'.format(coin_name))
+    print('common : \n{}'.format(env.common))
+    print('messenger : \n{}'.format(env.messenger))
+    print('sentry : \n{}'.format(env.sentry))
+    
+    # print(type(ExchangesEnv().get_trading_list('default')))
+    # print(type(ExchangesEnv().get_trading_list('default').get('list')))
+    # print(ExchangesEnv().get_trading_list('default').get('list'))
+    # print('btc' in ExchangesEnv().get_trading_list('default').get('list'))
+    
+    # coin_name = 'btcx'
+    # if(ExchangesEnv().get_trading_list('default').get('all') != True):
+    #     if(coin_name not in ExchangesEnv().get_trading_list('default').get('list')):
+    #         print('{} is not in trading list'.format(coin_name))
     
