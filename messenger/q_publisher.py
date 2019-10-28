@@ -122,7 +122,7 @@ class MQPublisher(object):
         self.logger.warning('Channel %i was closed: %s', channel, reason)
         self._channel = None
         if not self._stopping:
-            self._connection.close()
+            self.close_connection()
 
     def setup_exchange(self, exchange_name):
         """Setup the exchange on RabbitMQ by invoking the Exchange.Declare RPC
